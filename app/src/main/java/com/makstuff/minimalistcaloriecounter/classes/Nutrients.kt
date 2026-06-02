@@ -4,8 +4,9 @@ import android.content.Context
 import androidx.compose.runtime.toMutableStateList
 import com.makstuff.minimalistcaloriecounter.R
 import com.makstuff.minimalistcaloriecounter.essentials.NUTRIENT_PROPERTIES
+import com.makstuff.minimalistcaloriecounter.essentials.checkValidNumber
 import com.makstuff.minimalistcaloriecounter.essentials.toCost
-import com.makstuff.minimalistcaloriecounter.essentials.toProperString
+import com.makstuff.minimalistcaloriecounter.essentials.toFormattedString
 
 class Nutrients(
     val values: List<Double> = List(NUTRIENT_PROPERTIES.size) { 0.0 }.toMutableStateList(),
@@ -23,7 +24,7 @@ class Nutrients(
     fun stringValues(prune: Boolean): List<String> {
         return values.mapIndexed { index, value ->
             if (index == NUTRIENT_PROPERTIES.size - 1) value.toCost()
-            else value.toProperString(prune)
+            else value.toFormattedString(prune)
         }
     }
 
@@ -32,11 +33,11 @@ class Nutrients(
         return if (nutrientEnergy > 0) {
             listOf(
                 //*400/900 includes factor 100 for nice percentages (45% instead of 0.45)
-                (values[1] * 400 / nutrientEnergy).toProperString(false),
-                (values[2] * 400 / nutrientEnergy).toProperString(false),
-                (values[3] * 400 / nutrientEnergy).toProperString(false),
-                (values[4] * 900 / nutrientEnergy).toProperString(false),
-                (values[5] * 900 / nutrientEnergy).toProperString(false),
+                (values[1] * 400 / nutrientEnergy).toFormattedString(false),
+                (values[2] * 400 / nutrientEnergy).toFormattedString(false),
+                (values[3] * 400 / nutrientEnergy).toFormattedString(false),
+                (values[4] * 900 / nutrientEnergy).toFormattedString(false),
+                (values[5] * 900 / nutrientEnergy).toFormattedString(false),
             )
         } else listOf("0.00", "0.00", "0.00", "0.00", "0.00")
     }
@@ -45,12 +46,9 @@ class Nutrients(
         fun fromStrings(values: List<String>, context: Context): Nutrients {
             val list: MutableList<Double> = mutableListOf()
             values.forEachIndexed { index, value ->
-                check(value.toDoubleOrNull() != null) {
-                    context.resources.getStringArray(R.array.nutrient_names)[index] + " " +
-                            context.getString(R.string.must_be_a_valid_number) + "."
-                }
+                checkValidNumber(value, context.resources.getStringArray(R.array.nutrient_names)[index], context)
                 if (index == NUTRIENT_PROPERTIES.size - 1) {list.add(value.toDouble().toCost().toDouble())}
-                else {list.add(value.toDouble().toProperString(true).toDouble())}
+                else {list.add(value.toDouble().toFormattedString(true).toDouble())}
             }
             return Nutrients(
                 list.toMutableStateList(),

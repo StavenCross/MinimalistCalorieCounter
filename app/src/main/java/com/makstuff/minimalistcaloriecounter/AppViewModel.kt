@@ -15,7 +15,8 @@ import com.makstuff.minimalistcaloriecounter.classes.DatabaseEntry
 import com.makstuff.minimalistcaloriecounter.classes.Nutrients
 import com.makstuff.minimalistcaloriecounter.essentials.NUTRIENT_PROPERTIES
 import com.makstuff.minimalistcaloriecounter.essentials.NavButton
-import com.makstuff.minimalistcaloriecounter.essentials.toProperString
+import com.makstuff.minimalistcaloriecounter.essentials.checkValidNumber
+import com.makstuff.minimalistcaloriecounter.essentials.toFormattedString
 import com.makstuff.minimalistcaloriecounter.ui.theme.AppTheme
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -323,13 +324,13 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun currentComboAddComponent(weight: String, databaseEntry: DatabaseEntry, context: Context) {
-        check(weight.toDoubleOrNull() != null) { context.getString(R.string.weight) + " " + context.getString(R.string.must_be_a_valid_number)+"."}
+        checkValidNumber(weight, context.getString(R.string.weight), context)
         _uiState.value.currentCombo.addComponent(weight.toDouble(), databaseEntry)
         currentComboWriteToCSV(context)
     }
 
     fun dayAddFood(weight: String, databaseEntry: DatabaseEntry, context: Context) {
-        check(weight.toDoubleOrNull() != null) { context.getString(R.string.weight) + " " + context.getString(R.string.must_be_a_valid_number)+"."}
+        checkValidNumber(weight, context.getString(R.string.weight), context)
         _uiState.value.day.addComponent(weight.toDouble(), databaseEntry)
         dayWriteToCSV(context)
     }
@@ -351,17 +352,17 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
 
     fun currentComboEditComponentWeight(weightString: String, index: Int, context: Context) {
-        check(weightString.toDoubleOrNull() != null) { context.getString(R.string.weight) + " " + context.getString(R.string.must_be_a_valid_number)+"."}
+        checkValidNumber(weightString, context.getString(R.string.weight), context)
         _uiState.value.currentCombo.editComponentWeight(
-            weightString.toDouble().toProperString(true).toDouble(), index
+            weightString.toDouble().toFormattedString(true).toDouble(), index
         )
         currentComboWriteToCSV(context)
     }
 
     fun dayEditFoodWeight(weightString: String, index: Int, context: Context) {
-        check(weightString.toDoubleOrNull() != null) { context.getString(R.string.weight) + " " + context.getString(R.string.must_be_a_valid_number)+"."}
+        checkValidNumber(weightString, context.getString(R.string.weight), context)
         _uiState.value.day.editComponentWeight(
-            weightString.toDouble().toProperString(true).toDouble(), index
+            weightString.toDouble().toFormattedString(true).toDouble(), index
         )
         dayWriteToCSV(context)
     }

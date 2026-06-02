@@ -11,12 +11,17 @@ import com.makstuff.minimalistcaloriecounter.ui.reused.TileLegend
 fun ScreenShowFoodAll(
     database: List<DatabaseEntry>,
     onFoodClicked: (Int) -> Unit,
+    onFoodLongClicked: (Int) -> Unit = {},
 ) {
     Column {
         TileLegend()
         ScrollColumn(reverseScrolling = false, items = database.mapIndexed { index, entry ->
             {
-                TileDatabase(entry, { onFoodClicked(index) })
+                TileDatabase(
+                    databaseEntry = entry,
+                    onClick = { onFoodClicked(index) },
+                    onLongClick = { onFoodLongClicked(index) }
+                )
             }
         })
     }

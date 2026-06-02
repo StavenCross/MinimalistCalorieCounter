@@ -10,19 +10,21 @@ class CustomWeights(
     val listOfStrings: MutableList<Pair<String, String>> = mutableListOf()
 
     init {
-        check(
-            inputString == "" || Regex("""^\d+(\.\d+)?:[^\n\r,:-]+(-\d+(\.\d+)?:[^\n\r,:-]+)*$""").containsMatchIn(
-                inputString
-            )
-        ) {
+        val isValid = this.inputString.isEmpty() || Regex("""^\d+(\.\d+)?:[^\n\r,:-]+(-\d+(\.\d+)?:[^\n\r,:-]+)*$""").containsMatchIn(
+            this.inputString
+        )
+        check(isValid) {
             context.getString(R.string.custom_weights_format)
         }
-        if (inputString != "") {
-            inputString.split("-").forEach {
+        
+        if (this.inputString.isNotEmpty()) {
+            this.inputString.split("-").forEach {
                 val splitList = it.split(":")
-                val weight = splitList[0]
-                val name = splitList[1]
-                listOfStrings.add(Pair(weight, name))
+                if (splitList.size >= 2) {
+                    val weight = splitList[0]
+                    val name = splitList[1]
+                    this.listOfStrings.add(Pair(weight, name))
+                }
             }
         }
     }

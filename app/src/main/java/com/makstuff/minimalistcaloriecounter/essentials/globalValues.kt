@@ -8,11 +8,11 @@ enum class NavButton {
     COMBINE,
 }
 
-val DAY = NavButton.DAY
-val ARCHIVE = NavButton.ARCHIVE
-val DATABASE = NavButton.DATABASE
-val CREATE = NavButton.CREATE
-val COMBINE = NavButton.COMBINE
+val NAV_DAY = NavButton.DAY
+val NAV_ARCHIVE = NavButton.ARCHIVE
+val NAV_DATABASE = NavButton.DATABASE
+val NAV_CREATE = NavButton.CREATE
+val NAV_COMBINE = NavButton.COMBINE
 
 val GENERAL_WEIGHTS: List<Pair<String, String>> = listOf(
     Pair("5", "5"),
@@ -45,6 +45,12 @@ val GENERAL_WEIGHTS: List<Pair<String, String>> = listOf(
     Pair("400", "400"),
     Pair("450", "450"),
     Pair("500", "500"),
+    Pair("550", "550"),
+    Pair("600", "600"),
+    Pair("700", "700"),
+    Pair("800", "800"),
+    Pair("900", "900"),
+    Pair("1000", "1000"),
 )
 
 data class NutrientProperties(

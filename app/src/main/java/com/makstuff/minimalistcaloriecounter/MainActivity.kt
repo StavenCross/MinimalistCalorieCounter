@@ -1,10 +1,10 @@
 package com.makstuff.minimalistcaloriecounter
 
 import android.os.Bundle
+import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
@@ -16,7 +16,7 @@ import com.makstuff.minimalistcaloriecounter.ui.theme.AppTheme
 import com.makstuff.minimalistcaloriecounter.ui.theme.DarkTheme
 import com.makstuff.minimalistcaloriecounter.ui.theme.LocalTheme
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         val splashScreen = installSplashScreen()
         super.onCreate(savedInstanceState)
@@ -39,22 +39,14 @@ class MainActivity : AppCompatActivity() {
 
             LaunchedEffect(darkTheme.isDark) {
                 enableEdgeToEdge(
-                    statusBarStyle = if (darkTheme.isDark) {
-                        SystemBarStyle.dark(android.graphics.Color.TRANSPARENT)
-                    } else {
-                        SystemBarStyle.light(
-                            android.graphics.Color.TRANSPARENT,
-                            android.graphics.Color.TRANSPARENT
-                        )
-                    },
-                    navigationBarStyle = if (darkTheme.isDark) {
-                        SystemBarStyle.dark(android.graphics.Color.TRANSPARENT)
-                    } else {
-                        SystemBarStyle.light(
-                            android.graphics.Color.TRANSPARENT,
-                            android.graphics.Color.TRANSPARENT
-                        )
-                    }
+                    statusBarStyle = SystemBarStyle.auto(
+                        android.graphics.Color.TRANSPARENT,
+                        android.graphics.Color.TRANSPARENT,
+                    ) { darkTheme.isDark },
+                    navigationBarStyle = SystemBarStyle.auto(
+                        android.graphics.Color.TRANSPARENT,
+                        android.graphics.Color.TRANSPARENT,
+                    ) { darkTheme.isDark }
                 )
             }
 

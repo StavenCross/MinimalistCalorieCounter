@@ -6,7 +6,8 @@ import com.makstuff.minimalistcaloriecounter.R
 import com.makstuff.minimalistcaloriecounter.essentials.CSV_INDEX_DATABASE_NUTRIENTS_LOWER
 import com.makstuff.minimalistcaloriecounter.essentials.CSV_INDEX_DATABASE_NUTRIENTS_UPPER
 import com.makstuff.minimalistcaloriecounter.essentials.NUTRIENT_PROPERTIES
-import com.makstuff.minimalistcaloriecounter.essentials.toProperString
+import com.makstuff.minimalistcaloriecounter.essentials.checkValidNumber
+import com.makstuff.minimalistcaloriecounter.essentials.toFormattedString
 import java.time.LocalDate
 import java.time.format.DateTimeParseException
 
@@ -55,7 +56,7 @@ data class Archive(
         list.add(listOf("Date", "BodyWeight") + NUTRIENT_PROPERTIES.map { it.nameForCSV })
         entries.forEach {
             list.add(
-                listOf(it.first.toString()) + listOf(it.second.toProperString(true)) + it.third.stringValues(
+                listOf(it.first.toString()) + listOf(it.second.toFormattedString(true)) + it.third.stringValues(
                     true
                 )
             )
@@ -69,8 +70,7 @@ data class Archive(
         nutrients: Nutrients,
         updateDependencies: Boolean = true
     ) {
-        check(bodyWeight.toDoubleOrNull() != null) {
-            context.getString(R.string.body_weight) + " " + context.getString(R.string.must_be_a_valid_number) + "."}
+        checkValidNumber(bodyWeight, context.getString(R.string.body_weight), context)
         checkBodyWeight(bodyWeight.toDouble())
         entries.add(Triple(date, bodyWeight.toDouble(), nutrients))
         if (updateDependencies) {

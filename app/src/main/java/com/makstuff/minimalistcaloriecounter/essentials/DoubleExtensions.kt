@@ -2,7 +2,7 @@ package com.makstuff.minimalistcaloriecounter.essentials
 
 import java.util.Locale
 
-fun Double.toProperString(prune: Boolean): String {
+fun Double.toFormattedString(prune: Boolean): String {
     var string = ""
     fun format(scale: Int) {
         string = "%.${scale}f".format(Locale.US,this)

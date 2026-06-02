@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
@@ -54,16 +53,16 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.makstuff.minimalistcaloriecounter.classes.Nutrients
 import com.makstuff.minimalistcaloriecounter.essentials.ALPHABET
-import com.makstuff.minimalistcaloriecounter.essentials.ARCHIVE
-import com.makstuff.minimalistcaloriecounter.essentials.COMBINE
-import com.makstuff.minimalistcaloriecounter.essentials.CREATE
-import com.makstuff.minimalistcaloriecounter.essentials.DATABASE
-import com.makstuff.minimalistcaloriecounter.essentials.DAY
+import com.makstuff.minimalistcaloriecounter.essentials.NAV_ARCHIVE
+import com.makstuff.minimalistcaloriecounter.essentials.NAV_COMBINE
+import com.makstuff.minimalistcaloriecounter.essentials.NAV_CREATE
+import com.makstuff.minimalistcaloriecounter.essentials.NAV_DATABASE
+import com.makstuff.minimalistcaloriecounter.essentials.NAV_DAY
 import com.makstuff.minimalistcaloriecounter.essentials.GENERAL_WEIGHTS
 import com.makstuff.minimalistcaloriecounter.essentials.NavControllerListener
 import com.makstuff.minimalistcaloriecounter.essentials.NavButton
 import com.makstuff.minimalistcaloriecounter.essentials.toBodyWeight
-import com.makstuff.minimalistcaloriecounter.essentials.toProperString
+import com.makstuff.minimalistcaloriecounter.essentials.toFormattedString
 import com.makstuff.minimalistcaloriecounter.ui.reused.ButtonGrid
 import com.makstuff.minimalistcaloriecounter.ui.reused.ButtonText
 import com.makstuff.minimalistcaloriecounter.ui.reused.DropdownMenu
@@ -100,6 +99,18 @@ fun App(
     val uriHandler = LocalUriHandler.current
     fun navTo(route: String) {
         navController.navigate(route)
+    }
+
+    fun editDatabaseEntry(index: Int) {
+        viewModel.updateDatabaseEntryEditName(uiState.database[index].name)
+        viewModel.updateDatabaseEntryEditAllNutrients(
+            uiState.database[index].nutrients.stringValues(
+                true
+            ).toMutableStateList()
+        )
+        viewModel.updateDatabaseEntryEditCustomWeights(uiState.database[index].customWeights.inputString)
+        viewModel.updateDatabaseEntryEditQuickselect(uiState.database[index].quickselect)
+        navTo("database_edit_entry/$index")
     }
 
     fun setNav(string: String, button: NavButton) {
@@ -205,7 +216,8 @@ fun App(
                 ).show()
             } catch (e: IllegalStateException) {
                 Toast.makeText(
-                    context, context.getString(R.string.import_failed) + ": " + e.message, Toast.LENGTH_LONG
+                    context,
+                    context.getString(R.string.import_failed) + ": " + e.message, Toast.LENGTH_LONG
                 ).show()
             }
         }
@@ -468,7 +480,6 @@ fun App(
 
                                 val intent = Intent(Intent.ACTION_VIEW).apply {
                                     data = "market://details?id=$appId".toUri()
-                                    setPackage("com.android.vending")
                                 }
 
                                 try {
@@ -486,13 +497,13 @@ fun App(
             NavigationBar(
                 items = listOf(
                     NavigationBarItemData(
-                        stringResource(R.string.database_navbar), R.drawable.list, uiState.navigationBarHighlight == DATABASE
+                        stringResource(R.string.database_navbar), R.drawable.list, uiState.navigationBarHighlight == NAV_DATABASE
                     ) { navTo("database_home") },
                     NavigationBarItemData(
-                        stringResource(R.string.archive), R.drawable.archive, uiState.navigationBarHighlight == ARCHIVE
+                        stringResource(R.string.archive), R.drawable.archive, uiState.navigationBarHighlight == NAV_ARCHIVE
                     ) { navTo("archive_home") },
                     NavigationBarItemData(
-                        stringResource(R.string.day), R.drawable.today, uiState.navigationBarHighlight == DAY
+                        stringResource(R.string.day), R.drawable.today, uiState.navigationBarHighlight == NAV_DAY
                     ) {
                         if (navController.currentBackStackEntry?.destination?.route == "day_home") {
                             navTo("day_content")
@@ -501,13 +512,13 @@ fun App(
                         }
                     },
                     NavigationBarItemData(
-                        stringResource(R.string.food), R.drawable.food, uiState.navigationBarHighlight == CREATE
+                        stringResource(R.string.food), R.drawable.food, uiState.navigationBarHighlight == NAV_CREATE
                     ) { 
                         viewModel.resetDatabaseEntryCreateAllInput()
                         navTo("create_home") 
                     },
                     NavigationBarItemData(
-                        stringResource(R.string.combine), R.drawable.dish, uiState.navigationBarHighlight == COMBINE
+                        stringResource(R.string.combine), R.drawable.dish, uiState.navigationBarHighlight == NAV_COMBINE
                     ) {
                         viewModel.currentComboReset(context)
                         navTo("combine_home") },
@@ -523,7 +534,6 @@ fun App(
                 }
             )
         },
-        contentWindowInsets = WindowInsets(0, 0, 0, 0)
     ) { innerPadding ->
         NavHost(
             modifier = Modifier
@@ -569,7 +579,7 @@ fun App(
                                         component = component,
                                         onClick = {
                                             viewModel.updateCurrentComboComponentWeight(
-                                                component.first.toProperString(
+                                                component.first.toFormattedString(
                                                     true
                                                 )
                                             )
@@ -596,7 +606,7 @@ fun App(
                                         component = component,
                                         onClick = {
                                             viewModel.updateCurrentComboComponentWeight(
-                                                component.first.toProperString(
+                                                component.first.toFormattedString(
                                                     true
                                                 )
                                             )
@@ -872,6 +882,7 @@ fun App(
                         viewModel.setNameFoodCombineAdd(uiState.database[index].name)
                         navTo("combine_add_weight/$index")
                     },
+                    onFoodLongClicked = { index -> editDatabaseEntry(index) },
                     onBack = {navTo("combine_home")}
                 )
 
@@ -886,6 +897,7 @@ fun App(
                         viewModel.setNameFoodDayAdd(uiState.database[index].name)
                         navTo("day_add_weight/$index")
                     },
+                    onFoodLongClicked = { index -> editDatabaseEntry(index) },
                     onBack = {navTo("day_home")}
                 )
             }
@@ -895,16 +907,10 @@ fun App(
                 ScreenShowFoodAll(
                     database = uiState.database,
                     onFoodClicked = { index ->
-                        viewModel.updateDatabaseEntryEditName(uiState.database[index].name)
-                        viewModel.updateDatabaseEntryEditAllNutrients(
-                            uiState.database[index].nutrients.stringValues(
-                                true
-                            ).toMutableStateList()
-                        )
-                        viewModel.updateDatabaseEntryEditCustomWeights(uiState.database[index].customWeights.inputString)
-                        viewModel.updateDatabaseEntryEditQuickselect(uiState.database[index].quickselect)
-                        navTo("database_edit_entry/$index")
-                    }                )
+                        editDatabaseEntry(index)
+                    },
+                    onFoodLongClicked = { index -> editDatabaseEntry(index) }
+                )
             }
 
             composable("day_home") {
@@ -952,16 +958,7 @@ fun App(
                                             navTo("day_add_weight/${it.first}")
                                         },
                                         onLongClick = {
-                                                viewModel.updateDatabaseEntryEditName(uiState.database[it.first].name)
-                                                viewModel.updateDatabaseEntryEditAllNutrients(
-                                                    uiState.database[it.first].nutrients.stringValues(
-                                                        true
-                                                    ).toMutableStateList()
-                                                )
-                                                viewModel.updateDatabaseEntryEditCustomWeights(uiState.database[it.first].customWeights.inputString)
-                                                viewModel.updateDatabaseEntryEditQuickselect(uiState.database[it.first].quickselect)
-                                                navTo("database_edit_entry/${it.first}")
-
+                                            editDatabaseEntry(it.first)
                                         }
                                     )
                                 }
@@ -1054,15 +1051,7 @@ fun App(
                                             navTo("combine_add_weight/${it.first}")
                                         },
                                         onLongClick = {
-                                            viewModel.updateDatabaseEntryEditName(uiState.database[it.first].name)
-                                            viewModel.updateDatabaseEntryEditAllNutrients(
-                                                uiState.database[it.first].nutrients.stringValues(
-                                                    true
-                                                ).toMutableStateList()
-                                            )
-                                            viewModel.updateDatabaseEntryEditCustomWeights(uiState.database[it.first].customWeights.inputString)
-                                            viewModel.updateDatabaseEntryEditQuickselect(uiState.database[it.first].quickselect)
-                                            navTo("database_edit_entry/${it.first}")
+                                            editDatabaseEntry(it.first)
                                         }
                                     )
                                 }

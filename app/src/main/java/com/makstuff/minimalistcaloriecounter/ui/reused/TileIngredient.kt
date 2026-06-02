@@ -11,7 +11,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.makstuff.minimalistcaloriecounter.classes.DatabaseEntry
 import com.makstuff.minimalistcaloriecounter.classes.Nutrients
-import com.makstuff.minimalistcaloriecounter.essentials.toProperString
+import com.makstuff.minimalistcaloriecounter.essentials.toFormattedString
 
 @Composable
 fun TileIngredient(
@@ -31,7 +31,7 @@ fun TileIngredient(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 TextOneLine(
-                    text = component.first.toProperString(false),
+                    text = component.first.toFormattedString(false),
                     Modifier.weight(1.5f),
                     textAlign = TextAlign.Start,
                 )

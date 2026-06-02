@@ -9,7 +9,7 @@ import com.makstuff.minimalistcaloriecounter.classes.Archive
 import com.makstuff.minimalistcaloriecounter.classes.Combo
 import com.makstuff.minimalistcaloriecounter.classes.DatabaseEntry
 import com.makstuff.minimalistcaloriecounter.classes.GridButtonData
-import com.makstuff.minimalistcaloriecounter.essentials.DAY
+import com.makstuff.minimalistcaloriecounter.essentials.NAV_DAY
 import com.makstuff.minimalistcaloriecounter.essentials.NavButton
 import com.makstuff.minimalistcaloriecounter.ui.theme.AppTheme
 import java.time.LocalDate
@@ -37,7 +37,7 @@ data class AppUiState(
     val day: Combo,
     val currentCombo: Combo,
 
-    val navigationBarHighlight: NavButton = DAY,
+    val navigationBarHighlight: NavButton = NAV_DAY,
     val topBarTitle: String = "",
     val dropdownMenuVisible: Boolean = false,
     /*

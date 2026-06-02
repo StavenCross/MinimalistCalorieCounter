@@ -72,6 +72,7 @@
     <string name="must_be_a_valid_number">must be a valid number</string>
     <string name="must_be_larger_than">must be larger than</string>
     <string name="must_be_smaller_than">must be smaller than</string>
+    <string name="use_period_instead_of_comma">Please use \".\" as decimal separator instead of \",\".</string>
     <string name="name">Name</string>
     <string name="name_cant_be_empty">Name can\'t be empty.</string>
     <string name="name_capital_letter">Name must start with a capital letter (A-Z, no accents).</string>

@@ -24,55 +24,55 @@ fun NavControllerListener(
     LaunchedEffect(currentRoute, nameFoodCombineAdd, nameFoodCombineEdit, nameFoodDayAdd, nameFoodDayEdit) {
         when (currentRoute) {
             "day_home" ->
-                setNav(context.getString(R.string.title_add_food_to_day), DAY)
+                setNav(context.getString(R.string.title_add_food_to_day), NAV_DAY)
 
             "day_content" ->
-                setNav(context.getString(R.string.title_edit_food_in_day), DAY)
+                setNav(context.getString(R.string.title_edit_food_in_day), NAV_DAY)
 
             "day_add_food" ->
-                setNav(context.getString(R.string.title_pick_food), DAY)
+                setNav(context.getString(R.string.title_pick_food), NAV_DAY)
 
             "day_add_weight/{index}" ->
-                setNav(context.getString(R.string.title_enter_weight_of) + " " + nameFoodDayAdd, DAY)
+                setNav(context.getString(R.string.title_enter_weight_of) + " " + nameFoodDayAdd, NAV_DAY)
 
             "day_edit_weight/{index}" ->
-                setNav(context.getString(R.string.title_edit_weight_of) + " " + nameFoodDayEdit, DAY)
+                setNav(context.getString(R.string.title_edit_weight_of) + " " + nameFoodDayEdit, NAV_DAY)
 
             "archive_home" ->
-                setNav(context.getString(R.string.archive), ARCHIVE)
+                setNav(context.getString(R.string.archive), NAV_ARCHIVE)
 
             "archive_create_entry_manually" ->
-                setNav(context.getString(R.string.title_create_new_archive_entry), ARCHIVE)
+                setNav(context.getString(R.string.title_create_new_archive_entry), NAV_ARCHIVE)
 
             "archive_create_entry_from_day" ->
-                setNav(context.getString(R.string.title_enter_body_weight), ARCHIVE)
+                setNav(context.getString(R.string.title_enter_body_weight), NAV_ARCHIVE)
 
             "archive_edit_entry/{index}" ->
-                setNav(context.getString(R.string.title_edit_archive_entry), ARCHIVE)
+                setNav(context.getString(R.string.title_edit_archive_entry), NAV_ARCHIVE)
 
             "database_home" ->
-                setNav(context.getString(R.string.database), DATABASE)
+                setNav(context.getString(R.string.database), NAV_DATABASE)
 
             "database_edit_entry/{index}" ->
-                setNav(context.getString(R.string.title_edit_database_entry), DATABASE)
+                setNav(context.getString(R.string.title_edit_database_entry), NAV_DATABASE)
 
             "create_home" ->
-                setNav(context.getString(R.string.title_create_new_database_entry), CREATE)
+                setNav(context.getString(R.string.title_create_new_database_entry), NAV_CREATE)
 
             "combine_home" ->
-                setNav(context.getString(R.string.title_add_ingredient_to_recipe), COMBINE)
+                setNav(context.getString(R.string.title_add_ingredient_to_recipe), NAV_COMBINE)
 
             "combine_content" ->
-                setNav(context.getString(R.string.title_ingredients_of_recipe), COMBINE)
+                setNav(context.getString(R.string.title_ingredients_of_recipe), NAV_COMBINE)
 
             "combine_add_component" ->
-                setNav(context.getString(R.string.title_pick_ingredient), COMBINE)
+                setNav(context.getString(R.string.title_pick_ingredient), NAV_COMBINE)
 
             "combine_add_weight/{index}" ->
-                setNav(context.getString(R.string.title_enter_weight_of) + " " + nameFoodCombineAdd, COMBINE)
+                setNav(context.getString(R.string.title_enter_weight_of) + " " + nameFoodCombineAdd, NAV_COMBINE)
 
             "combine_edit_weight/{index}" ->
-                setNav(context.getString(R.string.title_edit_weight_of) + " " + nameFoodCombineEdit, COMBINE)
+                setNav(context.getString(R.string.title_edit_weight_of) + " " + nameFoodCombineEdit, NAV_COMBINE)
         }
     }
 }

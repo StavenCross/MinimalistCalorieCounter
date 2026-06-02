@@ -8,8 +8,9 @@ import com.makstuff.minimalistcaloriecounter.essentials.CSV_INDEX_DATABASE_NUTRI
 import com.makstuff.minimalistcaloriecounter.essentials.CSV_INDEX_DATABASE_NUTRIENTS_UPPER
 import com.makstuff.minimalistcaloriecounter.essentials.CSV_INDEX_DATABASE_QUICKSELECT
 import com.makstuff.minimalistcaloriecounter.essentials.NUTRIENT_PROPERTIES
-import com.makstuff.minimalistcaloriecounter.essentials.toProperString
+import com.makstuff.minimalistcaloriecounter.essentials.toFormattedString
 
+// Represents an entry in the food database
 data class DatabaseEntry(
     val name: String = "",
     val nutrients: Nutrients,
@@ -69,6 +70,6 @@ data class DatabaseEntry(
         upperBound: Double,
         nameOfValue: String,
     ) {
-        check(number <= upperBound) { nameOfValue+ " " +  context.getString(R.string.must_be_smaller_than) + " " + upperBound.toProperString(true)+"." }
+        check(number <= upperBound) { nameOfValue+ " " +  context.getString(R.string.must_be_smaller_than) + " " + upperBound.toFormattedString(true)+"." }
     }
 }

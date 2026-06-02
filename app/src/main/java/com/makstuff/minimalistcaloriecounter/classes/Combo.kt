@@ -5,7 +5,8 @@ import androidx.compose.runtime.mutableStateListOf
 import com.makstuff.minimalistcaloriecounter.R
 import com.makstuff.minimalistcaloriecounter.essentials.CSV_INDEX_DATABASE_QUICKSELECT
 import com.makstuff.minimalistcaloriecounter.essentials.NUTRIENT_PROPERTIES
-import com.makstuff.minimalistcaloriecounter.essentials.toProperString
+import com.makstuff.minimalistcaloriecounter.essentials.checkValidNumber
+import com.makstuff.minimalistcaloriecounter.essentials.toFormattedString
 
 data class Combo(
     var name: String = "",
@@ -25,9 +26,7 @@ data class Combo(
             val combo = Combo(context = context)
             values.forEachIndexed { index, csvLine ->
                 if (index > 0) {
-                    check(csvLine[0].toDoubleOrNull() != null) {
-                        context.getString(R.string.weight_of_ingredient) + " " + context.getString(
-                        R.string.must_be_a_valid_number)+"." }
+                    checkValidNumber(csvLine[0], context.getString(R.string.weight_of_ingredient), context)
                     combo.addComponent(
                         csvLine[0].toDouble(),
                         DatabaseEntry.fromCSV(
@@ -52,7 +51,7 @@ data class Combo(
             ) + NUTRIENT_PROPERTIES.map { it.nameForCSV } + listOf("CustomWeight", "Quickselect"))
         components.forEach {
             list.add(
-                listOf(it.first.toProperString(true)) +
+                listOf(it.first.toFormattedString(true)) +
                         listOf(it.second.name) + it.second.nutrients.stringValues(true) +
                         listOf(it.second.customWeights.inputString) +
                         listOf(if (it.second.quickselect) "y" else "n")
@@ -62,6 +61,9 @@ data class Combo(
     }
 
     fun toDatabaseEntry(): DatabaseEntry {
+        if (inputOverallWeight != "") {
+            checkValidNumber(inputOverallWeight, context.getString(R.string.overall_weight), context)
+        }
         check(overallWeight!! > 0) { context.getString(R.string.entry_from_empty_recipe) }
         return DatabaseEntry(name, overallNutrients.times(100 / overallWeight!!,context),
             CustomWeights(context = context),context = context)

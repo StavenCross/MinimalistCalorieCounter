@@ -72,6 +72,7 @@
     <string name="must_be_a_valid_number">deve essere un numero valido</string>
     <string name="must_be_larger_than">deve essere maggiore di</string>
     <string name="must_be_smaller_than">deve essere minore di</string>
+    <string name="use_period_instead_of_comma">Utilizzare il punto (.) come separatore decimale invece della virgola (,).</string>
     <string name="name">Nome</string>
     <string name="name_cant_be_empty">Il nome non può essere vuoto.</string>
     <string name="name_capital_letter">Il nome deve iniziare con una maiuscola (A-Z, senza accenti).</string>

@@ -72,6 +72,7 @@
     <string name="must_be_a_valid_number">muss eine valide Zahl sein</string>
     <string name="must_be_larger_than">muss größer sein als</string>
     <string name="must_be_smaller_than">muss kleiner sein als</string>
+    <string name="use_period_instead_of_comma">Bitte Punkt (.) statt Komma (,) als Dezimaltrennzeichen verwenden.</string>
     <string name="name">Name</string>
     <string name="name_cant_be_empty">Name darf nicht leer sein.</string>
     <string name="name_capital_letter">Name muss mit Großbuchstaben beginnen (A-Z, ohne Akzente).</string>

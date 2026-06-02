@@ -5,14 +5,14 @@ plugins {
 
 android {
     namespace = "com.makstuff.minimalistcaloriecounter"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "com.makstuff.minimalistcaloriecounter"
-        minSdk = 26
-        targetSdk = 36
-        versionCode = 17
-        versionName = "4.4"
+        minSdk = 27
+        targetSdk = 37
+        versionCode = 19
+        versionName = "4.6"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -50,6 +50,9 @@ android {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
+        jniLibs {
+            keepDebugSymbols += "**/*.so"
+        }
     }
 }
 
@@ -59,7 +62,7 @@ dependencies {
     implementation("androidx.compose.ui:ui-tooling-preview")
     debugImplementation("androidx.compose.ui:ui-tooling")
     implementation("com.github.doyaaaaaken:kotlin-csv-jvm:1.10.0")
-    implementation("androidx.navigation:navigation-compose:2.9.7")
+    implementation("androidx.navigation:navigation-compose:2.9.8")
     implementation("androidx.core:core-splashscreen:1.2.0")
     implementation("androidx.appcompat:appcompat:1.7.1")
     implementation("com.google.android.play:review-ktx:2.0.2")
