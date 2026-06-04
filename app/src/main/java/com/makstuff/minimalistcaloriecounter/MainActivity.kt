@@ -1,7 +1,7 @@
 package com.makstuff.minimalistcaloriecounter
 
 import android.os.Bundle
-import androidx.activity.ComponentActivity
+import androidx.appcompat.app.AppCompatActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -16,7 +16,7 @@ import com.makstuff.minimalistcaloriecounter.ui.theme.AppTheme
 import com.makstuff.minimalistcaloriecounter.ui.theme.DarkTheme
 import com.makstuff.minimalistcaloriecounter.ui.theme.LocalTheme
 
-class MainActivity : ComponentActivity() {
+class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         val splashScreen = installSplashScreen()
         super.onCreate(savedInstanceState)

@@ -2,6 +2,8 @@ package com.makstuff.minimalistcaloriecounter.ui.screens
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
@@ -31,6 +33,7 @@ fun ScreenEnterWeightOfFood(
 ) {
     val focusRequester = remember { FocusRequester() }
     Column(
+        modifier = Modifier.fillMaxSize(),
         verticalArrangement = Arrangement.SpaceBetween
     ) {
         LaunchedEffect(Unit) {
@@ -51,22 +54,30 @@ fun ScreenEnterWeightOfFood(
             )
             RowOfButtonText(list = listOfTextButtons)
         }
-        Column {
-            Grid(
-                columns = 6,
-                reverseUpDown = false,
-                reverseLeftRight = false,
-                items = listOfItems
-            )
-            if (listOfQSItems.isNotEmpty()) {
-                Grid(
-                    columns = 3,
-                    reverseUpDown = true,
-                    reverseLeftRight = true,
-                    items = listOfQSItems
-                )
-            }
+        val combinedItems = remember(listOfItems, listOfQSItems) {
+            // App.kt sends QS items reversed.
+            // In a reversed grid (reverseUpDown=true, reverseLeftRight=true),
+            // the first item in the list is at the bottom-right visually.
+            val qsProcessed = listOfQSItems.map { Pair(2, it.second) }
+            val qsPaddingCount = (3 - (qsProcessed.size % 3)) % 3
+            val qsPadding = List<Pair<Int, @Composable () -> Unit>>(qsPaddingCount) { Pair(2, @Composable {}) }
+
+            // To have normal items on top and LTR in a reversed grid, we reverse the list.
+            val normalProcessed = listOfItems.reversed()
+            val nPaddingCount = (6 - (normalProcessed.size % 6)) % 6
+            val nPadding = List<Pair<Int, @Composable () -> Unit>>(nPaddingCount) { Pair(1, @Composable {}) }
+
+            // Order in list: [Bottom-most] ... [Top-most]
+            qsProcessed + qsPadding + nPadding + normalProcessed
         }
+
+        Grid(
+            modifier = Modifier.weight(1f).fillMaxHeight(),
+            columns = 6,
+            reverseUpDown = true,
+            reverseLeftRight = true,
+            items = combinedItems
+        )
     }
 }
 
