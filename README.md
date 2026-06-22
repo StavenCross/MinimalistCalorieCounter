@@ -1,32 +1,27 @@
-## User guide
+## User Guide
 
-Many of the functions and elements should be pretty self-explanatory, this is just a short rundown of a few which might not be as clear.
-
-- By default, on the home screen there are 19 "Easy Access buttons" to log the foods with just a single click. You can remove these by long-pressing them, which takes you to their edit page, then turn off the "Easy Access switch" and press "Save changes".
-- You can add additional Easy Access buttons by clicking the food in the database screen which also opens the edit page, then turn ON the Easy Access switch and press "Save changes".
-- If you often eat the same amount of a certain food, below the Easy Access switch you can also add a set of "Quickselect weights" to make these weights available with just one click below the normal weight buttons. Fill in the weights and names of your choice separated by colons and hyphens (e.g. "55:1 Scoop-110:2 Scoops") and press "Save changes".
-- You can repeatedly press the "Day" button in the navigation bar to switch between the "add" and "edit" pages even faster.
-- When creating a recipe, you can leave the "Overall weight" text field empty if you want to use the sum of ingredient weights, which is then calculated automatically.
-- In the default database there is a food called "Average". This has the recommended nutrient ratios of a healthy, protein-focused diet and is set up such that 100g of it have exactly 100kcal. So if I estimate based on my experience that I maybe ate 700kcal of food I don't know the content of, I just log 700g of the food "Average" and call it good enough.
-- If you want to use the default database in another language than the app itself, you can set the app to the language you want the database to be in, reset the database, then set the app back to the language you want for the app. As long as you don't reset the database again, it will keep its language.
-- In the input screens with multiple text fields, in most of them the "Enter" key on the keyboard is replaced by a "Next" key that allows you to directly jump to the next text field. On the last text field there is a "Checkmark" key instead that acts as an alternate confirm button.
-- If you do not like the provided standard database, you can import [database_empty.csv](https://github.com/Makstuff/MinimalistCalorieCounter/blob/9da0ef3786e6f7f54b71d335681c2f8e5c225166/database_empty.csv) to clear out everything.
-- In case you have trouble with the *.csv import, check out the default files [here](https://github.com/Makstuff/MinimalistCalorieCounter/tree/3cd6049b0cee640e6fdbafbaff69f8ea3e6b145c/app/src/main/res/raw) and make sure yours look exactly the same and avoid Especially certain illegal symbols (";|,) like a sneaky comma in "3,5% whole milk" can be quite hard to find, and the in-app error messages due to my lack of skill are not overly specific.
-- Note that I used Gemini for the French, Italian and Spanish translations. More than anything this was an experiment if people are interested in more translations at all. If there is some nonsense in the translated files somewhere, please let me know here or at message.makstuff@outlook.com. You are also very welcome to ask for (smaller) changes or new features, but nothing too complicated (so no charts and no notifications and no customizable pet avatars, sorry).
+- **Easy access buttons**: By default, there are 19 buttons on the home screen to log foods with a single click. Long-press a button to go directly to this food's edit screen where you can disable its "Easy Access" switch if so desired. To add new buttons, click a food in the database and turn on the switch.
+- **Custom quickselect weights**: On any food's edit page, you can add set weights (e.g., "55:1 Scoop-110:2 Scoops"). These appear as one-click buttons below the standard quickselect weights, taking up two columns.
+- **Navigation shortcut**: Repeatedly press the "Day" button in the navigation bar to toggle between the "add" and "edit" pages even faster.
+- **Adaptive "Enter" key**: In multi-field input screens, the "Enter" key is replaced by a "Next" key to jump between fields, except on the final field where it becomes a "Checkmark" key to quickly confirm and save.
+- **Recipe weight autocomplete**: When creating a recipe, leave the "Overall weight" field empty to automatically use the calculated sum of all ingredient weights. This can be useful for many dishes where no extra water is added.
+- **Logging unknown food**: The default database includes an "Average" food that is set to exactly 100kcal per 100g while maintaining a healthy balance of nutrients. If I estimate based on experience that a meal was roughly 700kcal, I simply log 700g of "Average" and call it good enough.
+- **Multiple languages**: You can maintain your database in a different language than the app UI. Set the app to your desired database language, reset the database, and then switch the app back to your preferred UI language.
+- **Health Connect behavior**: If auto sync is active, every added, changed or deleted single archive entry will be instantly mirrored in Health Connect. Bulk changes (Import Archive, Clear Archive) do not automatically trigger syncs and must be triggered manually if desired. To be able to monitor what's happening in Health Connect, every read or write action is accompanied by a toast notification (e.g., "Archive entry added to Health Connect").
+- **Clear database**: There is no option in the app for that, but if desired you can import [database_empty.csv](https://github.com/Makstuff/MinimalistCalorieCounter/blob/9da0ef3786e6f7f54b71d335681c2f8e5c225166/database_empty.csv) to completely clear out the database.
+- **CSV format**: When tinkering with CSV files, ensure they follow the [default format](https://github.com/Makstuff/MinimalistCalorieCounter/tree/3cd6049b0cee640e6fdbafbaff69f8ea3e6b145c/app/src/main/res/raw) and especially avoid illegal symbols like the classic culprits ";|,. The error messages of CSV import are not particularly useful, so finding small errors like a comma in "3,5% whole milk" can be quite tricky.
 
 ## About this app
 
-After testing lots of different calorie counter apps without finding one I was completely happy with, I finally decided to take matters into my own hand and learn how to code for Android myself. This resulting app is exactly what I personally want and fits my every need, but I can understand that might not be the case everyone. The main barriers are probably
-1. my decision to not use a large external food database, because I prefer to gather data either directly from the product labels or, if that's not possible, from other sources like my nutrition book or websites that I can choose and double-check if some numbers seem questionable, and
-2. the interface, which is optimized for using a minimum amount of clicks in the long-term and sacrifices a lot of potential intuitivity for that.
+After testing many calorie counter apps without finding a perfect fit, I finally decided to take matters into my own hand and learn how to code for Android myself. This app is the final result of my efforts.
 
-I hope that despite all that, this app will find its niche in the Play Store universe and make some lives a little easier.
+It is optimized for a minimum number of clicks in the long-term, for which it sacrifices significant intuitivity and ease of use in the short-term. First and foremost, it does not use a large external database, as I prefer to verify all nutritional data directly from product labels or trusted sources like my nutrition table book. The interface is also structured in a way that makes for a steeper learning curve than most comparable apps. I might be biased of course, but I say, totally worth it.
 
-[Buy me a coffee.](https://www.buymeacoffee.com/makstuff)
+## Production details
+ 
+The early versions of this app were 100% coded manually. I did however massively rely on Gemini for polishing the UI, adding Health Connect support as well as the French, Italian, and Spanish translations. All these were pretty much impossible to do for me on my own. By the way, if you find nonsensical translations in your language, please let me know at message.makstuff@outlook.com.
 
-## Compatibility with USA-type food labels
-
-Unfortunately, through much of the development of this app, I was not aware how different USA and other countries' food labels can be compared to EU ones. The USA ones seem to deal almost exclusively in arbitrary "portions" instead of in fixed weights like 100g, and on top of that they include fiber in carbohydrate. If I had known about this sooner, I would have definitely included an option in the app. But now I would have to rewrite a lot of my messy code, and I honestly don't have the motivation at the moment. Might be something to tackle in the future, but for now I have just excluded all non-EU countries from the target regions on the Play Store.
+Another detail is that during the initial development I was not aware of how weird USA and Canada's food labels are with their arbitrary "portions" and including fiber in carbohydrate. So the app is incompatible with this type of labels, and fixing this would be a major headache even with Gemini, so I decided to just exclude USA and Canada from the target regions in the Play Store. If your country should be excluded as well, please write me at message.makstuff@outlook.com.
 
 ## Screenshots
 
@@ -34,3 +29,4 @@ Unfortunately, through much of the development of this app, I was not aware how 
 
 <a href='https://play.google.com/store/apps/details?id=com.makstuff.minimalistcaloriecounter&pcampaignid=pcampaignidMKT-Other-global-all-co-prtnr-py-PartBadge-Mar2515-1'><img alt='Get it on Google Play' src='https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png' width="200"/></a>
 
+[Buy me a coffee.](https://www.buymeacoffee.com/makstuff)

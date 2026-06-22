@@ -32,6 +32,7 @@ fun ScreenEnterWeightOfFood(
     listOfQSItems: List<Pair<Int, @Composable () -> Unit>>
 ) {
     val focusRequester = remember { FocusRequester() }
+    
     Column(
         modifier = Modifier.fillMaxSize(),
         verticalArrangement = Arrangement.SpaceBetween
@@ -80,4 +81,3 @@ fun ScreenEnterWeightOfFood(
         )
     }
 }
-

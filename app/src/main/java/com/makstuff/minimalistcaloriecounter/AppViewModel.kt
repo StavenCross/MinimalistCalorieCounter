@@ -2,9 +2,11 @@ package com.makstuff.minimalistcaloriecounter
 
 import android.app.Application
 import android.content.Context
+import android.widget.Toast
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.toMutableStateList
 import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.viewModelScope
 import com.github.doyaaaaaken.kotlincsv.dsl.csvReader
 import com.github.doyaaaaaken.kotlincsv.dsl.csvWriter
 import com.github.doyaaaaaken.kotlincsv.util.CSVFieldNumDifferentException
@@ -13,14 +15,19 @@ import com.makstuff.minimalistcaloriecounter.classes.Combo
 import com.makstuff.minimalistcaloriecounter.classes.CustomWeights
 import com.makstuff.minimalistcaloriecounter.classes.DatabaseEntry
 import com.makstuff.minimalistcaloriecounter.classes.Nutrients
+import com.makstuff.minimalistcaloriecounter.health.HealthConnectManager
 import com.makstuff.minimalistcaloriecounter.essentials.NUTRIENT_PROPERTIES
 import com.makstuff.minimalistcaloriecounter.essentials.NavButton
 import com.makstuff.minimalistcaloriecounter.essentials.checkValidNumber
 import com.makstuff.minimalistcaloriecounter.essentials.toFormattedString
+import com.makstuff.minimalistcaloriecounter.essentials.toBodyWeight
 import com.makstuff.minimalistcaloriecounter.ui.theme.AppTheme
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.File
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -28,6 +35,90 @@ import java.time.LocalDateTime
 class AppViewModel(app: Application) : AndroidViewModel(app) {
     private val _uiState = MutableStateFlow(AppUiState(archive = Archive(context = app.applicationContext),day = Combo(context = app.applicationContext), currentCombo = Combo(context = app.applicationContext)))
     val uiState = _uiState.asStateFlow()
+
+    private val healthConnectManager = HealthConnectManager(getApplication<Application>().applicationContext)
+
+    fun updateHealthConnectPermissionsStatus() {
+        viewModelScope.launch {
+            val allGranted = healthConnectManager.hasAllPermissions()
+            val anyGranted = healthConnectManager.hasAnyPermissions()
+            var needsSave = false
+            _uiState.update { currentState ->
+                val newSyncStatus = if (!allGranted) false else currentState.healthConnectSyncEnabled
+                if (newSyncStatus != currentState.healthConnectSyncEnabled) {
+                    needsSave = true
+                }
+                currentState.copy(
+                    healthConnectPermissionsGranted = allGranted,
+                    healthConnectAnyPermissionsGranted = anyGranted,
+                    healthConnectSyncEnabled = newSyncStatus,
+                )
+            }
+            if (needsSave) {
+                optionsWriteToFile(getApplication<Application>().applicationContext)
+            }
+        }
+    }
+
+    fun toggleHealthConnectSyncEnabled(context: Context) {
+        _uiState.update { currentState ->
+            val newState = !currentState.healthConnectSyncEnabled
+            // Use launch to handle the side effects since we are inside a functional update
+            if (newState) {
+                viewModelScope.launch { setAlertDialogHealthConnectActivation(bool = true) }
+            }
+            currentState.copy(healthConnectSyncEnabled = newState)
+        }
+        optionsWriteToFile(context)
+    }
+
+    fun syncHealthConnect() {
+        viewModelScope.launch {
+            if (healthConnectManager.hasAllPermissions()) {
+                healthConnectManager.syncArchive(uiState.value.archive)
+            } else {
+                Toast.makeText(getApplication<Application>().applicationContext, getApplication<Application>().getString(R.string.health_connect_permissions_missing), Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    fun restoreArchiveFromHealthConnect(context: Context) {
+        viewModelScope.launch {
+            if (healthConnectManager.hasAllPermissions()) {
+                val hcData = healthConnectManager.readArchiveFromHealthConnect()
+                if (hcData.isNotEmpty()) {
+                    _uiState.update { currentState ->
+                        val newArchive = currentState.archive.copy(entries = hcData.toMutableStateList())
+                        newArchive.updateAverageNutrients()
+                        newArchive.sortByDate()
+                        currentState.copy(archive = newArchive)
+                    }
+                    archiveWriteToCSV(context)
+                    Toast.makeText(context, context.getString(R.string.toast_hc_full_archive_restored), Toast.LENGTH_SHORT).show()
+                } else {
+                    Toast.makeText(context, "No data found in Health Connect", Toast.LENGTH_SHORT).show()
+                }
+            } else {
+                Toast.makeText(context, context.getString(R.string.health_connect_permissions_missing), Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    fun setAlertDialogHealthConnectActivation(bool: Boolean){
+        _uiState.update { currentState ->
+            currentState.copy(
+                alertDialogHealthConnectActivation = bool
+            )
+        }
+    }
+
+    fun setAlertDialogHealthConnectPermissions(bool: Boolean){
+        _uiState.update { currentState ->
+            currentState.copy(
+                alertDialogHealthConnectPermissions = bool
+            )
+        }
+    }
 
     fun setLoadingToFalse() {
         _uiState.update { currentState ->
@@ -45,25 +136,11 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    fun toggleDarkTheme(context: Context) {
-        when (uiState.value.themeUserSetting) {
-            AppTheme.MODE_AUTO -> _uiState.update { currentState ->
-                currentState.copy(
-                    themeUserSetting = AppTheme.MODE_NIGHT
-                )
-            }
-
-            AppTheme.MODE_NIGHT -> _uiState.update { currentState ->
-                currentState.copy(
-                    themeUserSetting = AppTheme.MODE_DAY
-                )
-            }
-
-            AppTheme.MODE_DAY -> _uiState.update { currentState ->
-                currentState.copy(
-                    themeUserSetting = AppTheme.MODE_AUTO
-                )
-            }
+    fun setTheme(theme: AppTheme, context: Context) {
+        _uiState.update { currentState ->
+            currentState.copy(
+                themeUserSetting = theme
+            )
         }
         optionsWriteToFile(context)
     }
@@ -211,8 +288,20 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    fun archiveDeleteEntry(index: Int) {
+    fun archiveDeleteEntry(index: Int, context: Context, showToast: Boolean = true) {
+        val entry = _uiState.value.archive.entries[index]
         _uiState.value.archive.deleteEntry(index)
+        archiveWriteToCSV(context)
+        if (uiState.value.healthConnectSyncEnabled) {
+            viewModelScope.launch {
+                healthConnectManager.deleteSingleEntry(entry.first)
+                if (showToast) {
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(context, context.getString(R.string.toast_hc_entry_deleted), Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
+        }
     }
 
     fun resetArchiveEntryAllInput() {
@@ -339,10 +428,67 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         date: LocalDate,
         bodyWeight: String,
         nutrients: Nutrients,
-        context: Context
+        context: Context,
+        showToast: Boolean = true
     ) {
+        if (date.isAfter(LocalDate.now())) {
+            throw IllegalStateException(context.getString(R.string.error_archive_date_future))
+        }
+        if (_uiState.value.archive.entries.any { it.first == date }) {
+            throw IllegalStateException(context.getString(R.string.error_archive_date_exists))
+        }
         _uiState.value.archive.addEntry(date, bodyWeight, nutrients)
         archiveWriteToCSV(context)
+        if (uiState.value.healthConnectSyncEnabled) {
+            viewModelScope.launch {
+                healthConnectManager.syncSingleEntry(date, bodyWeight.toDoubleOrNull() ?: 0.0, nutrients)
+                if (showToast) {
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(context, context.getString(R.string.toast_hc_entry_added), Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
+        }
+    }
+
+    fun archiveEditEntry(
+        index: Int,
+        date: LocalDate,
+        bodyWeight: String,
+        nutrients: Nutrients,
+        context: Context
+    ) {
+        if (date.isAfter(LocalDate.now())) {
+            throw IllegalStateException(context.getString(R.string.error_archive_date_future))
+        }
+        // Delete old entry silently (regarding toasts)
+        val oldEntry = _uiState.value.archive.entries[index]
+        _uiState.value.archive.deleteEntry(index)
+        
+        // Check if new date collides with any REMAINING entries
+        if (_uiState.value.archive.entries.any { it.first == date }) {
+            // Restore if validation fails (to keep state consistent)
+            _uiState.value.archive.addEntry(oldEntry.first, oldEntry.second.toBodyWeight(), oldEntry.third)
+            throw IllegalStateException(context.getString(R.string.error_archive_date_exists))
+        }
+
+        // Add new entry
+        _uiState.value.archive.addEntry(date, bodyWeight, nutrients)
+        archiveWriteToCSV(context)
+        
+        if (uiState.value.healthConnectSyncEnabled) {
+            viewModelScope.launch {
+                // Remove old date from Health Connect if it changed
+                if (oldEntry.first != date) {
+                    healthConnectManager.deleteSingleEntry(oldEntry.first)
+                }
+                // Sync new/updated entry
+                healthConnectManager.syncSingleEntry(date, bodyWeight.toDoubleOrNull() ?: 0.0, nutrients)
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(context, context.getString(R.string.toast_hc_entry_edited), Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
     }
 
     fun currentComboDeleteComponent(index: Int, context: Context) {
@@ -397,13 +543,6 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             )
         }
     }
-    fun setDialogLanguage(bool: Boolean){
-        _uiState.update { currentState ->
-            currentState.copy(
-                dialogLanguage = bool
-            )
-        }
-    }
     fun setDialogLanguageInfo(bool: Boolean){
         _uiState.update { currentState ->
             currentState.copy(
@@ -430,6 +569,22 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         _uiState.update { currentState ->
             currentState.copy(
                 alertDialogDatabaseImport = bool
+            )
+        }
+    }
+
+    fun setAlertDialogHealthConnectRestore(bool: Boolean){
+        _uiState.update { currentState ->
+            currentState.copy(
+                alertDialogHealthConnectRestore = bool
+            )
+        }
+    }
+
+    fun setAlertDialogHealthConnectSync(bool: Boolean){
+        _uiState.update { currentState ->
+            currentState.copy(
+                alertDialogHealthConnectSync = bool
             )
         }
     }
@@ -495,21 +650,16 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    fun toggleDropdownMenuVisible() {
+
+    fun updateOptionsSheetVisible(boolean: Boolean) {
         _uiState.update { currentState ->
             currentState.copy(
-                dropdownMenuVisible = !uiState.value.dropdownMenuVisible
+                optionsSheetVisible = boolean,
+                optionsSheetPage = "main" // Reset to main when opening/closing
             )
         }
     }
 
-    fun updateDropdownMenuVisible(boolean: Boolean) {
-        _uiState.update { currentState ->
-            currentState.copy(
-                dropdownMenuVisible = boolean
-            )
-        }
-    }
 
 
     fun databaseUpdateFromCSV(context: Context) {
@@ -624,21 +774,45 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun optionsUpdateFromFile(context: Context) {
-        val file = File(context.getExternalFilesDir(null), "options.csv")
-        val string = file.inputStream().bufferedReader().use { it.readText() }
-        _uiState.update { currentState ->
-            currentState.copy(
-                themeUserSetting = if (string == "dark") AppTheme.MODE_NIGHT else if (string == "light") AppTheme.MODE_DAY else AppTheme.MODE_AUTO
-            )
+        try {
+            val file = File(context.getExternalFilesDir(null), "options.csv")
+            if (!file.exists()) return
+            val rows: List<List<String>> = csvReader().readAll(file.inputStream())
+            if (rows.isNotEmpty()) {
+                val themeRow = rows[0]
+                _uiState.update { currentState ->
+                    currentState.copy(
+                        themeUserSetting = if (themeRow.contains("dark")) AppTheme.MODE_NIGHT else if (themeRow.contains("light")) AppTheme.MODE_DAY else AppTheme.MODE_AUTO
+                    )
+                }
+                if (rows.size > 1) {
+                    val hcRow = rows[1]
+                    val savedSyncEnabled = hcRow.contains("true")
+                    viewModelScope.launch {
+                        val granted = healthConnectManager.hasAllPermissions()
+                        _uiState.update { currentState ->
+                            currentState.copy(
+                                healthConnectSyncEnabled = savedSyncEnabled && granted
+                            )
+                        }
+                    }
+                }
+            }
+        } catch (_: Exception) {
+            // Fallback to default if file is old or corrupted
         }
     }
 
     fun optionsWriteToFile(context: Context) {
         val file = File(context.getExternalFilesDir(null), "options.csv")
-        when (uiState.value.themeUserSetting) {
-            AppTheme.MODE_NIGHT -> file.writeText("dark")
-            AppTheme.MODE_DAY -> file.writeText("light")
-            AppTheme.MODE_AUTO -> file.writeText("auto")
+        csvWriter().open(file) {
+            val theme = when (uiState.value.themeUserSetting) {
+                AppTheme.MODE_NIGHT -> "dark"
+                AppTheme.MODE_DAY -> "light"
+                AppTheme.MODE_AUTO -> "auto"
+            }
+            writeRow(listOf(theme))
+            writeRow(listOf(uiState.value.healthConnectSyncEnabled.toString()))
         }
     }
 

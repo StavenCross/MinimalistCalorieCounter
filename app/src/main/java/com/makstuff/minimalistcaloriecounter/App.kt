@@ -1,15 +1,16 @@
 package com.makstuff.minimalistcaloriecounter
 
-import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatDelegate
+import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
@@ -23,13 +24,37 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.Switch
 import androidx.compose.material3.TopAppBar
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.material3.BottomSheetDefaults
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemDefaults
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -83,6 +108,10 @@ import com.makstuff.minimalistcaloriecounter.ui.screens.ScreenShowFoodAll
 import com.makstuff.minimalistcaloriecounter.ui.screens.ScreenShowFoodSelection
 import com.makstuff.minimalistcaloriecounter.ui.screens.ScreenWithHoverCard
 import com.makstuff.minimalistcaloriecounter.ui.theme.AppTheme
+import com.makstuff.minimalistcaloriecounter.health.HealthConnectManager
+import androidx.health.connect.client.HealthConnectClient
+import androidx.health.connect.client.PermissionController
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.delay
 import java.io.File
 import java.time.LocalDateTime
@@ -96,7 +125,17 @@ fun App(
 ) {
     val context = LocalContext.current
     context.findActivity() // Use the proper unwrap function!
+    val lifecycleOwner = LocalLifecycleOwner.current
     val uriHandler = LocalUriHandler.current
+    val healthConnectManager = remember { HealthConnectManager(context) }
+
+    val healthConnectRequestPermissionLauncher = rememberLauncherForActivityResult(
+        contract = PermissionController.createRequestPermissionResultContract(),
+        onResult = { _ ->
+            viewModel.updateHealthConnectPermissionsStatus()
+        }
+    )
+
     fun navTo(route: String) {
         navController.navigate(route)
     }
@@ -128,7 +167,17 @@ fun App(
         setNav = { string, button -> setNav(string, button) }
     )
 
+    LaunchedEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                viewModel.updateHealthConnectPermissionsStatus()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+    }
+
     LaunchedEffect(Unit) {
+        viewModel.updateHealthConnectPermissionsStatus()
         viewModel.databaseResetCSV(false, context)
         viewModel.currentComboResetCSV(false, context)
         viewModel.archiveResetCSV(false, context)
@@ -170,7 +219,7 @@ fun App(
                 context, context.getString(R.string.day) + " CSV: " + e.message, Toast.LENGTH_LONG
             ).show()
         }
-        delay(1000)//1000 seems enough to prevent glitches from dark mode override loading
+        delay(1000.milliseconds)//1000 seems enough to prevent glitches from dark mode override loading
         viewModel.setLoadingToFalse()
     }
     val databaseImporter = rememberLauncherForActivityResult(
@@ -242,32 +291,34 @@ fun App(
                     actionIconContentColor = MaterialTheme.colorScheme.onSurface,
                 ),
                 actions = {
-                    IconButton(onClick = { viewModel.toggleDropdownMenuVisible() }) {
+                    IconButton(onClick = { viewModel.updateOptionsSheetVisible(true) }) {
                         Icon(painterResource(id = R.drawable.options), stringResource(R.string.options))
                     }
                     when {
                         uiState.alertDialogArchiveReset -> {
                             AlertDialog(
                                 onDismissRequest = {viewModel.setAlertDialogArchiveReset(false)},
-                                confirmButton = { ButtonText(text = stringResource(R.string.button_confirm), onClick = {
+                                confirmButton = { ButtonText(text = stringResource(R.string.button_continue), onClick = {
                                     viewModel.archiveResetCSV(true, context)
                                     viewModel.archiveUpdateFromCSV(context)
-                                    viewModel.setAlertDialogArchiveReset(false)})},
+                                    viewModel.setAlertDialogArchiveReset(false)
+                                })},
                                 dismissButton = { ButtonText(text = stringResource(R.string.button_cancel), onClick =  {viewModel.setAlertDialogArchiveReset(false)})},
                                 text = { Text(stringResource(R.string.dialog_archive_clear))},
-                                title = {Text(stringResource(R.string.dialog_destructive_action))})
+                                title = {Text(stringResource(R.string.confirmation))})
                         }}
                     when {
                         uiState.alertDialogDatabaseReset -> {
                             AlertDialog(
                                 onDismissRequest = {viewModel.setAlertDialogDatabaseReset(false)},
-                                confirmButton = { ButtonText(text = stringResource(R.string.button_confirm),onClick= {
+                                confirmButton = { ButtonText(text = stringResource(R.string.button_continue),onClick= {
                                     viewModel.databaseResetCSV(true, context)
                                     viewModel.databaseUpdateFromCSV(context)
-                                    viewModel.setAlertDialogDatabaseReset(false)})},
+                                    viewModel.setAlertDialogDatabaseReset(false)
+                                })},
                                 dismissButton = { ButtonText(text = stringResource(R.string.button_cancel), onClick= {viewModel.setAlertDialogDatabaseReset(false)})},
                                 text = { Text(stringResource(R.string.dialog_database_reset))},
-                                title = {Text(stringResource(R.string.dialog_destructive_action))})
+                                title = {Text(stringResource(R.string.confirmation))})
                         }}
 
                     when {
@@ -280,7 +331,7 @@ fun App(
                                 })},
                                 dismissButton = { ButtonText(text = stringResource(R.string.button_cancel), onClick =  {viewModel.setAlertDialogArchiveImport(false)})},
                                 text = { Text(stringResource(R.string.dialog_archive_import))},
-                                title = {Text(stringResource(R.string.dialog_dangerous_action))})
+                                title = {Text(stringResource(R.string.confirmation))})
                         }}
                     when {
                         uiState.alertDialogDatabaseImport -> {
@@ -292,57 +343,76 @@ fun App(
                                 })},
                                 dismissButton = { ButtonText(text = stringResource(R.string.button_cancel), onClick= {viewModel.setAlertDialogDatabaseImport(false)})},
                                 text = { Text(stringResource(R.string.dialog_database_import))},
-                                title = {Text(stringResource(R.string.dialog_dangerous_action))})
+                                title = {Text(stringResource(R.string.confirmation))})
                         }}
                     when {
-                        uiState.dialogLanguage -> {
+                        uiState.alertDialogHealthConnectRestore -> {
                             AlertDialog(
-                                onDismissRequest = {viewModel.setDialogLanguage(false)},
-                                title  = {
-                                    // Centering the Title
-                                    Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                                    Text(stringResource(R.string.choose_language))
-                                    }
-                                                                                                                 },
-                                confirmButton = {
-                                    Column(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        horizontalAlignment = Alignment.CenterHorizontally,
-                                        verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                                        ButtonText(text = stringResource(R.string.always_english), onClick = {
-                                            AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags("en"))
-                                            viewModel.setDialogLanguage(false)
-                                            viewModel.setDialogLanguageInfo(true)
-                                        })
-                                        ButtonText(text = stringResource(R.string.always_german), onClick = {
-                                            AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags("de"))
-                                            viewModel.setDialogLanguage(false)
-                                            viewModel.setDialogLanguageInfo(true)
-                                        })
-                                        ButtonText(text = stringResource(R.string.always_french), onClick = {
-                                            AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags("fr"))
-                                            viewModel.setDialogLanguage(false)
-                                            viewModel.setDialogLanguageInfo(true)
-                                        })
-                                        ButtonText(text = stringResource(R.string.always_italian), onClick = {
-                                            AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags("it"))
-                                            viewModel.setDialogLanguage(false)
-                                            viewModel.setDialogLanguageInfo(true)
-                                        })
-                                        ButtonText(text = stringResource(R.string.always_spanish), onClick = {
-                                            AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags("es"))
-                                            viewModel.setDialogLanguage(false)
-                                            viewModel.setDialogLanguageInfo(true)
-                                        })
-                                        ButtonText(text = stringResource(R.string.system_default), onClick = {
-                                            AppCompatDelegate.setApplicationLocales(LocaleListCompat.getEmptyLocaleList())
-                                            viewModel.setDialogLanguage(false)
-                                            viewModel.setDialogLanguageInfo(true)
-                                        })
-                                    }
-                                }
-                            )
+                                onDismissRequest = {viewModel.setAlertDialogHealthConnectRestore(false)},
+                                confirmButton = { ButtonText(text = stringResource(R.string.button_continue),onClick= {
+                                    viewModel.restoreArchiveFromHealthConnect(context)
+                                    viewModel.setAlertDialogHealthConnectRestore(false)
+                                })},
+                                dismissButton = { ButtonText(text = stringResource(R.string.button_cancel), onClick= {viewModel.setAlertDialogHealthConnectRestore(false)})},
+                                text = { Text(stringResource(R.string.dialog_health_connect_restore))},
+                                title = {Text(stringResource(R.string.confirmation))})
                         }}
+                    when {
+                        uiState.alertDialogHealthConnectSync -> {
+                            AlertDialog(
+                                onDismissRequest = {viewModel.setAlertDialogHealthConnectSync(false)},
+                                confirmButton = { ButtonText(text = stringResource(R.string.button_continue),onClick= {
+                                    viewModel.syncHealthConnect()
+                                    viewModel.setAlertDialogHealthConnectSync(false)
+                                })},
+                                dismissButton = { ButtonText(text = stringResource(R.string.button_cancel), onClick= {viewModel.setAlertDialogHealthConnectSync(false)})},
+                                text = { Text(stringResource(R.string.dialog_health_connect_sync))},
+                                title = {Text(stringResource(R.string.confirmation))})
+                        }}
+                    when {
+                        uiState.alertDialogHealthConnectPermissions -> {
+                            AlertDialog(
+                                onDismissRequest = { viewModel.setAlertDialogHealthConnectPermissions(false) },
+                                confirmButton = {
+                                    ButtonText(text = stringResource(R.string.button_continue), onClick = {
+                                        if (uiState.healthConnectAnyPermissionsGranted) {
+                                            // Some granted: Take directly to app's permission settings in Health Connect
+                                            try {
+                                                context.startActivity(Intent("androidx.health.ACTION_MANAGE_HEALTH_PERMISSIONS").apply {
+                                                    putExtra(Intent.EXTRA_PACKAGE_NAME, context.packageName)
+                                                })
+                                            } catch (_: Exception) {
+                                                context.startActivity(Intent(HealthConnectClient.ACTION_HEALTH_CONNECT_SETTINGS))
+                                            }
+                                        } else {
+                                            // None granted: Use the system prompt
+                                            healthConnectRequestPermissionLauncher.launch(healthConnectManager.permissions)
+                                        }
+                                        viewModel.setAlertDialogHealthConnectPermissions(false)
+                                    })
+                                },
+                                dismissButton = {
+                                    ButtonText(text = stringResource(R.string.button_cancel), onClick = {
+                                        viewModel.setAlertDialogHealthConnectPermissions(false)
+                                    })
+                                },
+                                text = { Text(stringResource(R.string.dialog_health_connect_disclosure)) },
+                                title = { Text(stringResource(R.string.confirmation)) })
+                        }
+                    }
+                    when {
+                        uiState.alertDialogHealthConnectActivation -> {
+                            AlertDialog(
+                                onDismissRequest = { viewModel.setAlertDialogHealthConnectActivation(false) },
+                                confirmButton = {
+                                    ButtonText(text = stringResource(R.string.button_understood), onClick = {
+                                        viewModel.setAlertDialogHealthConnectActivation(false)
+                                    })
+                                },
+                                text = { Text(stringResource(R.string.dialog_health_connect_activation)) },
+                                title = { Text(stringResource(R.string.information)) })
+                        }
+                    }
                     when {
                         uiState.dialogLanguageInfo -> {
                             AlertDialog(
@@ -355,31 +425,31 @@ fun App(
                                     viewModel.setDialogLanguageInfo(false)
                                 })},
                                 text = { Text(stringResource(R.string.dialog_language,stringResource(R.string.dropdown_reset_database)))},
-                                title = {Text(stringResource(R.string.database_language))})
+                                title = {Text(stringResource(R.string.information))})
                         }}
                     when {
                         uiState.alertDialogDayReset -> {
                             AlertDialog(
                                 onDismissRequest = {viewModel.setAlertDialogDayReset(false)},
-                                confirmButton = { ButtonText(text = stringResource(R.string.button_confirm),onClick= {
+                                confirmButton = { ButtonText(text = stringResource(R.string.button_continue),onClick= {
                                     viewModel.dayReset(context)
                                     viewModel.setAlertDialogDayReset(false)
                                 })},
                                 dismissButton = { ButtonText(text = stringResource(R.string.button_cancel), onClick= {viewModel.setAlertDialogDayReset(false)})},
                                 text = { Text(stringResource(R.string.dialog_reset_day))},
-                                title = {Text(stringResource(R.string.dialog_destructive_action))})
+                                title = {Text(stringResource(R.string.confirmation))})
                         }}
                     when {
                         uiState.alertDialogRecipeReset -> {
                             AlertDialog(
                                 onDismissRequest = {viewModel.setAlertDialogRecipeReset(false)},
-                                confirmButton = { ButtonText(text = stringResource(R.string.button_confirm),onClick= {
+                                confirmButton = { ButtonText(text = stringResource(R.string.button_continue),onClick= {
                                     viewModel.currentComboReset(context)
                                     viewModel.setAlertDialogRecipeReset(false)
                                 })},
                                 dismissButton = { ButtonText(text = stringResource(R.string.button_cancel), onClick= {viewModel.setAlertDialogRecipeReset(false)})},
                                 text = { Text(stringResource(R.string.dialog_reset_recipe))},
-                                title = {Text(stringResource(R.string.dialog_destructive_action))})
+                                title = {Text(stringResource(R.string.confirmation))})
                         }
                     }
                     when {
@@ -387,9 +457,9 @@ fun App(
                             AlertDialog(
                                 onDismissRequest = { viewModel.setAlertDialogArchiveDelete(false) },
                                 confirmButton = {
-                                    ButtonText(text = stringResource(R.string.button_confirm), onClick = {
+                                    ButtonText(text = stringResource(R.string.button_continue), onClick = {
                                         if (uiState.indexArchiveDelete != -1) {
-                                            viewModel.archiveDeleteEntry(uiState.indexArchiveDelete)
+                                            viewModel.archiveDeleteEntry(uiState.indexArchiveDelete, context)
                                             navTo("archive_home")
                                         }
                                         viewModel.setAlertDialogArchiveDelete(false)
@@ -399,7 +469,7 @@ fun App(
                                     ButtonText(text = stringResource(R.string.button_cancel), onClick = { viewModel.setAlertDialogArchiveDelete(false) })
                                 },
                                 text = { Text(stringResource(R.string.dialog_archive_delete)) },
-                                title = { Text(stringResource(R.string.dialog_destructive_action)) })
+                                title = { Text(stringResource(R.string.confirmation)) })
                         }
                     }
                     when {
@@ -407,7 +477,7 @@ fun App(
                             AlertDialog(
                                 onDismissRequest = { viewModel.setAlertDialogDatabaseDelete(false) },
                                 confirmButton = {
-                                    ButtonText(text = stringResource(R.string.button_confirm), onClick = {
+                                    ButtonText(text = stringResource(R.string.button_continue), onClick = {
                                         if (uiState.indexDatabaseDelete != -1) {
                                             viewModel.databaseDeleteEntry(uiState.indexDatabaseDelete, true, context)
                                             navController.popBackStack()
@@ -419,77 +489,319 @@ fun App(
                                     ButtonText(text = stringResource(R.string.button_cancel), onClick = { viewModel.setAlertDialogDatabaseDelete(false) })
                                 },
                                 text = { Text(stringResource(R.string.dialog_database_delete)) },
-                                title = { Text(stringResource(R.string.dialog_destructive_action)) })
+                                title = { Text(stringResource(R.string.confirmation)) })
                         }
                     }
 
-                    DropdownMenu(
-                        expanded = uiState.dropdownMenuVisible,
-                        onDismissRequest = { viewModel.updateDropdownMenuVisible(false) },
-                        /* Moved lambda arguments in pairs out of parentheses because internet
-                        and Android Studio says it is good practice. */
-                        items = listOf(
-                            DropdownMenuItemData(stringResource(R.string.dropdown_github))
-                            { uriHandler.openUri("https://github.com/Makstuff/MinimalistCalorieCounter") },
-                            DropdownMenuItemData(stringResource(R.string.choose_language))
-                            {
-                                viewModel.setDialogLanguage(true)
-                            },
-                            DropdownMenuItemData(
-                                stringResource(R.string.dark_mode) + ": " + when (uiState.themeUserSetting) {
-                                    AppTheme.MODE_AUTO -> stringArrayResource(R.array.dark_mode_options)[0]
-                                    AppTheme.MODE_DAY -> stringArrayResource(R.array.dark_mode_options)[1]
-                                    AppTheme.MODE_NIGHT -> stringArrayResource(R.array.dark_mode_options)[2]
-                                },
-                                dismissOnClick = false
+                    if (uiState.optionsSheetVisible) {
+                        var languageMenuExpanded by remember { mutableStateOf(false) }
+                        var themeMenuExpanded by remember { mutableStateOf(false) }
+                        var databaseExpanded by remember { mutableStateOf(false) }
+                        var archiveExpanded by remember { mutableStateOf(false) }
+                        var supportExpanded by remember { mutableStateOf(false) }
+
+                        val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
+                        val listState = rememberLazyListState()
+
+                        ModalBottomSheet(
+                            onDismissRequest = { viewModel.updateOptionsSheetVisible(false) },
+                            sheetState = sheetState,
+                            containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                            scrimColor = Color.Black.copy(alpha = 0.5f),
+                            dragHandle = { BottomSheetDefaults.DragHandle() }
+                        ) {
+                            LazyColumn(
+                                state = listState,
+                                modifier = Modifier
+                                    .fillMaxHeight()
+                                    .fillMaxWidth()
+                                    .padding(bottom = WindowInsets.navigationBars
+                                        .asPaddingValues()
+                                        .calculateBottomPadding())
                             ) {
-                                viewModel.toggleDarkTheme(context)
-                            },
-                            DropdownMenuItemData(stringResource(R.string.dropdown_import_database) + " (*.csv)")
-                            {
-                                viewModel.setAlertDialogDatabaseImport(true)
-                            },
-                            DropdownMenuItemData(stringResource(R.string.dropdown_backup_database) + " (*.csv)")
-                            { databaseExporter.launch("database_backup.csv") },
-                            DropdownMenuItemData(stringResource(R.string.dropdown_reset_database))
-                            {
-                                viewModel.setAlertDialogDatabaseReset(true)
-                            },
-                            DropdownMenuItemData(stringResource(R.string.dropdown_import_archive) + " (*.csv)")
-                            {
-                                viewModel.setAlertDialogArchiveImport(true)
-                            },
-                            DropdownMenuItemData(stringResource(R.string.dropdown_backup_archive) + " (*.csv)")
-                            { archiveExporter.launch("archive_backup.csv") },
-                            DropdownMenuItemData(stringResource(R.string.dropdown_clear_archive))
-                            {
-                                viewModel.setAlertDialogArchiveReset(true)
-                            },
-                            DropdownMenuItemData(stringResource(R.string.report_problem))
-                            { val intent = Intent(Intent.ACTION_SENDTO).apply {
-                                val uriString = "mailto:message.makstuff@outlook.com?subject=Minimalist Calorie Counter&body=🐈"
-                                data = uriString.replace(" ", "%20").toUri()
-                            }
-                                try {
-                                    context.startActivity(intent)
-                                } catch (_: ActivityNotFoundException) {
-                                    Toast.makeText(context, "No email app found", Toast.LENGTH_SHORT).show()
-                                } },
-                            DropdownMenuItemData(stringResource(R.string.dropdown_rate)) {
-                                val appId = "com.makstuff.minimalistcaloriecounter"
+                                // --- Section: Settings (Always Visible) ---
 
-                                val intent = Intent(Intent.ACTION_VIEW).apply {
-                                    data = "market://details?id=$appId".toUri()
+                                item {
+                                    val currentLocale = AppCompatDelegate.getApplicationLocales().toLanguageTags()
+                                    val currentLanguageLabel = when {
+                                        currentLocale.contains("en") -> stringResource(R.string.always_english)
+                                        currentLocale.contains("de") -> stringResource(R.string.always_german)
+                                        currentLocale.contains("fr") -> stringResource(R.string.always_french)
+                                        currentLocale.contains("it") -> stringResource(R.string.always_italian)
+                                        currentLocale.contains("es") -> stringResource(R.string.always_spanish)
+                                        else -> stringResource(R.string.system_default)
+                                    }
+
+                                    OptionsItem(
+                                        text = stringResource(R.string.choose_language),
+                                        trailingContent = {
+                                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                                Box {
+                                                    DropdownMenu(
+                                                        expanded = languageMenuExpanded,
+                                                        onDismissRequest = { languageMenuExpanded = false },
+                                                        items = listOf(
+                                                            DropdownMenuItemData(stringResource(R.string.always_english)) {
+                                                                AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags("en"))
+                                                                viewModel.setDialogLanguageInfo(bool = true)
+                                                            },
+                                                            DropdownMenuItemData(stringResource(R.string.always_german)) {
+                                                                AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags("de"))
+                                                                viewModel.setDialogLanguageInfo(bool = true)
+                                                            },
+                                                            DropdownMenuItemData(stringResource(R.string.always_french)) {
+                                                                AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags("fr"))
+                                                                viewModel.setDialogLanguageInfo(bool = true)
+                                                            },
+                                                            DropdownMenuItemData(stringResource(R.string.always_italian)) {
+                                                                AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags("it"))
+                                                                viewModel.setDialogLanguageInfo(bool = true)
+                                                            },
+                                                            DropdownMenuItemData(stringResource(R.string.always_spanish)) {
+                                                                AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags("es"))
+                                                                viewModel.setDialogLanguageInfo(bool = true)
+                                                            },
+                                                            DropdownMenuItemData(stringResource(R.string.system_default)) {
+                                                                AppCompatDelegate.setApplicationLocales(LocaleListCompat.getEmptyLocaleList())
+                                                                viewModel.setDialogLanguageInfo(bool = true)
+                                                            }
+                                                        )
+                                                    )
+                                                }
+                                                Text(
+                                                    text = currentLanguageLabel,
+                                                    style = MaterialTheme.typography.bodyMedium,
+                                                    color = MaterialTheme.colorScheme.secondary
+                                                )
+                                            }
+                                        },
+                                        onClick = { languageMenuExpanded = true }
+                                    )
                                 }
 
-                                try {
-                                    context.startActivity(intent)
-                                } catch (_: ActivityNotFoundException) {
-                                    uriHandler.openUri("https://play.google.com/store/apps/details?id=$appId")
+                                item {
+                                    val currentThemeLabel = when (uiState.themeUserSetting) {
+                                        AppTheme.MODE_AUTO -> stringArrayResource(R.array.dark_mode_options)[0]
+                                        AppTheme.MODE_DAY -> stringArrayResource(R.array.dark_mode_options)[1]
+                                        AppTheme.MODE_NIGHT -> stringArrayResource(R.array.dark_mode_options)[2]
+                                    }
+                                    OptionsItem(
+                                        text = stringResource(R.string.dark_mode),
+                                        trailingContent = {
+                                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                                Box {
+                                                    DropdownMenu(
+                                                        expanded = themeMenuExpanded,
+                                                        onDismissRequest = { themeMenuExpanded = false },
+                                                        items = listOf(
+                                                            DropdownMenuItemData(stringArrayResource(R.array.dark_mode_options)[0]) {
+                                                                viewModel.setTheme(AppTheme.MODE_AUTO, context)
+                                                                themeMenuExpanded = false
+                                                            },
+                                                            DropdownMenuItemData(stringArrayResource(R.array.dark_mode_options)[1]) {
+                                                                viewModel.setTheme(AppTheme.MODE_DAY, context)
+                                                                themeMenuExpanded = false
+                                                            },
+                                                            DropdownMenuItemData(stringArrayResource(R.array.dark_mode_options)[2]) {
+                                                                viewModel.setTheme(AppTheme.MODE_NIGHT, context)
+                                                                themeMenuExpanded = false
+                                                            }
+                                                        )
+                                                    )
+                                                }
+                                                Text(
+                                                    text = currentThemeLabel,
+                                                    style = MaterialTheme.typography.bodyMedium,
+                                                    color = MaterialTheme.colorScheme.secondary
+                                                )
+                                            }
+                                        },
+                                        onClick = { themeMenuExpanded = true }
+                                    )
                                 }
+
+                                item {
+                                    OptionsItem(
+                                        text = stringResource(R.string.health_connect_permissions),
+                                        trailingContent = {
+                                            Switch(
+                                                checked = uiState.healthConnectPermissionsGranted,
+                                                onCheckedChange = null // Click handled by OptionsItem
+                                            )
+                                        },
+                                        onClick = {
+                                            val availabilityStatus = HealthConnectClient.getSdkStatus(context)
+                                            if (availabilityStatus == HealthConnectClient.SDK_UNAVAILABLE) {
+                                                Toast.makeText(context, "Health Connect is not available on this device", Toast.LENGTH_LONG).show()
+                                            } else if (availabilityStatus == HealthConnectClient.SDK_UNAVAILABLE_PROVIDER_UPDATE_REQUIRED) {
+                                                val uriString = "market://details?id=com.google.android.apps.healthdata&url=healthconnect%3A%2F%2Fonboarding"
+                                                context.startActivity(Intent(Intent.ACTION_VIEW).apply {
+                                                    setPackage("com.android.vending")
+                                                    data = uriString.toUri()
+                                                    putExtra("overlay", true)
+                                                    putExtra("callerId", context.packageName)
+                                                })
+                                            } else {
+                                                if (uiState.healthConnectPermissionsGranted) {
+                                                    // Deactivating: Take user to standard Health Connect settings
+                                                    try {
+                                                        context.startActivity(Intent(HealthConnectClient.ACTION_HEALTH_CONNECT_SETTINGS))
+                                                    } catch (_: Exception) {
+                                                        Toast.makeText(context, "Could not open Health Connect settings", Toast.LENGTH_SHORT).show()
+                                                    }
+                                                } else {
+                                                    // Prominent Disclosure: Show info dialog before the system prompt
+                                                    viewModel.setAlertDialogHealthConnectPermissions(true)
+                                                    // The actual launcher will be triggered by the "Understood" button
+                                                    // OR you can keep it simple and launch it after they acknowledge.
+                                                }
+                                            }
+                                        }
+                                    )
+                                }
+
+                                item {
+                                    OptionsItem(
+                                        text = stringResource(R.string.dropdown_sync_health_connect),
+                                        trailingContent = {
+                                            Switch(
+                                                checked = uiState.healthConnectSyncEnabled && uiState.healthConnectPermissionsGranted,
+                                                enabled = uiState.healthConnectPermissionsGranted,
+                                                onCheckedChange = null // Click handled by OptionsItem
+                                            )
+                                        },
+                                        onClick = {
+                                            if (uiState.healthConnectPermissionsGranted) {
+                                                viewModel.toggleHealthConnectSyncEnabled(context)
+                                            } else {
+                                                Toast.makeText(context, context.getString(R.string.health_connect_permissions_missing), Toast.LENGTH_SHORT).show()
+                                            }
+                                        }
+                                    )
+                                }
+
+                                item { HorizontalDivider(Modifier.padding(vertical = 8.dp)) }
+
+                                // --- Section: Database ---
+                                item {
+                                    OptionsSectionHeader(
+                                        text = stringResource(R.string.database),
+                                        isExpanded = databaseExpanded,
+                                        onToggle = { databaseExpanded = !databaseExpanded }
+                                    )
+                                }
+                                if (databaseExpanded) {
+                                    item {
+                                        OptionsItem(stringResource(R.string.dropdown_import_database) + " (*.csv)") {
+                                            viewModel.setAlertDialogDatabaseImport(true)
+                                        }
+                                    }
+                                    item {
+                                        OptionsItem(stringResource(R.string.dropdown_backup_database) + " (*.csv)") {
+                                            databaseExporter.launch("database_backup.csv")
+                                        }
+                                    }
+                                    item {
+                                        OptionsItem(stringResource(R.string.dropdown_reset_database)) {
+                                            viewModel.setAlertDialogDatabaseReset(true)
+                                        }
+                                    }
+                                }
+
+                                item { HorizontalDivider(Modifier.padding(vertical = 8.dp)) }
+
+                                // --- Section: Archive ---
+                                item {
+                                    OptionsSectionHeader(
+                                        text = stringResource(R.string.archive),
+                                        isExpanded = archiveExpanded,
+                                        onToggle = { archiveExpanded = !archiveExpanded }
+                                    )
+                                }
+                                if (archiveExpanded) {
+                                    item {
+                                        OptionsItem(stringResource(R.string.dropdown_import_archive) + " (*.csv)") {
+                                            viewModel.setAlertDialogArchiveImport(true)
+                                        }
+                                    }
+                                    item {
+                                        OptionsItem(stringResource(R.string.dropdown_import_archive_health_connect)) {
+                                            if (uiState.healthConnectPermissionsGranted) {
+                                                viewModel.setAlertDialogHealthConnectRestore(true)
+                                            } else {
+                                                Toast.makeText(context, context.getString(R.string.health_connect_permissions_missing), Toast.LENGTH_SHORT).show()
+                                            }
+                                        }
+                                    }
+                                    item {
+                                        OptionsItem(stringResource(R.string.dropdown_backup_archive) + " (*.csv)") {
+                                            archiveExporter.launch("archive_backup.csv")
+                                        }
+                                    }
+                                    item {
+                                        OptionsItem(stringResource(R.string.dropdown_export_archive_health_connect)) {
+                                            if (uiState.healthConnectPermissionsGranted) {
+                                                viewModel.setAlertDialogHealthConnectSync(true)
+                                            } else {
+                                                Toast.makeText(context, context.getString(R.string.health_connect_permissions_missing), Toast.LENGTH_SHORT).show()
+                                            }
+                                        }
+                                    }
+                                    item {
+                                        OptionsItem(stringResource(R.string.dropdown_clear_archive)) {
+                                            viewModel.setAlertDialogArchiveReset(true)
+                                        }
+                                    }
+                                }
+
+                                item { HorizontalDivider(Modifier.padding(vertical = 8.dp)) }
+
+                                // --- Section: Support ---
+                                item {
+                                    OptionsSectionHeader(
+                                        text = stringResource(R.string.support),
+                                        isExpanded = supportExpanded,
+                                        onToggle = { supportExpanded = !supportExpanded }
+                                    )
+                                }
+                                if (supportExpanded) {
+                                    item {
+                                        OptionsItem(stringResource(R.string.dropdown_github)) {
+                                            uriHandler.openUri("https://github.com/Makstuff/MinimalistCalorieCounter")
+                                        }
+                                    }
+                                    item {
+                                        OptionsItem(stringResource(R.string.privacy_policy)) {
+                                            uriHandler.openUri("https://github.com/Makstuff/MinimalistCalorieCounter/blob/master/PRIVACY_POLICY.md")
+                                        }
+                                    }
+                                    item {
+                                        OptionsItem(stringResource(R.string.report_problem)) {
+                                            val intent = Intent(Intent.ACTION_SENDTO).apply {
+                                                val uriString = "mailto:message.makstuff@outlook.com?subject=Minimalist Calorie Counter&body=🐈"
+                                                data = uriString.replace(" ", "%20").toUri()
+                                            }
+                                            try {
+                                                context.startActivity(intent)
+                                            } catch (_: Exception) {
+                                                Toast.makeText(context, "No email app found", Toast.LENGTH_SHORT).show()
+                                            }
+                                        }
+                                    }
+                                    item {
+                                        OptionsItem(stringResource(R.string.dropdown_rate)) {
+                                            val appId = "com.makstuff.minimalistcaloriecounter"
+                                            val intent = Intent(Intent.ACTION_VIEW).apply { data = "market://details?id=$appId".toUri() }
+                                            try { context.startActivity(intent) } catch (_: Exception) {
+                                                uriHandler.openUri("https://play.google.com/store/apps/details?id=$appId")
+                                            }
+                                        }
+                                    }
+                                }
+                                item { Spacer(Modifier.height(16.dp)) }
                             }
-                        )
-                    )
+                        }
+                    }
                 }
             )
         },
@@ -753,8 +1065,8 @@ fun App(
                     if(index < uiState.archive.entries.size){
                         fun onConfirm() {
                             try {
-                                viewModel.archiveDeleteEntry(index)
-                                viewModel.archiveAddEntry(
+                                viewModel.archiveEditEntry(
+                                    index = index,
                                     date = uiState.inputArchiveEntryDate,
                                     bodyWeight = uiState.inputArchiveEntryBodyWeight,
                                     nutrients = Nutrients.fromStrings(uiState.inputArchiveEntryNutrients,context),
@@ -1335,4 +1647,53 @@ fun App(
                 }}
         }
     }
+}
+
+@Composable
+fun OptionsSectionHeader(text: String, isExpanded: Boolean? = null, onToggle: (() -> Unit)? = null) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .then(if (onToggle != null) Modifier.clickable { onToggle() } else Modifier)
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(
+            text = text,
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.primary,
+        )
+        if (isExpanded != null) {
+            Icon(
+                imageVector = if (isExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(20.dp)
+            )
+        }
+    }
+}
+
+@Composable
+fun OptionsItem(
+    text: String, 
+    trailingText: String? = null, 
+    trailingContent: @Composable (() -> Unit)? = null,
+    onClick: () -> Unit
+) {
+    ListItem(
+        headlineContent = {
+            Text(text)
+        },
+        trailingContent = trailingContent ?: trailingText?.let { {
+            Text(
+                text = it, 
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.secondary
+            ) 
+        } },
+        modifier = Modifier.clickable { onClick() },
+        colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
+    )
 }
