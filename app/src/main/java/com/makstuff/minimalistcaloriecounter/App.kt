@@ -35,6 +35,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.BottomSheetDefaults
@@ -292,97 +293,155 @@ fun App(
                 ),
                 actions = {
                     IconButton(onClick = { viewModel.updateOptionsSheetVisible(true) }) {
-                        Icon(painterResource(id = R.drawable.options), stringResource(R.string.options))
+                        Icon(
+                            painterResource(id = R.drawable.options),
+                            stringResource(R.string.options)
+                        )
                     }
                     when {
                         uiState.alertDialogArchiveReset -> {
                             AlertDialog(
-                                onDismissRequest = {viewModel.setAlertDialogArchiveReset(false)},
-                                confirmButton = { ButtonText(text = stringResource(R.string.button_continue), onClick = {
-                                    viewModel.archiveResetCSV(true, context)
-                                    viewModel.archiveUpdateFromCSV(context)
-                                    viewModel.setAlertDialogArchiveReset(false)
-                                })},
-                                dismissButton = { ButtonText(text = stringResource(R.string.button_cancel), onClick =  {viewModel.setAlertDialogArchiveReset(false)})},
-                                text = { Text(stringResource(R.string.dialog_archive_clear))},
-                                title = {Text(stringResource(R.string.confirmation))})
-                        }}
+                                onDismissRequest = { viewModel.setAlertDialogArchiveReset(false) },
+                                confirmButton = {
+                                    ButtonText(
+                                        text = stringResource(R.string.button_continue),
+                                        onClick = {
+                                            viewModel.archiveResetCSV(true, context)
+                                            viewModel.archiveUpdateFromCSV(context)
+                                            viewModel.setAlertDialogArchiveReset(false)
+                                        })
+                                },
+                                dismissButton = {
+                                    ButtonText(
+                                        text = stringResource(R.string.button_cancel),
+                                        onClick = { viewModel.setAlertDialogArchiveReset(false) })
+                                },
+                                text = { Text(stringResource(R.string.dialog_archive_clear)) },
+                                title = { Text(stringResource(R.string.confirmation)) })
+                        }
+                    }
                     when {
                         uiState.alertDialogDatabaseReset -> {
                             AlertDialog(
-                                onDismissRequest = {viewModel.setAlertDialogDatabaseReset(false)},
-                                confirmButton = { ButtonText(text = stringResource(R.string.button_continue),onClick= {
-                                    viewModel.databaseResetCSV(true, context)
-                                    viewModel.databaseUpdateFromCSV(context)
-                                    viewModel.setAlertDialogDatabaseReset(false)
-                                })},
-                                dismissButton = { ButtonText(text = stringResource(R.string.button_cancel), onClick= {viewModel.setAlertDialogDatabaseReset(false)})},
-                                text = { Text(stringResource(R.string.dialog_database_reset))},
-                                title = {Text(stringResource(R.string.confirmation))})
-                        }}
+                                onDismissRequest = { viewModel.setAlertDialogDatabaseReset(false) },
+                                confirmButton = {
+                                    ButtonText(
+                                        text = stringResource(R.string.button_continue),
+                                        onClick = {
+                                            viewModel.databaseResetCSV(true, context)
+                                            viewModel.databaseUpdateFromCSV(context)
+                                            viewModel.setAlertDialogDatabaseReset(false)
+                                        })
+                                },
+                                dismissButton = {
+                                    ButtonText(
+                                        text = stringResource(R.string.button_cancel),
+                                        onClick = { viewModel.setAlertDialogDatabaseReset(false) })
+                                },
+                                text = { Text(stringResource(R.string.dialog_database_reset)) },
+                                title = { Text(stringResource(R.string.confirmation)) })
+                        }
+                    }
 
                     when {
                         uiState.alertDialogArchiveImport -> {
                             AlertDialog(
-                                onDismissRequest = {viewModel.setAlertDialogArchiveImport(false)},
-                                confirmButton = { ButtonText(text = stringResource(R.string.button_continue), onClick = {
-                                    archiveImporter.launch(arrayOf("text/comma-separated-values"))
-                                    viewModel.setAlertDialogArchiveImport(false)
-                                })},
-                                dismissButton = { ButtonText(text = stringResource(R.string.button_cancel), onClick =  {viewModel.setAlertDialogArchiveImport(false)})},
-                                text = { Text(stringResource(R.string.dialog_archive_import))},
-                                title = {Text(stringResource(R.string.confirmation))})
-                        }}
+                                onDismissRequest = { viewModel.setAlertDialogArchiveImport(false) },
+                                confirmButton = {
+                                    ButtonText(
+                                        text = stringResource(R.string.button_continue),
+                                        onClick = {
+                                            archiveImporter.launch(arrayOf("text/comma-separated-values"))
+                                            viewModel.setAlertDialogArchiveImport(false)
+                                        })
+                                },
+                                dismissButton = {
+                                    ButtonText(
+                                        text = stringResource(R.string.button_cancel),
+                                        onClick = { viewModel.setAlertDialogArchiveImport(false) })
+                                },
+                                text = { Text(stringResource(R.string.dialog_archive_import)) },
+                                title = { Text(stringResource(R.string.confirmation)) })
+                        }
+                    }
                     when {
                         uiState.alertDialogDatabaseImport -> {
                             AlertDialog(
-                                onDismissRequest = {viewModel.setAlertDialogDatabaseImport(false)},
-                                confirmButton = { ButtonText(text = stringResource(R.string.button_continue),onClick= {
-                                    databaseImporter.launch(arrayOf("text/comma-separated-values"))
-                                    viewModel.setAlertDialogDatabaseImport(false)
-                                })},
-                                dismissButton = { ButtonText(text = stringResource(R.string.button_cancel), onClick= {viewModel.setAlertDialogDatabaseImport(false)})},
-                                text = { Text(stringResource(R.string.dialog_database_import))},
-                                title = {Text(stringResource(R.string.confirmation))})
-                        }}
+                                onDismissRequest = { viewModel.setAlertDialogDatabaseImport(false) },
+                                confirmButton = {
+                                    ButtonText(
+                                        text = stringResource(R.string.button_continue),
+                                        onClick = {
+                                            databaseImporter.launch(arrayOf("text/comma-separated-values"))
+                                            viewModel.setAlertDialogDatabaseImport(false)
+                                        })
+                                },
+                                dismissButton = {
+                                    ButtonText(
+                                        text = stringResource(R.string.button_cancel),
+                                        onClick = { viewModel.setAlertDialogDatabaseImport(false) })
+                                },
+                                text = { Text(stringResource(R.string.dialog_database_import)) },
+                                title = { Text(stringResource(R.string.confirmation)) })
+                        }
+                    }
                     when {
                         uiState.alertDialogHealthConnectSync -> {
                             AlertDialog(
-                                onDismissRequest = {viewModel.setAlertDialogHealthConnectSync(false)},
-                                confirmButton = { ButtonText(text = stringResource(R.string.button_continue),onClick= {
-                                    viewModel.syncHealthConnect()
-                                    viewModel.setAlertDialogHealthConnectSync(false)
-                                })},
-                                dismissButton = { ButtonText(text = stringResource(R.string.button_cancel), onClick= {viewModel.setAlertDialogHealthConnectSync(false)})},
-                                text = { Text(stringResource(R.string.dialog_health_connect_sync))},
-                                title = {Text(stringResource(R.string.confirmation))})
-                        }}
+                                onDismissRequest = { viewModel.setAlertDialogHealthConnectSync(false) },
+                                confirmButton = {
+                                    ButtonText(
+                                        text = stringResource(R.string.button_continue),
+                                        onClick = {
+                                            viewModel.syncHealthConnect()
+                                            viewModel.setAlertDialogHealthConnectSync(false)
+                                        })
+                                },
+                                dismissButton = {
+                                    ButtonText(
+                                        text = stringResource(R.string.button_cancel),
+                                        onClick = { viewModel.setAlertDialogHealthConnectSync(false) })
+                                },
+                                text = { Text(stringResource(R.string.dialog_health_connect_sync)) },
+                                title = { Text(stringResource(R.string.confirmation)) })
+                            }
+                        }
                     when {
                         uiState.alertDialogHealthConnectPermissions -> {
                             AlertDialog(
                                 onDismissRequest = { viewModel.setAlertDialogHealthConnectPermissions(false) },
                                 confirmButton = {
-                                    ButtonText(text = stringResource(R.string.button_continue), onClick = {
-                                        if (uiState.healthConnectAnyPermissionsGranted) {
-                                            // Some granted: Take directly to app's permission settings in Health Connect
-                                            try {
-                                                context.startActivity(Intent("androidx.health.ACTION_MANAGE_HEALTH_PERMISSIONS").apply {
-                                                    putExtra(Intent.EXTRA_PACKAGE_NAME, context.packageName)
-                                                })
-                                            } catch (_: Exception) {
-                                                context.startActivity(Intent(HealthConnectClient.ACTION_HEALTH_CONNECT_SETTINGS))
+                                    ButtonText(
+                                        text = stringResource(R.string.button_continue),
+                                        onClick = {
+                                            if (uiState.healthConnectAnyPermissionsGranted) {
+                                                // Some granted: Take directly to app's permission settings in Health Connect
+                                                try {
+                                                    context.startActivity(
+                                                        Intent("androidx.health.connect.action.MANAGE_HEALTH_PERMISSIONS").apply {
+                                                            putExtra(
+                                                                Intent.EXTRA_PACKAGE_NAME,
+                                                                context.packageName
+                                                            )
+                                                        })
+                                                } catch (_: Exception) {
+                                                    context.startActivity(Intent(HealthConnectClient.ACTION_HEALTH_CONNECT_SETTINGS))
+                                                }
+                                            } else {
+                                                // None granted: Use the system prompt
+                                                healthConnectRequestPermissionLauncher.launch(
+                                                    healthConnectManager.permissions
+                                                )
                                             }
-                                        } else {
-                                            // None granted: Use the system prompt
-                                            healthConnectRequestPermissionLauncher.launch(healthConnectManager.permissions)
-                                        }
-                                        viewModel.setAlertDialogHealthConnectPermissions(false)
-                                    })
+                                            viewModel.setAlertDialogHealthConnectPermissions(false)
+                                        })
                                 },
                                 dismissButton = {
-                                    ButtonText(text = stringResource(R.string.button_cancel), onClick = {
-                                        viewModel.setAlertDialogHealthConnectPermissions(false)
-                                    })
+                                    ButtonText(
+                                        text = stringResource(R.string.button_cancel),
+                                        onClick = {
+                                            viewModel.setAlertDialogHealthConnectPermissions(false)
+                                        })
                                 },
                                 text = { Text(stringResource(R.string.dialog_health_connect_disclosure)) },
                                 title = { Text(stringResource(R.string.confirmation)) })
@@ -392,10 +451,15 @@ fun App(
                         uiState.alertDialogHealthConnectActivation -> {
                             AlertDialog(
                                 onDismissRequest = { viewModel.setAlertDialogHealthConnectActivation(false) },
+                                properties = DialogProperties(
+                                    dismissOnClickOutside = false
+                                ),
                                 confirmButton = {
-                                    ButtonText(text = stringResource(R.string.button_understood), onClick = {
-                                        viewModel.setAlertDialogHealthConnectActivation(false)
-                                    })
+                                    ButtonText(
+                                        text = stringResource(R.string.button_understood),
+                                        onClick = {
+                                            viewModel.setAlertDialogHealthConnectActivation(false)
+                                        })
                                 },
                                 text = { Text(stringResource(R.string.dialog_health_connect_activation)) },
                                 title = { Text(stringResource(R.string.information)) })
@@ -404,40 +468,69 @@ fun App(
                     when {
                         uiState.dialogLanguageInfo -> {
                             AlertDialog(
-                                onDismissRequest = {viewModel.setDialogLanguageInfo(false)},
+                                onDismissRequest = { viewModel.setDialogLanguageInfo(false) },
                                 properties = DialogProperties(
                                     dismissOnClickOutside = false,
                                     dismissOnBackPress = false
                                 ),
-                                confirmButton = { ButtonText(text = stringResource(R.string.button_understood),onClick= {
-                                    viewModel.setDialogLanguageInfo(false)
-                                })},
-                                text = { Text(stringResource(R.string.dialog_language,stringResource(R.string.dropdown_reset_database)))},
-                                title = {Text(stringResource(R.string.information))})
-                        }}
+                                confirmButton = {
+                                    ButtonText(
+                                        text = stringResource(R.string.button_understood),
+                                        onClick = {
+                                            viewModel.setDialogLanguageInfo(false)
+                                        })
+                                },
+                                text = {
+                                    Text(
+                                        stringResource(
+                                            R.string.dialog_language,
+                                            stringResource(R.string.dropdown_reset_database)
+                                        )
+                                    )
+                                },
+                                title = { Text(stringResource(R.string.information)) })
+                        }
+                    }
                     when {
                         uiState.alertDialogDayReset -> {
                             AlertDialog(
-                                onDismissRequest = {viewModel.setAlertDialogDayReset(false)},
-                                confirmButton = { ButtonText(text = stringResource(R.string.button_continue),onClick= {
-                                    viewModel.dayReset(context)
-                                    viewModel.setAlertDialogDayReset(false)
-                                })},
-                                dismissButton = { ButtonText(text = stringResource(R.string.button_cancel), onClick= {viewModel.setAlertDialogDayReset(false)})},
-                                text = { Text(stringResource(R.string.dialog_reset_day))},
-                                title = {Text(stringResource(R.string.confirmation))})
-                        }}
+                                onDismissRequest = { viewModel.setAlertDialogDayReset(false) },
+                                confirmButton = {
+                                    ButtonText(
+                                        text = stringResource(R.string.button_continue),
+                                        onClick = {
+                                            viewModel.dayReset(context)
+                                            viewModel.setAlertDialogDayReset(false)
+                                        })
+                                },
+                                dismissButton = {
+                                    ButtonText(
+                                        text = stringResource(R.string.button_cancel),
+                                        onClick = { viewModel.setAlertDialogDayReset(false) })
+                                },
+                                text = { Text(stringResource(R.string.dialog_reset_day)) },
+                                title = { Text(stringResource(R.string.confirmation)) })
+                        }
+                    }
                     when {
                         uiState.alertDialogRecipeReset -> {
                             AlertDialog(
-                                onDismissRequest = {viewModel.setAlertDialogRecipeReset(false)},
-                                confirmButton = { ButtonText(text = stringResource(R.string.button_continue),onClick= {
-                                    viewModel.currentComboReset(context)
-                                    viewModel.setAlertDialogRecipeReset(false)
-                                })},
-                                dismissButton = { ButtonText(text = stringResource(R.string.button_cancel), onClick= {viewModel.setAlertDialogRecipeReset(false)})},
-                                text = { Text(stringResource(R.string.dialog_reset_recipe))},
-                                title = {Text(stringResource(R.string.confirmation))})
+                                onDismissRequest = { viewModel.setAlertDialogRecipeReset(false) },
+                                confirmButton = {
+                                    ButtonText(
+                                        text = stringResource(R.string.button_continue),
+                                        onClick = {
+                                            viewModel.currentComboReset(context)
+                                            viewModel.setAlertDialogRecipeReset(false)
+                                        })
+                                },
+                                dismissButton = {
+                                    ButtonText(
+                                        text = stringResource(R.string.button_cancel),
+                                        onClick = { viewModel.setAlertDialogRecipeReset(false) })
+                                },
+                                text = { Text(stringResource(R.string.dialog_reset_recipe)) },
+                                title = { Text(stringResource(R.string.confirmation)) })
                         }
                     }
                     when {
@@ -445,16 +538,27 @@ fun App(
                             AlertDialog(
                                 onDismissRequest = { viewModel.setAlertDialogArchiveDelete(false) },
                                 confirmButton = {
-                                    ButtonText(text = stringResource(R.string.button_continue), onClick = {
-                                        if (uiState.indexArchiveDelete != -1) {
-                                            viewModel.archiveDeleteEntry(uiState.indexArchiveDelete, context)
-                                            navTo("archive_home")
-                                        }
-                                        viewModel.setAlertDialogArchiveDelete(false)
-                                    })
+                                    ButtonText(
+                                        text = stringResource(R.string.button_continue),
+                                        onClick = {
+                                            if (uiState.indexArchiveDelete != -1) {
+                                                viewModel.archiveDeleteEntry(
+                                                    uiState.indexArchiveDelete,
+                                                    context
+                                                )
+                                                navTo("archive_home")
+                                            }
+                                            viewModel.setAlertDialogArchiveDelete(false)
+                                        })
                                 },
                                 dismissButton = {
-                                    ButtonText(text = stringResource(R.string.button_cancel), onClick = { viewModel.setAlertDialogArchiveDelete(false) })
+                                    ButtonText(
+                                        text = stringResource(R.string.button_cancel),
+                                        onClick = {
+                                            viewModel.setAlertDialogArchiveDelete(
+                                                false
+                                            )
+                                        })
                                 },
                                 text = { Text(stringResource(R.string.dialog_archive_delete)) },
                                 title = { Text(stringResource(R.string.confirmation)) })
@@ -465,16 +569,28 @@ fun App(
                             AlertDialog(
                                 onDismissRequest = { viewModel.setAlertDialogDatabaseDelete(false) },
                                 confirmButton = {
-                                    ButtonText(text = stringResource(R.string.button_continue), onClick = {
-                                        if (uiState.indexDatabaseDelete != -1) {
-                                            viewModel.databaseDeleteEntry(uiState.indexDatabaseDelete, true, context)
-                                            navController.popBackStack()
-                                        }
-                                        viewModel.setAlertDialogDatabaseDelete(false)
-                                    })
+                                    ButtonText(
+                                        text = stringResource(R.string.button_continue),
+                                        onClick = {
+                                            if (uiState.indexDatabaseDelete != -1) {
+                                                viewModel.databaseDeleteEntry(
+                                                    uiState.indexDatabaseDelete,
+                                                    true,
+                                                    context
+                                                )
+                                                navController.popBackStack()
+                                            }
+                                            viewModel.setAlertDialogDatabaseDelete(false)
+                                        })
                                 },
                                 dismissButton = {
-                                    ButtonText(text = stringResource(R.string.button_cancel), onClick = { viewModel.setAlertDialogDatabaseDelete(false) })
+                                    ButtonText(
+                                        text = stringResource(R.string.button_cancel),
+                                        onClick = {
+                                            viewModel.setAlertDialogDatabaseDelete(
+                                                false
+                                            )
+                                        })
                                 },
                                 text = { Text(stringResource(R.string.dialog_database_delete)) },
                                 title = { Text(stringResource(R.string.confirmation)) })
@@ -488,7 +604,8 @@ fun App(
                         var archiveExpanded by remember { mutableStateOf(false) }
                         var supportExpanded by remember { mutableStateOf(false) }
 
-                        val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
+                        val sheetState =
+                            rememberModalBottomSheetState(skipPartiallyExpanded = false)
                         val listState = rememberLazyListState()
 
                         ModalBottomSheet(
@@ -503,14 +620,17 @@ fun App(
                                 modifier = Modifier
                                     .fillMaxHeight()
                                     .fillMaxWidth()
-                                    .padding(bottom = WindowInsets.navigationBars
-                                        .asPaddingValues()
-                                        .calculateBottomPadding())
+                                    .padding(
+                                        bottom = WindowInsets.navigationBars
+                                            .asPaddingValues()
+                                            .calculateBottomPadding()
+                                    )
                             ) {
                                 // --- Section: Settings (Always Visible) ---
 
                                 item {
-                                    val currentLocale = AppCompatDelegate.getApplicationLocales().toLanguageTags()
+                                    val currentLocale =
+                                        AppCompatDelegate.getApplicationLocales().toLanguageTags()
                                     val currentLanguageLabel = when {
                                         currentLocale.contains("en") -> stringResource(R.string.always_english)
                                         currentLocale.contains("de") -> stringResource(R.string.always_german)
@@ -527,31 +647,79 @@ fun App(
                                                 Box {
                                                     DropdownMenu(
                                                         expanded = languageMenuExpanded,
-                                                        onDismissRequest = { languageMenuExpanded = false },
+                                                        onDismissRequest = {
+                                                            languageMenuExpanded = false
+                                                        },
                                                         items = listOf(
-                                                            DropdownMenuItemData(stringResource(R.string.always_english)) {
-                                                                AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags("en"))
-                                                                viewModel.setDialogLanguageInfo(bool = true)
+                                                            DropdownMenuItemData(
+                                                                stringResource(R.string.always_english)
+                                                            ) {
+                                                                AppCompatDelegate.setApplicationLocales(
+                                                                    LocaleListCompat.forLanguageTags(
+                                                                        "en"
+                                                                    )
+                                                                )
+                                                                viewModel.setDialogLanguageInfo(
+                                                                    bool = true
+                                                                )
                                                             },
-                                                            DropdownMenuItemData(stringResource(R.string.always_german)) {
-                                                                AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags("de"))
-                                                                viewModel.setDialogLanguageInfo(bool = true)
+                                                            DropdownMenuItemData(
+                                                                stringResource(R.string.always_german)
+                                                            ) {
+                                                                AppCompatDelegate.setApplicationLocales(
+                                                                    LocaleListCompat.forLanguageTags(
+                                                                        "de"
+                                                                    )
+                                                                )
+                                                                viewModel.setDialogLanguageInfo(
+                                                                    bool = true
+                                                                )
                                                             },
-                                                            DropdownMenuItemData(stringResource(R.string.always_french)) {
-                                                                AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags("fr"))
-                                                                viewModel.setDialogLanguageInfo(bool = true)
+                                                            DropdownMenuItemData(
+                                                                stringResource(R.string.always_french)
+                                                            ) {
+                                                                AppCompatDelegate.setApplicationLocales(
+                                                                    LocaleListCompat.forLanguageTags(
+                                                                        "fr"
+                                                                    )
+                                                                )
+                                                                viewModel.setDialogLanguageInfo(
+                                                                    bool = true
+                                                                )
                                                             },
-                                                            DropdownMenuItemData(stringResource(R.string.always_italian)) {
-                                                                AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags("it"))
-                                                                viewModel.setDialogLanguageInfo(bool = true)
+                                                            DropdownMenuItemData(
+                                                                stringResource(R.string.always_italian)
+                                                            ) {
+                                                                AppCompatDelegate.setApplicationLocales(
+                                                                    LocaleListCompat.forLanguageTags(
+                                                                        "it"
+                                                                    )
+                                                                )
+                                                                viewModel.setDialogLanguageInfo(
+                                                                    bool = true
+                                                                )
                                                             },
-                                                            DropdownMenuItemData(stringResource(R.string.always_spanish)) {
-                                                                AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags("es"))
-                                                                viewModel.setDialogLanguageInfo(bool = true)
+                                                            DropdownMenuItemData(
+                                                                stringResource(R.string.always_spanish)
+                                                            ) {
+                                                                AppCompatDelegate.setApplicationLocales(
+                                                                    LocaleListCompat.forLanguageTags(
+                                                                        "es"
+                                                                    )
+                                                                )
+                                                                viewModel.setDialogLanguageInfo(
+                                                                    bool = true
+                                                                )
                                                             },
-                                                            DropdownMenuItemData(stringResource(R.string.system_default)) {
-                                                                AppCompatDelegate.setApplicationLocales(LocaleListCompat.getEmptyLocaleList())
-                                                                viewModel.setDialogLanguageInfo(bool = true)
+                                                            DropdownMenuItemData(
+                                                                stringResource(R.string.system_default)
+                                                            ) {
+                                                                AppCompatDelegate.setApplicationLocales(
+                                                                    LocaleListCompat.getEmptyLocaleList()
+                                                                )
+                                                                viewModel.setDialogLanguageInfo(
+                                                                    bool = true
+                                                                )
                                                             }
                                                         )
                                                     )
@@ -580,18 +748,35 @@ fun App(
                                                 Box {
                                                     DropdownMenu(
                                                         expanded = themeMenuExpanded,
-                                                        onDismissRequest = { themeMenuExpanded = false },
+                                                        onDismissRequest = {
+                                                            themeMenuExpanded = false
+                                                        },
                                                         items = listOf(
-                                                            DropdownMenuItemData(stringArrayResource(R.array.dark_mode_options)[0]) {
-                                                                viewModel.setTheme(AppTheme.MODE_AUTO, context)
+                                                            DropdownMenuItemData(
+                                                                stringArrayResource(R.array.dark_mode_options)[0]
+                                                            ) {
+                                                                viewModel.setTheme(
+                                                                    AppTheme.MODE_AUTO,
+                                                                    context
+                                                                )
                                                                 themeMenuExpanded = false
                                                             },
-                                                            DropdownMenuItemData(stringArrayResource(R.array.dark_mode_options)[1]) {
-                                                                viewModel.setTheme(AppTheme.MODE_DAY, context)
+                                                            DropdownMenuItemData(
+                                                                stringArrayResource(R.array.dark_mode_options)[1]
+                                                            ) {
+                                                                viewModel.setTheme(
+                                                                    AppTheme.MODE_DAY,
+                                                                    context
+                                                                )
                                                                 themeMenuExpanded = false
                                                             },
-                                                            DropdownMenuItemData(stringArrayResource(R.array.dark_mode_options)[2]) {
-                                                                viewModel.setTheme(AppTheme.MODE_NIGHT, context)
+                                                            DropdownMenuItemData(
+                                                                stringArrayResource(R.array.dark_mode_options)[2]
+                                                            ) {
+                                                                viewModel.setTheme(
+                                                                    AppTheme.MODE_NIGHT,
+                                                                    context
+                                                                )
                                                                 themeMenuExpanded = false
                                                             }
                                                         )
@@ -619,11 +804,17 @@ fun App(
                                             )
                                         },
                                         onClick = {
-                                            val availabilityStatus = HealthConnectClient.getSdkStatus(context)
+                                            val availabilityStatus =
+                                                HealthConnectClient.getSdkStatus(context)
                                             if (availabilityStatus == HealthConnectClient.SDK_UNAVAILABLE) {
-                                                Toast.makeText(context, "Health Connect is not available on this device", Toast.LENGTH_LONG).show()
+                                                Toast.makeText(
+                                                    context,
+                                                    "Health Connect is not available on this device",
+                                                    Toast.LENGTH_LONG
+                                                ).show()
                                             } else if (availabilityStatus == HealthConnectClient.SDK_UNAVAILABLE_PROVIDER_UPDATE_REQUIRED) {
-                                                val uriString = "market://details?id=com.google.android.apps.healthdata&url=healthconnect%3A%2F%2Fonboarding"
+                                                val uriString =
+                                                    "market://details?id=com.google.android.apps.healthdata&url=healthconnect%3A%2F%2Fonboarding"
                                                 context.startActivity(Intent(Intent.ACTION_VIEW).apply {
                                                     setPackage("com.android.vending")
                                                     data = uriString.toUri()
@@ -632,9 +823,13 @@ fun App(
                                                 })
                                             } else {
                                                 if (uiState.healthConnectPermissionsGranted) {
-                                                    viewModel.toggleHealthConnectSyncEnabled(context)
+                                                    viewModel.toggleHealthConnectSyncEnabled(
+                                                        context
+                                                    )
                                                 } else {
-                                                    viewModel.setAlertDialogHealthConnectPermissions(true)
+                                                    viewModel.setAlertDialogHealthConnectPermissions(
+                                                        true
+                                                    )
                                                 }
                                             }
                                         }
@@ -653,12 +848,16 @@ fun App(
                                 }
                                 if (databaseExpanded) {
                                     item {
-                                        OptionsItem(stringResource(R.string.dropdown_import_database) + " (*.csv)") {
+                                        OptionsItem(
+                                            stringResource(R.string.dropdown_import_database) + " (*.csv)"
+                                        ) {
                                             viewModel.setAlertDialogDatabaseImport(true)
                                         }
                                     }
                                     item {
-                                        OptionsItem(stringResource(R.string.dropdown_backup_database) + " (*.csv)") {
+                                        OptionsItem(
+                                            stringResource(R.string.dropdown_backup_database) + " (*.csv)"
+                                        ) {
                                             databaseExporter.launch("database_backup.csv")
                                         }
                                     }
@@ -681,21 +880,31 @@ fun App(
                                 }
                                 if (archiveExpanded) {
                                     item {
-                                        OptionsItem(stringResource(R.string.dropdown_import_archive) + " (*.csv)") {
+                                        OptionsItem(
+                                            stringResource(R.string.dropdown_import_archive) + " (*.csv)"
+                                        ) {
                                             viewModel.setAlertDialogArchiveImport(true)
                                         }
                                     }
                                     item {
-                                        OptionsItem(stringResource(R.string.dropdown_backup_archive) + " (*.csv)") {
+                                        OptionsItem(
+                                            stringResource(R.string.dropdown_backup_archive) + " (*.csv)"
+                                        ) {
                                             archiveExporter.launch("archive_backup.csv")
                                         }
                                     }
                                     item {
-                                        OptionsItem(stringResource(R.string.dropdown_export_archive_health_connect)) {
+                                        OptionsItem(
+                                            stringResource(R.string.dropdown_export_archive_health_connect)
+                                        ) {
                                             if (uiState.healthConnectPermissionsGranted) {
                                                 viewModel.setAlertDialogHealthConnectSync(true)
                                             } else {
-                                                Toast.makeText(context, context.getString(R.string.health_connect_permissions_missing), Toast.LENGTH_SHORT).show()
+                                                Toast.makeText(
+                                                    context,
+                                                    context.getString(R.string.health_connect_permissions_missing),
+                                                    Toast.LENGTH_SHORT
+                                                ).show()
                                             }
                                         }
                                     }
@@ -730,21 +939,30 @@ fun App(
                                     item {
                                         OptionsItem(stringResource(R.string.report_problem)) {
                                             val intent = Intent(Intent.ACTION_SENDTO).apply {
-                                                val uriString = "mailto:message.makstuff@outlook.com?subject=Minimalist Calorie Counter&body=🐈"
+                                                val uriString =
+                                                    "mailto:message.makstuff@outlook.com?subject=Minimalist Calorie Counter&body=🐈"
                                                 data = uriString.replace(" ", "%20").toUri()
                                             }
                                             try {
                                                 context.startActivity(intent)
                                             } catch (_: Exception) {
-                                                Toast.makeText(context, "No email app found", Toast.LENGTH_SHORT).show()
+                                                Toast.makeText(
+                                                    context,
+                                                    "No email app found",
+                                                    Toast.LENGTH_SHORT
+                                                ).show()
                                             }
                                         }
                                     }
                                     item {
                                         OptionsItem(stringResource(R.string.dropdown_rate)) {
                                             val appId = "com.makstuff.minimalistcaloriecounter"
-                                            val intent = Intent(Intent.ACTION_VIEW).apply { data = "market://details?id=$appId".toUri() }
-                                            try { context.startActivity(intent) } catch (_: Exception) {
+                                            val intent = Intent(Intent.ACTION_VIEW).apply {
+                                                data = "market://details?id=$appId".toUri()
+                                            }
+                                            try {
+                                                context.startActivity(intent)
+                                            } catch (_: Exception) {
                                                 uriHandler.openUri("https://play.google.com/store/apps/details?id=$appId")
                                             }
                                         }
@@ -1598,6 +1816,65 @@ fun App(
                     }
                 }}
         }
+    }
+
+    if (uiState.healthConnectSyncProgress != null) {
+        AlertDialog(
+            onDismissRequest = { },
+            properties = DialogProperties(
+                dismissOnBackPress = false,
+                dismissOnClickOutside = false
+            ),
+            title = {
+                Text(
+                    text = stringResource(R.string.please_wait),
+                    style = MaterialTheme.typography.headlineSmall
+                )
+            },
+            text = {
+                Column {
+                    Text(
+                        text = stringResource(
+                            R.string.syncing_health_connect,
+                            uiState.healthConnectSyncCurrentCount,
+                            uiState.healthConnectSyncTotalCount
+                        ),
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    Spacer(modifier = Modifier.height(24.dp))
+                    LinearProgressIndicator(
+                        progress = { uiState.healthConnectSyncProgress!! },
+                        modifier = Modifier.fillMaxWidth(),
+                        strokeCap = androidx.compose.ui.graphics.StrokeCap.Round
+                    )
+                }
+            },
+            confirmButton = {
+                if (uiState.healthConnectSyncProgress!! >= 1f) {
+                    ButtonText(
+                        text = stringResource(R.string.button_finish),
+                        onClick = { viewModel.finishHealthConnectSync() }
+                    )
+                }
+            }
+        )
+    }
+
+    if (uiState.healthConnectSyncMessage != null) {
+        AlertDialog(
+            onDismissRequest = { viewModel.dismissHealthConnectSyncError() },
+            properties = DialogProperties(
+                dismissOnClickOutside = false
+            ),
+            confirmButton = {
+                ButtonText(
+                    text = stringResource(R.string.button_understood),
+                    onClick = { viewModel.dismissHealthConnectSyncError() }
+                )
+            },
+            title = { Text(stringResource(R.string.confirmation)) },
+            text = { Text(stringResource(R.string.health_connect_sync_error, uiState.healthConnectSyncMessage ?: "")) }
+        )
     }
 }
 

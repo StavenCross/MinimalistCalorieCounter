@@ -20,6 +20,8 @@ import kotlinx.coroutines.withContext
 import java.time.LocalDate
 import java.time.ZoneId
 
+import kotlin.time.Duration.Companion.milliseconds
+
 class HealthConnectManager(private val context: Context) {
     val healthConnectClient by lazy { HealthConnectClient.getOrCreate(context) }
 
@@ -107,79 +109,125 @@ class HealthConnectManager(private val context: Context) {
     }
 
 
-    fun syncArchive(archive: Archive) {
+    suspend fun syncArchive(
+        archive: Archive,
+        onProgress: (Float?, Int, Int) -> Unit,
+        onError: (String) -> Unit
+    ) {
         if (archive.entries.isEmpty()) return
 
-        CoroutineScope(Dispatchers.IO).launch {
-            try {
-                if (!hasAllPermissions()) {
-                    withContext(Dispatchers.Main) {
-                        Toast.makeText(context, context.getString(R.string.health_connect_permissions_missing), Toast.LENGTH_SHORT).show()
-                    }
-                    return@launch
+        try {
+            if (!hasAllPermissions()) {
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(context, context.getString(R.string.health_connect_permissions_missing), Toast.LENGTH_SHORT).show()
                 }
+                return
+            }
 
-                val nutritionRecords = mutableListOf<NutritionRecord>()
-                val weightRecords = mutableListOf<WeightRecord>()
+            val totalEntries = archive.entries.size
+            var currentEntriesDone = 0
 
-                archive.entries.forEach { (date, weight, nutrients) ->
-                    val startOfDay = date.atStartOfDay(ZoneId.systemDefault()).toInstant()
-                    val endOfDay = date.atTime(23, 59, 59).atZone(ZoneId.systemDefault()).toInstant()
-                    val timeRange = TimeRangeFilter.between(startOfDay, endOfDay)
+            // Extremely conservative chunking and long delays to satisfy strict API quotas
+            val chunks = archive.entries.chunked(5)
+            val totalChunks = chunks.size
 
-                    // Delete existing records specifically for this day before inserting new ones
-                    // This prevents wiping data from other apps on days not included in the archive
-                    healthConnectClient.deleteRecords(NutritionRecord::class, timeRange)
-                    healthConnectClient.deleteRecords(WeightRecord::class, timeRange)
+            chunks.forEachIndexed { index, chunk ->
+                var success = false
+                var attempts = 0
+                val maxAttempts = 5
 
-                    // Nutrition
-                    nutritionRecords.add(
-                        NutritionRecord(
-                            startTime = startOfDay,
-                            startZoneOffset = ZoneId.systemDefault().rules.getOffset(startOfDay),
-                            endTime = endOfDay,
-                            endZoneOffset = ZoneId.systemDefault().rules.getOffset(endOfDay),
-                            energy = Energy.kilocalories(nutrients.values[0]),
-                            totalCarbohydrate = Mass.grams(nutrients.values[1] + nutrients.values[6]),
-                            sugar = Mass.grams(nutrients.values[2]),
-                            protein = Mass.grams(nutrients.values[3]),
-                            totalFat = Mass.grams(nutrients.values[4]),
-                            saturatedFat = Mass.grams(nutrients.values[5]),
-                            dietaryFiber = Mass.grams(nutrients.values[6]),
-                            mealType = 0, // MEAL_TYPE_UNKNOWN
-                            name = "Daily Total",
-                            metadata = androidx.health.connect.client.records.metadata.Metadata.manualEntry(),
-                        )
-                    )
+                while (!success && attempts < maxAttempts) {
+                    try {
+                        // Check for coroutine cancellation
+                        kotlinx.coroutines.yield()
 
-                    // Weight
-                    if (weight > 0) {
-                        weightRecords.add(
-                            WeightRecord(
-                                time = startOfDay,
-                                zoneOffset = ZoneId.systemDefault().rules.getOffset(startOfDay),
-                                weight = Mass.kilograms(weight),
-                                metadata = androidx.health.connect.client.records.metadata.Metadata.manualEntry(),
+                        val nutritionRecords = mutableListOf<NutritionRecord>()
+                        val weightRecords = mutableListOf<WeightRecord>()
+
+                        chunk.forEach { (date, weight, nutrients) ->
+                            val startOfDay = date.atStartOfDay(ZoneId.systemDefault()).toInstant()
+                            val endOfDay = date.atTime(23, 59, 59).atZone(ZoneId.systemDefault()).toInstant()
+                            val timeRange = TimeRangeFilter.between(startOfDay, endOfDay)
+
+                            // Delete existing records specifically for this day
+                            healthConnectClient.deleteRecords(NutritionRecord::class, timeRange)
+                            healthConnectClient.deleteRecords(WeightRecord::class, timeRange)
+
+                            // Nutrition
+                            nutritionRecords.add(
+                                NutritionRecord(
+                                    startTime = startOfDay,
+                                    startZoneOffset = ZoneId.systemDefault().rules.getOffset(startOfDay),
+                                    endTime = endOfDay,
+                                    endZoneOffset = ZoneId.systemDefault().rules.getOffset(endOfDay),
+                                    energy = Energy.kilocalories(nutrients.values[0]),
+                                    totalCarbohydrate = Mass.grams(nutrients.values[1] + nutrients.values[6]),
+                                    sugar = Mass.grams(nutrients.values[2]),
+                                    protein = Mass.grams(nutrients.values[3]),
+                                    totalFat = Mass.grams(nutrients.values[4]),
+                                    saturatedFat = Mass.grams(nutrients.values[5]),
+                                    dietaryFiber = Mass.grams(nutrients.values[6]),
+                                    mealType = 0,
+                                    name = "Daily Total",
+                                    metadata = androidx.health.connect.client.records.metadata.Metadata.manualEntry(),
+                                )
                             )
-                        )
+
+                            // Weight
+                            if (weight > 0) {
+                                weightRecords.add(
+                                    WeightRecord(
+                                        time = startOfDay,
+                                        zoneOffset = ZoneId.systemDefault().rules.getOffset(startOfDay),
+                                        weight = Mass.kilograms(weight),
+                                        metadata = androidx.health.connect.client.records.metadata.Metadata.manualEntry(),
+                                    )
+                                )
+                            }
+                        }
+
+                        if (nutritionRecords.isNotEmpty()) {
+                            healthConnectClient.insertRecords(nutritionRecords)
+                        }
+                        if (weightRecords.isNotEmpty()) {
+                            healthConnectClient.insertRecords(weightRecords)
+                        }
+                        
+                        success = true
+                    } catch (e: Exception) {
+                        attempts++
+                        val isQuotaError = e.message?.contains("quota exceeded", ignoreCase = true) == true
+                        if (isQuotaError && attempts < maxAttempts) {
+                            // Hit rate limit: wait 3s, 6s, 9s... then retry this specific chunk
+                            kotlinx.coroutines.delay((3000L * attempts).milliseconds)
+                        } else {
+                            // Persistent or different error: give up and report
+                            throw e
+                        }
                     }
                 }
 
-                if (nutritionRecords.isNotEmpty()) {
-                    healthConnectClient.insertRecords(nutritionRecords)
-                }
-                if (weightRecords.isNotEmpty()) {
-                    healthConnectClient.insertRecords(weightRecords)
-                }
-                
+                currentEntriesDone += chunk.size
                 withContext(Dispatchers.Main) {
-                    Toast.makeText(context, context.getString(R.string.toast_hc_full_archive_synced), Toast.LENGTH_SHORT).show()
+                    onProgress((index + 1).toFloat() / totalChunks, currentEntriesDone, totalEntries)
                 }
-            } catch (e: Exception) {
-                withContext(Dispatchers.Main) {
-                    Toast.makeText(context, "Health Connect Error: ${e.message}", Toast.LENGTH_LONG).show()
-                }
+
+                // Standard delay between successful chunks
+                kotlinx.coroutines.delay(1000.milliseconds)
+            }
+
+            withContext(Dispatchers.Main) {
+                onProgress(1.0f, totalEntries, totalEntries)
+                Toast.makeText(context, context.getString(R.string.toast_hc_full_archive_synced), Toast.LENGTH_SHORT).show()
+            }
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            withContext(Dispatchers.Main) {
+                onError(e.message ?: "Unknown Error")
             }
         }
     }
+
+
 }

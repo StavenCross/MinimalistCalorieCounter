@@ -72,21 +72,50 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         optionsWriteToFile(context)
     }
 
+    private var healthConnectSyncJob: kotlinx.coroutines.Job? = null
+
     fun syncHealthConnect() {
-        viewModelScope.launch {
+        healthConnectSyncJob?.cancel()
+        healthConnectSyncJob = viewModelScope.launch {
             if (healthConnectManager.hasAllPermissions()) {
-                healthConnectManager.syncArchive(uiState.value.archive)
+                healthConnectManager.syncArchive(
+                    archive = uiState.value.archive,
+                    onProgress = { progress, current, total ->
+                        _uiState.update { it.copy(
+                            healthConnectSyncProgress = progress,
+                            healthConnectSyncCurrentCount = current,
+                            healthConnectSyncTotalCount = total
+                        ) }
+                    },
+                    onError = { error ->
+                        _uiState.update { it.copy(healthConnectSyncMessage = error) }
+                    }
+                )
             } else {
                 Toast.makeText(getApplication<Application>().applicationContext, getApplication<Application>().getString(R.string.health_connect_permissions_missing), Toast.LENGTH_SHORT).show()
             }
         }
     }
 
+    fun cancelHealthConnectSync() {
+        healthConnectSyncJob?.cancel()
+        healthConnectSyncJob = null
+        _uiState.update { it.copy(healthConnectSyncProgress = null, healthConnectSyncMessage = null) }
+    }
+
+    fun finishHealthConnectSync() {
+        _uiState.update { it.copy(healthConnectSyncProgress = null) }
+    }
+
+    fun dismissHealthConnectSyncError() {
+        _uiState.update { it.copy(healthConnectSyncProgress = null, healthConnectSyncMessage = null) }
+    }
+
 
     fun setAlertDialogHealthConnectActivation(bool: Boolean){
         _uiState.update { currentState ->
             currentState.copy(
-                alertDialogHealthConnectActivation = bool
+                alertDialogHealthConnectActivation = bool,
             )
         }
     }
@@ -130,9 +159,9 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         DatabaseEntry.checkName(uiState.value.inputDatabaseEntryCreateName, context)
         
         databaseAddEntry(
-            context,
-            true,
-            DatabaseEntry(
+            context = context,
+            updateDependencies = true,
+            databaseEntry = DatabaseEntry(
                 name = uiState.value.inputDatabaseEntryCreateName,
                 nutrients = Nutrients.fromStrings(uiState.value.inputDatabaseEntryCreateNutrients,context = context),
                 customWeights = CustomWeights(uiState.value.inputDatabaseEntryCreateCustomWeights,context = context),

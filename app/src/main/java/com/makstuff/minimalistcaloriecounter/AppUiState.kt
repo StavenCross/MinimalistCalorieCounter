@@ -99,6 +99,10 @@ data class AppUiState(
     val healthConnectPermissionsGranted: Boolean = false,
     val healthConnectAnyPermissionsGranted: Boolean = false,
     val healthConnectSyncEnabled: Boolean = false,
+    val healthConnectSyncProgress: Float? = null,
+    val healthConnectSyncCurrentCount: Int = 0,
+    val healthConnectSyncTotalCount: Int = 0,
+    val healthConnectSyncMessage: String? = null,
     val loading: Boolean = true,
 
     val alertDialogArchiveReset: Boolean = false,

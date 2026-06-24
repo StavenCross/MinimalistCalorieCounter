@@ -17,6 +17,7 @@
     <string name="button_clear_recipe">Restablecer</string>
 
     <string name="button_continue">Continuar</string>
+    <string name="button_finish">Finalizar</string>
     <string name="button_create">Crear</string>
     <string name="button_create_entry_manually">Crear entrada de archivo manualmente</string>
     <string name="button_create_new_archive_entry">Crear</string>
@@ -143,6 +144,9 @@
     <string name="toast_hc_entry_edited">Entrada de archivo editada en Health Connect</string>
     <string name="toast_hc_entry_deleted">Entrada de archivo eliminada de Health Connect</string>
     <string name="toast_hc_full_archive_synced">Archivo completo sincronizado con Health Connect</string>
+    <string name="health_connect_sync_error">Se produjo un error durante la sincronización de Health Connect: %1$s</string>
+    <string name="syncing_health_connect">Debido al límite de velocidad de la API de Health Connect, la sincronización puede tardar bastante para archivos grandes. (%1$d/%2$d completado)</string>
+    <string name="please_wait">Por favor, espere</string>
     <string name="error_archive_date_exists">Para esta fecha, ya existe una entrada de archivo.</string>
     <string name="error_archive_date_future">Las entradas de archivo no pueden estar en el futuro.</string>
 </resources>
