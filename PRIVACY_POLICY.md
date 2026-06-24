@@ -4,14 +4,13 @@
 
 ### Health Connect Integration
 
-Our app offers optional integration with Google Health Connect to help you manage your health data across the Android ecosystem.
+Our app offers optional integration with Google Health Connect to help you share your health data across the Android ecosystem.
 
 **Data Access and Usage:**
-If you choose to enable this integration, Minimalist Calorie Counter may read and write data related to **Nutrition** (energy and macronutrients) and **Body Weight**.
+If you choose to enable this integration, Minimalist Calorie Counter will write data related to **Nutrition** (energy and macronutrients) and **Body Weight** to Health Connect. Our app does not read any data from Health Connect.
 
 **Purpose of Data Processing:**
 *   **Data Export & Synchronization:** We share your recorded energy intake, nutrients, and body weight with Health Connect so that your progress is available to other health and fitness apps you trust, ensuring a unified view of your health journey.
-*   **Data Import & Recovery:** We provide the ability to import data from Health Connect to restore your internal application archive. This acts as a safeguard, allowing you to recover your history in the event of accidental data loss or when transitioning to a new device.
 
 **Privacy and Security Standards:**
 *   **Limited Use Disclosure:** The use of information received from Health Connect will adhere to the [Health Connect Permissions Policy](https://support.google.com/googleplay/android-developer/answer/9888170), including the **Limited Use** requirements.

@@ -346,18 +346,6 @@ fun App(
                                 title = {Text(stringResource(R.string.confirmation))})
                         }}
                     when {
-                        uiState.alertDialogHealthConnectRestore -> {
-                            AlertDialog(
-                                onDismissRequest = {viewModel.setAlertDialogHealthConnectRestore(false)},
-                                confirmButton = { ButtonText(text = stringResource(R.string.button_continue),onClick= {
-                                    viewModel.restoreArchiveFromHealthConnect(context)
-                                    viewModel.setAlertDialogHealthConnectRestore(false)
-                                })},
-                                dismissButton = { ButtonText(text = stringResource(R.string.button_cancel), onClick= {viewModel.setAlertDialogHealthConnectRestore(false)})},
-                                text = { Text(stringResource(R.string.dialog_health_connect_restore))},
-                                title = {Text(stringResource(R.string.confirmation))})
-                        }}
-                    when {
                         uiState.alertDialogHealthConnectSync -> {
                             AlertDialog(
                                 onDismissRequest = {viewModel.setAlertDialogHealthConnectSync(false)},
@@ -622,10 +610,11 @@ fun App(
 
                                 item {
                                     OptionsItem(
-                                        text = stringResource(R.string.health_connect_permissions),
+                                        text = stringResource(R.string.dropdown_sync_health_connect),
                                         trailingContent = {
                                             Switch(
-                                                checked = uiState.healthConnectPermissionsGranted,
+                                                checked = uiState.healthConnectSyncEnabled && uiState.healthConnectPermissionsGranted,
+                                                enabled = uiState.healthConnectPermissionsGranted,
                                                 onCheckedChange = null // Click handled by OptionsItem
                                             )
                                         },
@@ -643,38 +632,10 @@ fun App(
                                                 })
                                             } else {
                                                 if (uiState.healthConnectPermissionsGranted) {
-                                                    // Deactivating: Take user to standard Health Connect settings
-                                                    try {
-                                                        context.startActivity(Intent(HealthConnectClient.ACTION_HEALTH_CONNECT_SETTINGS))
-                                                    } catch (_: Exception) {
-                                                        Toast.makeText(context, "Could not open Health Connect settings", Toast.LENGTH_SHORT).show()
-                                                    }
+                                                    viewModel.toggleHealthConnectSyncEnabled(context)
                                                 } else {
-                                                    // Prominent Disclosure: Show info dialog before the system prompt
                                                     viewModel.setAlertDialogHealthConnectPermissions(true)
-                                                    // The actual launcher will be triggered by the "Understood" button
-                                                    // OR you can keep it simple and launch it after they acknowledge.
                                                 }
-                                            }
-                                        }
-                                    )
-                                }
-
-                                item {
-                                    OptionsItem(
-                                        text = stringResource(R.string.dropdown_sync_health_connect),
-                                        trailingContent = {
-                                            Switch(
-                                                checked = uiState.healthConnectSyncEnabled && uiState.healthConnectPermissionsGranted,
-                                                enabled = uiState.healthConnectPermissionsGranted,
-                                                onCheckedChange = null // Click handled by OptionsItem
-                                            )
-                                        },
-                                        onClick = {
-                                            if (uiState.healthConnectPermissionsGranted) {
-                                                viewModel.toggleHealthConnectSyncEnabled(context)
-                                            } else {
-                                                Toast.makeText(context, context.getString(R.string.health_connect_permissions_missing), Toast.LENGTH_SHORT).show()
                                             }
                                         }
                                     )
@@ -722,15 +683,6 @@ fun App(
                                     item {
                                         OptionsItem(stringResource(R.string.dropdown_import_archive) + " (*.csv)") {
                                             viewModel.setAlertDialogArchiveImport(true)
-                                        }
-                                    }
-                                    item {
-                                        OptionsItem(stringResource(R.string.dropdown_import_archive_health_connect)) {
-                                            if (uiState.healthConnectPermissionsGranted) {
-                                                viewModel.setAlertDialogHealthConnectRestore(true)
-                                            } else {
-                                                Toast.makeText(context, context.getString(R.string.health_connect_permissions_missing), Toast.LENGTH_SHORT).show()
-                                            }
                                         }
                                     }
                                     item {

@@ -6,7 +6,6 @@ import androidx.health.connect.client.HealthConnectClient
 import androidx.health.connect.client.permission.HealthPermission
 import androidx.health.connect.client.records.NutritionRecord
 import androidx.health.connect.client.records.WeightRecord
-import androidx.health.connect.client.request.ReadRecordsRequest
 import androidx.health.connect.client.time.TimeRangeFilter
 import androidx.health.connect.client.units.Energy
 import androidx.health.connect.client.units.Mass
@@ -20,15 +19,12 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.time.LocalDate
 import java.time.ZoneId
-import java.time.ZonedDateTime
 
 class HealthConnectManager(private val context: Context) {
     val healthConnectClient by lazy { HealthConnectClient.getOrCreate(context) }
 
     val permissions = setOf(
-        HealthPermission.getReadPermission(NutritionRecord::class),
         HealthPermission.getWritePermission(NutritionRecord::class),
-        HealthPermission.getReadPermission(WeightRecord::class),
         HealthPermission.getWritePermission(WeightRecord::class),
     )
 
@@ -110,67 +106,6 @@ class HealthConnectManager(private val context: Context) {
         }
     }
 
-    suspend fun readArchiveFromHealthConnect(): List<Triple<LocalDate, Double, Nutrients>> {
-        val result = mutableListOf<Triple<LocalDate, Double, Nutrients>>()
-        try {
-            if (!hasAllPermissions()) return emptyList()
-
-            val startTime = ZonedDateTime.of(2000, 1, 1, 0, 0, 0, 0, ZoneId.systemDefault()).toInstant()
-            val endTime = ZonedDateTime.now().plusDays(1).toInstant()
-            val timeRange = TimeRangeFilter.between(startTime, endTime)
-
-            val nutritionRecords = healthConnectClient.readRecords(
-                ReadRecordsRequest(NutritionRecord::class, timeRange)
-            ).records
-
-            val weightRecords = healthConnectClient.readRecords(
-                ReadRecordsRequest(WeightRecord::class, timeRange)
-            ).records
-
-            // Group by date
-            val dataByDate = mutableMapOf<LocalDate, Pair<Double, MutableList<Double>>>()
-
-            nutritionRecords.forEach { record ->
-                val date = record.startTime.atZone(ZoneId.systemDefault()).toLocalDate()
-                val nutrients = dataByDate.getOrPut(date) { Pair(0.0, MutableList(8) { 0.0 }) }
-                
-                nutrients.second[0] += record.energy?.inKilocalories ?: 0.0
-                // Revert fiber carbs addition: App Carbs = HC Total Carbs - HC Fiber
-                val hcTotalCarbs = record.totalCarbohydrate?.inGrams ?: 0.0
-                val hcFiber = record.dietaryFiber?.inGrams ?: 0.0
-                val hcSugar = record.sugar?.inGrams ?: 0.0
-                // Ensure App Carbs >= App Sugar to pass validation
-                nutrients.second[1] += (hcTotalCarbs - hcFiber).coerceAtLeast(hcSugar)
-                nutrients.second[2] += hcSugar
-                nutrients.second[3] += record.protein?.inGrams ?: 0.0
-                
-                val hcTotalFat = record.totalFat?.inGrams ?: 0.0
-                val hcSaturatedFat = record.saturatedFat?.inGrams ?: 0.0
-                // Ensure App Fat >= App Saturated Fat to pass validation
-                nutrients.second[4] += hcTotalFat.coerceAtLeast(hcSaturatedFat)
-                nutrients.second[5] += hcSaturatedFat
-
-                nutrients.second[6] += hcFiber
-                nutrients.second[7] = 0.0 // Cost set to zero
-            }
-
-            weightRecords.forEach { record ->
-                val date = record.time.atZone(ZoneId.systemDefault()).toLocalDate()
-                val current = dataByDate.getOrPut(date) { Pair(0.0, MutableList(8) { 0.0 }) }
-                dataByDate[date] = Pair(record.weight.inKilograms, current.second)
-            }
-
-            dataByDate.forEach { (date, pair) ->
-                result.add(Triple(date, pair.first, Nutrients(pair.second.toMutableStateList(), context)))
-            }
-
-        } catch (e: Exception) {
-            withContext(Dispatchers.Main) {
-                Toast.makeText(context, "Health Connect Restore Error: ${e.message}", Toast.LENGTH_LONG).show()
-            }
-        }
-        return result.sortedByDescending { it.first }
-    }
 
     fun syncArchive(archive: Archive) {
         if (archive.entries.isEmpty()) return

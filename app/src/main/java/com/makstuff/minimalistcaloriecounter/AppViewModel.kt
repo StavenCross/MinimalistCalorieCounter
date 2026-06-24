@@ -82,27 +82,6 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    fun restoreArchiveFromHealthConnect(context: Context) {
-        viewModelScope.launch {
-            if (healthConnectManager.hasAllPermissions()) {
-                val hcData = healthConnectManager.readArchiveFromHealthConnect()
-                if (hcData.isNotEmpty()) {
-                    _uiState.update { currentState ->
-                        val newArchive = currentState.archive.copy(entries = hcData.toMutableStateList())
-                        newArchive.updateAverageNutrients()
-                        newArchive.sortByDate()
-                        currentState.copy(archive = newArchive)
-                    }
-                    archiveWriteToCSV(context)
-                    Toast.makeText(context, context.getString(R.string.toast_hc_full_archive_restored), Toast.LENGTH_SHORT).show()
-                } else {
-                    Toast.makeText(context, "No data found in Health Connect", Toast.LENGTH_SHORT).show()
-                }
-            } else {
-                Toast.makeText(context, context.getString(R.string.health_connect_permissions_missing), Toast.LENGTH_SHORT).show()
-            }
-        }
-    }
 
     fun setAlertDialogHealthConnectActivation(bool: Boolean){
         _uiState.update { currentState ->
@@ -135,6 +114,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             )
         }
     }
+
 
     fun setTheme(theme: AppTheme, context: Context) {
         _uiState.update { currentState ->
@@ -573,13 +553,6 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    fun setAlertDialogHealthConnectRestore(bool: Boolean){
-        _uiState.update { currentState ->
-            currentState.copy(
-                alertDialogHealthConnectRestore = bool
-            )
-        }
-    }
 
     fun setAlertDialogHealthConnectSync(bool: Boolean){
         _uiState.update { currentState ->
@@ -797,6 +770,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                         }
                     }
                 }
+
             }
         } catch (_: Exception) {
             // Fallback to default if file is old or corrupted

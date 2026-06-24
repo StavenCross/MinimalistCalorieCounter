@@ -47,8 +47,7 @@
     <string name="dialog_archive_import">L\'importation d\'un fichier d\'archive remplace l\'ancien fichier dans tous les cas, même si le nouveau n\'est pas valide.</string>
     <string name="confirmation">Confirmation</string>
     <string name="dialog_database_import">L\'importation d\'un fichier de base de données remplace l\'ancien fichier dans tous les cas, même si le nouveau n\'est pas valide.</string>
-    <string name="dialog_health_connect_restore">L\'importation depuis Health Connect remplacera l\'intégralité de votre archive actuelle. Notez que le coût ne faisant pas partie de Health Connect, il sera mis à zéro pour toutes les entrées.</string>
-    <string name="dialog_health_connect_sync">Cela synchronisera vos entrées d\'archive actuelles avec Health Connect, en écrasant toutes les entrées existantes pour ces jours spécifiques. Les autres jours déjà présents dans Health Connect ne seront pas affectés.</string>
+    <string name="dialog_health_connect_sync">Cela synchronisera vos entrées d\'archive actuelles avec Health Connect, en écrasant toutes les entrées existantes dans Health Connect pour ces jours spécifiques. Les autres jours déjà présents dans Health Connect ne seront pas affectés.</string>
     <string name="dialog_database_reset">Vous êtes sur le point de réinitialiser votre base de données à l\'état d\'usine. Toutes les entrées ajoutées seront définitivement perdues.</string>
 
     <string name="dialog_language">Si vous souhaitez également changer la langue de la base de données, vous pouvez maintenant réinitialiser la base de données en utilisant l\'option « %1$s ». Notez que cela chargera la base de données par défaut dans la langue actuelle, et toutes les entrées que vous avez ajoutées dans la langue précédente seront définitivement perdues.</string>
@@ -135,18 +134,15 @@
     <string name="dialog_database_delete">Êtes-vous sûr de vouloir supprimer cette entrée de la base de données ?</string>
     <string name="health_connect_permissions_missing">Autorisations Health Connect manquantes.</string>
     <string name="dropdown_sync_health_connect">Synchronisation auto Health Connect</string>
-    <string name="health_connect_permissions">Autorisations Health Connect</string>
     <string name="dropdown_export_archive_health_connect">Exporter Archive (Health Connect)</string>
-    <string name="dropdown_import_archive_health_connect">Importer Archive (Health Connect)</string>
     <string name="information">Information</string>
     <string name="privacy_policy">Politique de confidentialité</string>
     <string name="dialog_health_connect_activation">La synchronisation auto Health Connect est désormais active. Les futures entrées d\'archive seront synchronisées automatiquement. Pour synchroniser les entrées d\'archive existantes, veuillez utiliser « Exporter Archive (Health Connect) ».</string>
-    <string name="dialog_health_connect_disclosure">Minimalist Calorie Counter utilise Health Connect pour synchroniser vos données de nutrition et de poids avec d\'autres applications de santé et pour fournir une sauvegarde de votre historique. Pour une fonctionnalité complète, veuillez accorder TOUTES les autorisations demandées sur l\'écran suivant. Vos données restent sur votre appareil et ne sont jamais partagées avec des tiers.</string>
+    <string name="dialog_health_connect_disclosure">Minimalist Calorie Counter utilise Health Connect pour partager vos données de nutrition et de poids avec d\'autres applications de santé. Pour une fonctionnalité complète, veuillez accorder TOUTES les autorisations demandées sur l\'écran suivant. Vos données restent sur votre appareil et ne sont jamais partagées avec des tiers.</string>
     <string name="toast_hc_entry_added">Entrée d\'archive ajoutée à Health Connect</string>
     <string name="toast_hc_entry_edited">Entrée d\'archive modifiée dans Health Connect</string>
     <string name="toast_hc_entry_deleted">Entrée d\'archive supprimée de Health Connect</string>
     <string name="toast_hc_full_archive_synced">Archive complète synchronisée avec Health Connect</string>
-    <string name="toast_hc_full_archive_restored">Archive complète restaurée depuis Health Connect</string>
     <string name="error_archive_date_exists">Pour cette date, une entrée d\'archive existe déjà.</string>
     <string name="error_archive_date_future">Les entrées d\'archive ne peuvent pas être dans le futur.</string>
 </resources>

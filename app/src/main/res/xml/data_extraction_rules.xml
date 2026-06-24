@@ -5,15 +5,15 @@
 -->
 <data-extraction-rules>
     <cloud-backup>
-        <!-- TODO: Use <include> and <exclude> to control what is backed up.
-        <include .../>
-        <exclude .../>
-        -->
+        <include domain="external" path="archive.csv"/>
+        <include domain="external" path="database.csv"/>
+        <include domain="external" path="day.csv"/>
+        <include domain="external" path="currentrecipe.csv"/>
     </cloud-backup>
-    <!--
     <device-transfer>
-        <include .../>
-        <exclude .../>
+        <include domain="external" path="archive.csv"/>
+        <include domain="external" path="database.csv"/>
+        <include domain="external" path="day.csv"/>
+        <include domain="external" path="currentrecipe.csv"/>
     </device-transfer>
-    -->
 </data-extraction-rules>

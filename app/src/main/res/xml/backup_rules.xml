@@ -6,8 +6,8 @@
    See https://developer.android.com/about/versions/12/backup-restore
 -->
 <full-backup-content>
-    <!--
-   <include domain="sharedpref" path="."/>
-   <exclude domain="sharedpref" path="device.xml"/>
--->
+    <include domain="external" path="archive.csv"/>
+    <include domain="external" path="database.csv"/>
+    <include domain="external" path="day.csv"/>
+    <include domain="external" path="currentrecipe.csv"/>
 </full-backup-content>

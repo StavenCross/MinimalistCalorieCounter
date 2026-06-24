@@ -11,8 +11,8 @@ android {
         applicationId = "com.makstuff.minimalistcaloriecounter"
         minSdk = 27
         targetSdk = 37
-        versionCode = 22
-        versionName = "5.0"
+        versionCode = 24
+        versionName = "5.2"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -68,6 +68,7 @@ dependencies {
     implementation("androidx.appcompat:appcompat:1.7.1")
     implementation("com.google.android.play:review-ktx:2.0.2")
     implementation("androidx.health.connect:connect-client:1.1.0")
+    implementation("androidx.work:work-runtime-ktx:2.11.2")
 }
 java {
     toolchain {

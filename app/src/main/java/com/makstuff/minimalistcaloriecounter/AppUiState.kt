@@ -105,7 +105,6 @@ data class AppUiState(
     val alertDialogDatabaseReset: Boolean = false,
     val alertDialogArchiveImport: Boolean = false,
     val alertDialogDatabaseImport: Boolean = false,
-    val alertDialogHealthConnectRestore: Boolean = false,
     val alertDialogHealthConnectSync: Boolean = false,
     val alertDialogHealthConnectActivation: Boolean = false,
     val alertDialogHealthConnectPermissions: Boolean = false,

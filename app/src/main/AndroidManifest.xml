@@ -2,15 +2,11 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <uses-permission android:name="android.permission.health.READ_NUTRITION" />
     <uses-permission android:name="android.permission.health.WRITE_NUTRITION" />
-    <uses-permission android:name="android.permission.health.READ_WEIGHT" />
     <uses-permission android:name="android.permission.health.WRITE_WEIGHT" />
 
     <!-- For backward compatibility with older Health Connect APK versions -->
-    <uses-permission android:name="androidx.health.permission.nutrition.READ" />
     <uses-permission android:name="androidx.health.permission.nutrition.WRITE" />
-    <uses-permission android:name="androidx.health.permission.weight.READ" />
     <uses-permission android:name="androidx.health.permission.weight.WRITE" />
 
     <queries>

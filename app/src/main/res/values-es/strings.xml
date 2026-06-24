@@ -47,8 +47,7 @@
     <string name="dialog_archive_import">Importar un archivo de archivo sobrescribe el archivo antiguo en cualquier caso, incluso si el nuevo archivo no es válido.</string>
     <string name="confirmation">Confirmación</string>
     <string name="dialog_database_import">Importar un archivo de base de datos sobrescribe el archivo antiguo en cualquier caso, incluso si el nuevo archivo no es válido.</string>
-    <string name="dialog_health_connect_restore">Importar desde Health Connect sobrescribirá todo tu archivo actual. Ten en cuenta que, dado que el costo no forma parte de Health Connect, se establecerá en cero para todas las entradas.</string>
-    <string name="dialog_health_connect_sync">Esto sincronizará tus entradas de archivo actuales con Health Connect, sobrescribiendo cualquier entrada existente para esos días específicos. Otros días que ya estén en Health Connect no se verán afectados.</string>
+    <string name="dialog_health_connect_sync">Esto sincronizará tus entradas de archivo actuales con Health Connect, sobrescribiendo cualquier entrada existente en Health Connect para esos días específicos. Otros días que ya estén en Health Connect no se verán afectados.</string>
     <string name="dialog_database_reset">Estás a punto de restablecer tu base de datos al estado de fábrica. Todas las entradas añadidas se perderán permanentemente.</string>
 
     <string name="dialog_language">Si también desea cambiar el idioma de la base de datos, ahora puede restablecer la base de datos utilizando la opción \"%1$s\". Tenga en cuenta que esto cargará la base de datos predeterminada en el idioma actual, y todas las entradas que añadió en el idioma anterior se perderán permanentemente.</string>
@@ -135,18 +134,15 @@
     <string name="dialog_database_delete">¿Estás seguro de que quieres eliminar esta entrada de la base de datos?</string>
     <string name="health_connect_permissions_missing">Faltan permisos de Health Connect.</string>
     <string name="dropdown_sync_health_connect">Sincronización automática de Health Connect</string>
-    <string name="health_connect_permissions">Permisos de Health Connect</string>
     <string name="dropdown_export_archive_health_connect">Exportar Archivo (Health Connect)</string>
-    <string name="dropdown_import_archive_health_connect">Importar Archivo (Health Connect)</string>
     <string name="information">Información</string>
     <string name="privacy_policy">Política de privacidad</string>
     <string name="dialog_health_connect_activation">La sincronización automática de Health Connect ahora está activa. Las futuras entradas de archivo se sincronizarán automáticamente. Para sincronizar las entradas de archivo existentes, use \"Exportar Archivo (Health Connect)\".</string>
-    <string name="dialog_health_connect_disclosure">Contador de Calorías Minimalista utiliza Health Connect para sincronizar sus datos de nutrición y peso con otras aplicaciones de salud y para proporcionar una copia de seguridad de su historial. Para una funcionalidad completa, conceda TODOS los permisos solicitados en la siguiente pantalla. Sus datos permanecen en su dispositivo y nunca se comparten con terceros.</string>
+    <string name="dialog_health_connect_disclosure">Contador de Calorías Minimalista utiliza Health Connect para compartir sus datos de nutrición y peso con otras aplicaciones de salud. Para una funcionalidad completa, conceda TODOS los permisos solicitados en la siguiente pantalla. Sus datos permanecen en su dispositivo y nunca se comparten con terceros.</string>
     <string name="toast_hc_entry_added">Entrada de archivo añadida a Health Connect</string>
     <string name="toast_hc_entry_edited">Entrada de archivo editada en Health Connect</string>
     <string name="toast_hc_entry_deleted">Entrada de archivo eliminada de Health Connect</string>
     <string name="toast_hc_full_archive_synced">Archivo completo sincronizado con Health Connect</string>
-    <string name="toast_hc_full_archive_restored">Archivo completo restaurado desde Health Connect</string>
     <string name="error_archive_date_exists">Para esta fecha, ya existe una entrada de archivo.</string>
     <string name="error_archive_date_future">Las entradas de archivo no pueden estar en el futuro.</string>
 </resources>
