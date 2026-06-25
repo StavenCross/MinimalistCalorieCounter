@@ -116,6 +116,8 @@ import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.delay
 import java.io.File
 import java.time.LocalDateTime
+import android.view.WindowManager
+import androidx.compose.runtime.DisposableEffect
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -404,8 +406,8 @@ fun App(
                                 },
                                 text = { Text(stringResource(R.string.dialog_health_connect_sync)) },
                                 title = { Text(stringResource(R.string.confirmation)) })
-                            }
                         }
+                    }
                     when {
                         uiState.alertDialogHealthConnectPermissions -> {
                             AlertDialog(
@@ -452,7 +454,8 @@ fun App(
                             AlertDialog(
                                 onDismissRequest = { viewModel.setAlertDialogHealthConnectActivation(false) },
                                 properties = DialogProperties(
-                                    dismissOnClickOutside = false
+                                    dismissOnClickOutside = false,
+                                    dismissOnBackPress = false
                                 ),
                                 confirmButton = {
                                     ButtonText(
@@ -462,6 +465,25 @@ fun App(
                                         })
                                 },
                                 text = { Text(stringResource(R.string.dialog_health_connect_activation)) },
+                                title = { Text(stringResource(R.string.information)) })
+                        }
+                    }
+                    when {
+                        uiState.alertDialogHealthConnectToasts -> {
+                            AlertDialog(
+                                onDismissRequest = { viewModel.setAlertDialogHealthConnectToasts(false) },
+                                properties = DialogProperties(
+                                    dismissOnClickOutside = false,
+                                    dismissOnBackPress = false
+                                ),
+                                confirmButton = {
+                                    ButtonText(
+                                        text = stringResource(R.string.button_understood),
+                                        onClick = {
+                                            viewModel.setAlertDialogHealthConnectToasts(false)
+                                        })
+                                },
+                                text = { Text(stringResource(R.string.dialog_health_connect_toasts)) },
                                 title = { Text(stringResource(R.string.information)) })
                         }
                     }
@@ -600,8 +622,9 @@ fun App(
                     if (uiState.optionsSheetVisible) {
                         var languageMenuExpanded by remember { mutableStateOf(false) }
                         var themeMenuExpanded by remember { mutableStateOf(false) }
-                        var databaseExpanded by remember { mutableStateOf(false) }
+                        var healthConnectExpanded by remember { mutableStateOf(false) }
                         var archiveExpanded by remember { mutableStateOf(false) }
+                        var databaseExpanded by remember { mutableStateOf(false) }
                         var supportExpanded by remember { mutableStateOf(false) }
 
                         val sheetState =
@@ -793,19 +816,19 @@ fun App(
                                     )
                                 }
 
+                                item { HorizontalDivider(Modifier.padding(vertical = 8.dp)) }
+
+                                // --- Section: Health Connect ---
                                 item {
-                                    OptionsItem(
-                                        text = stringResource(R.string.dropdown_sync_health_connect),
-                                        trailingContent = {
-                                            Switch(
-                                                checked = uiState.healthConnectSyncEnabled && uiState.healthConnectPermissionsGranted,
-                                                enabled = uiState.healthConnectPermissionsGranted,
-                                                onCheckedChange = null // Click handled by OptionsItem
-                                            )
-                                        },
-                                        onClick = {
-                                            val availabilityStatus =
-                                                HealthConnectClient.getSdkStatus(context)
+                                    OptionsSectionHeader(
+                                        text = stringResource(R.string.health_connect),
+                                        isExpanded = healthConnectExpanded,
+                                        onToggle = { healthConnectExpanded = !healthConnectExpanded }
+                                    )
+                                    if (healthConnectExpanded) {
+                                        val availabilityStatus = HealthConnectClient.getSdkStatus(context)
+
+                                        fun handleHCInteraction(onSuccess: () -> Unit) {
                                             if (availabilityStatus == HealthConnectClient.SDK_UNAVAILABLE) {
                                                 Toast.makeText(
                                                     context,
@@ -823,9 +846,7 @@ fun App(
                                                 })
                                             } else {
                                                 if (uiState.healthConnectPermissionsGranted) {
-                                                    viewModel.toggleHealthConnectSyncEnabled(
-                                                        context
-                                                    )
+                                                    onSuccess()
                                                 } else {
                                                     viewModel.setAlertDialogHealthConnectPermissions(
                                                         true
@@ -833,7 +854,78 @@ fun App(
                                                 }
                                             }
                                         }
+
+                                        OptionsItem(
+                                            text = stringResource(R.string.dropdown_sync_health_connect),
+                                            trailingContent = {
+                                                Switch(
+                                                    checked = uiState.healthConnectSyncEnabled && uiState.healthConnectPermissionsGranted,
+                                                    enabled = uiState.healthConnectPermissionsGranted,
+                                                    onCheckedChange = null // Click handled by OptionsItem
+                                                )
+                                            },
+                                            onClick = {
+                                                handleHCInteraction {
+                                                    viewModel.toggleHealthConnectSyncEnabled(context)
+                                                }
+                                            }
+                                        )
+                                        OptionsItem(
+                                            text = stringResource(R.string.health_connect_notifications),
+                                            trailingContent = {
+                                                Switch(
+                                                    checked = uiState.healthConnectToastsEnabled && uiState.healthConnectPermissionsGranted,
+                                                    enabled = uiState.healthConnectPermissionsGranted,
+                                                    onCheckedChange = null // Click handled by OptionsItem
+                                                )
+                                            },
+                                            onClick = {
+                                                handleHCInteraction {
+                                                    viewModel.toggleHealthConnectToastsEnabled(context)
+                                                }
+                                            }
+                                        )
+                                        OptionsItem(
+                                            text = stringResource(R.string.dropdown_export_archive_health_connect),
+                                            onClick = {
+                                                handleHCInteraction {
+                                                    viewModel.setAlertDialogHealthConnectSync(true)
+                                                }
+                                            }
+                                        )
+                                    }
+                                }
+
+                                item { HorizontalDivider(Modifier.padding(vertical = 8.dp)) }
+
+                                // --- Section: Archive ---
+                                item {
+                                    OptionsSectionHeader(
+                                        text = stringResource(R.string.archive),
+                                        isExpanded = archiveExpanded,
+                                        onToggle = { archiveExpanded = !archiveExpanded }
                                     )
+                                }
+                                if (archiveExpanded) {
+                                    item {
+                                        OptionsItem(
+                                            stringResource(R.string.dropdown_import_archive) + " (*.csv)"
+                                        ) {
+                                            viewModel.setAlertDialogArchiveImport(true)
+                                        }
+                                    }
+                                    item {
+                                        OptionsItem(
+                                            stringResource(R.string.dropdown_backup_archive) + " (*.csv)"
+                                        ) {
+                                            archiveExporter.launch("archive_backup.csv")
+                                        }
+                                    }
+                                    item {
+                                        OptionsItem(stringResource(R.string.dropdown_clear_archive)) {
+                                            viewModel.setAlertDialogArchiveReset(true)
+                                        }
+                                    }
                                 }
 
                                 item { HorizontalDivider(Modifier.padding(vertical = 8.dp)) }
@@ -864,53 +956,6 @@ fun App(
                                     item {
                                         OptionsItem(stringResource(R.string.dropdown_reset_database)) {
                                             viewModel.setAlertDialogDatabaseReset(true)
-                                        }
-                                    }
-                                }
-
-                                item { HorizontalDivider(Modifier.padding(vertical = 8.dp)) }
-
-                                // --- Section: Archive ---
-                                item {
-                                    OptionsSectionHeader(
-                                        text = stringResource(R.string.archive),
-                                        isExpanded = archiveExpanded,
-                                        onToggle = { archiveExpanded = !archiveExpanded }
-                                    )
-                                }
-                                if (archiveExpanded) {
-                                    item {
-                                        OptionsItem(
-                                            stringResource(R.string.dropdown_import_archive) + " (*.csv)"
-                                        ) {
-                                            viewModel.setAlertDialogArchiveImport(true)
-                                        }
-                                    }
-                                    item {
-                                        OptionsItem(
-                                            stringResource(R.string.dropdown_backup_archive) + " (*.csv)"
-                                        ) {
-                                            archiveExporter.launch("archive_backup.csv")
-                                        }
-                                    }
-                                    item {
-                                        OptionsItem(
-                                            stringResource(R.string.dropdown_export_archive_health_connect)
-                                        ) {
-                                            if (uiState.healthConnectPermissionsGranted) {
-                                                viewModel.setAlertDialogHealthConnectSync(true)
-                                            } else {
-                                                Toast.makeText(
-                                                    context,
-                                                    context.getString(R.string.health_connect_permissions_missing),
-                                                    Toast.LENGTH_SHORT
-                                                ).show()
-                                            }
-                                        }
-                                    }
-                                    item {
-                                        OptionsItem(stringResource(R.string.dropdown_clear_archive)) {
-                                            viewModel.setAlertDialogArchiveReset(true)
                                         }
                                     }
                                 }
@@ -1819,6 +1864,14 @@ fun App(
     }
 
     if (uiState.healthConnectSyncProgress != null) {
+        val window = context.findActivity()?.window
+        DisposableEffect(Unit) {
+            window?.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+            onDispose {
+                window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+            }
+        }
+
         AlertDialog(
             onDismissRequest = { },
             properties = DialogProperties(
@@ -1843,17 +1896,22 @@ fun App(
                     )
                     Spacer(modifier = Modifier.height(24.dp))
                     LinearProgressIndicator(
-                        progress = { uiState.healthConnectSyncProgress!! },
+                        progress = { uiState.healthConnectSyncProgress ?: 0f },
                         modifier = Modifier.fillMaxWidth(),
                         strokeCap = androidx.compose.ui.graphics.StrokeCap.Round
                     )
                 }
             },
             confirmButton = {
-                if (uiState.healthConnectSyncProgress!! >= 1f) {
+                if ((uiState.healthConnectSyncProgress ?: 0f) >= 1f) {
                     ButtonText(
                         text = stringResource(R.string.button_finish),
                         onClick = { viewModel.finishHealthConnectSync() }
+                    )
+                } else {
+                    ButtonText(
+                        text = stringResource(R.string.button_cancel),
+                        onClick = { viewModel.cancelHealthConnectSync() }
                     )
                 }
             }
@@ -1864,7 +1922,8 @@ fun App(
         AlertDialog(
             onDismissRequest = { viewModel.dismissHealthConnectSyncError() },
             properties = DialogProperties(
-                dismissOnClickOutside = false
+                dismissOnClickOutside = false,
+                dismissOnBackPress = false
             ),
             confirmButton = {
                 ButtonText(

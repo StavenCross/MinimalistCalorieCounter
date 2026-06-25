@@ -48,7 +48,7 @@
     <string name="dialog_archive_import">Eine Archivdatei zu importieren, überschreibt in jedem Fall die alte Datei, selbst wenn die neue Datei fehlerhaft sein sollte.</string>
     <string name="confirmation">Bestätigung</string>
     <string name="dialog_database_import">Eine Datenbankdatei zu importieren, überschreibt in jedem Fall die alte Datei, selbst wenn die neue Datei fehlerhaft sein sollte.</string>
-    <string name="dialog_health_connect_sync">Dies wird deine aktuellen Archiveinträge mit Health Connect synchronisieren und alle in Health Connect vorhandenen Einträge für diese spezifischen Tage überschreiben. Andere bereits in Health Connect vorhandene Tage sind davon nicht betroffen.</string>
+    <string name="dialog_health_connect_sync">Dies wird dein vollständiges Archiv mit Health Connect synchronisieren. Falls diese App bereits Health Connect-Einträge für Tage erstellt hat, die Teil des aktuellen In-App-Archivs sind, werden diese Health Connect-Einträge überschrieben. Health Connect-Einträge für Tage, die NICHT Teil des aktuellen In-App-Archivs sind, sind nicht betroffen.\n\nBeachte, dass dieser Vorgang bei Archiven, die mehrere Jahre umfassen, 10 Minuten und mehr dauern kann. Um eine vollständige Synchronisierung zu gewährleisten, solltest du dein Telefon während dieser Zeit nicht für andere Dinge benutzen.</string>
     <string name="dialog_database_reset">Du bist dabei, deine gesamte Datenbank in den Ursprungszustand zurückzuversetzen. Alle Einträge, die du hinzugefügt hast, werden unwiederbringlich gelöscht.</string>
 
     <string name="dialog_language">Falls Du auch die Sprache der Datenbank ändern willst, kannst Du die Datenbank nun über die Option „%1$s“ zurücksetzen. Beachte, dass dabei die Standard-Datenbank in der aktuellen Sprache geladen wird und alle Einträge, die Du in der vorherigen Sprache hinzugefügt hast, unwiederbringlich gelöscht werden.</string>
@@ -133,19 +133,22 @@
     <string name="dropdown_rate">App im Play Store bewerten 🙏❤️</string>
     <string name="dialog_archive_delete">Bist du sicher, dass du diesen Archiveintrag löschen möchtest?</string>
     <string name="dialog_database_delete">Bist du sicher, dass du diesen Datenbankeintrag löschen möchtest?</string>
+    <string name="health_connect">Health Connect</string>
     <string name="health_connect_permissions_missing">Health Connect Berechtigungen fehlen.</string>
     <string name="dropdown_sync_health_connect">Health Connect Auto-Sync</string>
-    <string name="dropdown_export_archive_health_connect">Archiv exportieren (Health Connect)</string>
+    <string name="dropdown_export_archive_health_connect">Vollständige manuelle Health Connect Synchronisierung</string>
+    <string name="health_connect_notifications">Health Connect Benachrichtigungen</string>
     <string name="information">Information</string>
     <string name="privacy_policy">Datenschutzerklärung</string>
-    <string name="dialog_health_connect_activation">Der Health Connect Auto-Sync ist jetzt aktiv. Zukünftige Archiveinträge werden automatisch synchronisiert. Um bestehende Archiveinträge zu synchronisieren, verwende bitte „Archiv exportieren (Health Connect)“.</string>
+    <string name="dialog_health_connect_activation">Health Connect Auto-Sync ist jetzt aktiv. Zukünftige Archivänderungen werden automatisch synchronisiert. Dies beinhaltet alle Hinzufügungen, Löschungen und Änderungen am Archiv, die innerhalb der App vorgenommen werden, außer Archiv-Importe und Archiv-Löschungen.\n\nUm bestehende Archiveinträge zu synchronisieren, verwende bitte „Health Connect vollständige manuelle Synchronisierung“.</string>
+    <string name="dialog_health_connect_toasts">Health Connect Benachrichtigungen sind jetzt aktiv. Dies zeigt bei jedem erfolgreichen Schreibvorgang in Health Connect kleine Popup-Meldungen an.</string>
     <string name="dialog_health_connect_disclosure">Der Einfache Kalorienzähler nutzt Health Connect, um Ihre Ernährungs- und Gewichtsdaten mit anderen Gesundheits-Apps zu teilen. Für den vollen Funktionsumfang erteilen Sie bitte ALLE angeforderten Berechtigungen auf dem folgenden Bildschirm. Ihre Daten bleiben auf Ihrem Gerät und werden niemals an Dritte weitergegeben.</string>
     <string name="toast_hc_entry_added">Archiveintrag zu Health Connect hinzugefügt</string>
     <string name="toast_hc_entry_edited">Archiveintrag in Health Connect bearbeitet</string>
     <string name="toast_hc_entry_deleted">Archiveintrag aus Health Connect gelöscht</string>
     <string name="toast_hc_full_archive_synced">Gesamtes Archiv mit Health Connect synchronisiert</string>
     <string name="health_connect_sync_error">Ein Fehler ist bei der Health Connect Synchronisation aufgetreten: %1$s</string>
-    <string name="syncing_health_connect">Aufgrund des Ratenlimits der Health Connect API kann die Synchronisierung bei großen Archiven ziemlich lange dauern. (%1$d/%2$d fertig)</string>
+    <string name="syncing_health_connect">Exportiere das gesamte Archiv nach Health Connect. Aufgrund von Health Connect Ratenlimits kann dies bei großen Archiven mehrere Minuten dauern; eine ungleichmäßige Fortschrittsgeschwindigkeit ist dabei zu erwarten.\n\nBitte lass die App im Vordergrund und schalte den Bildschirm nicht manuell aus. Die App hält den Bildschirm bis zum Ende aktiv. (%1$d/%2$d fertig)</string>
     <string name="please_wait">Bitte warten</string>
     <string name="error_archive_date_exists">Für dieses Datum existiert bereits ein Archiveintrag.</string>
     <string name="error_archive_date_future">Archiveinträge dürfen nicht in der Zukunft liegen.</string>

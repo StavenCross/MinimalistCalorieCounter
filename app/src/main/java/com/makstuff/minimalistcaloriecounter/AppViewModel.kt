@@ -48,10 +48,15 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                 if (newSyncStatus != currentState.healthConnectSyncEnabled) {
                     needsSave = true
                 }
+                val newToastsStatus = if (!allGranted) false else currentState.healthConnectToastsEnabled
+                if (newToastsStatus != currentState.healthConnectToastsEnabled) {
+                    needsSave = true
+                }
                 currentState.copy(
                     healthConnectPermissionsGranted = allGranted,
                     healthConnectAnyPermissionsGranted = anyGranted,
                     healthConnectSyncEnabled = newSyncStatus,
+                    healthConnectToastsEnabled = newToastsStatus,
                 )
             }
             if (needsSave) {
@@ -68,6 +73,17 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                 viewModelScope.launch { setAlertDialogHealthConnectActivation(bool = true) }
             }
             currentState.copy(healthConnectSyncEnabled = newState)
+        }
+        optionsWriteToFile(context)
+    }
+
+    fun toggleHealthConnectToastsEnabled(context: Context) {
+        _uiState.update { currentState ->
+            val newState = !currentState.healthConnectToastsEnabled
+            if (newState) {
+                viewModelScope.launch { setAlertDialogHealthConnectToasts(bool = true) }
+            }
+            currentState.copy(healthConnectToastsEnabled = newState)
         }
         optionsWriteToFile(context)
     }
@@ -116,6 +132,14 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         _uiState.update { currentState ->
             currentState.copy(
                 alertDialogHealthConnectActivation = bool,
+            )
+        }
+    }
+
+    fun setAlertDialogHealthConnectToasts(bool: Boolean){
+        _uiState.update { currentState ->
+            currentState.copy(
+                alertDialogHealthConnectToasts = bool,
             )
         }
     }
@@ -297,14 +321,14 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    fun archiveDeleteEntry(index: Int, context: Context, showToast: Boolean = true) {
+    fun archiveDeleteEntry(index: Int, context: Context) {
         val entry = _uiState.value.archive.entries[index]
         _uiState.value.archive.deleteEntry(index)
         archiveWriteToCSV(context)
         if (uiState.value.healthConnectSyncEnabled) {
             viewModelScope.launch {
                 healthConnectManager.deleteSingleEntry(entry.first)
-                if (showToast) {
+                if (uiState.value.healthConnectToastsEnabled) {
                     withContext(Dispatchers.Main) {
                         Toast.makeText(context, context.getString(R.string.toast_hc_entry_deleted), Toast.LENGTH_SHORT).show()
                     }
@@ -437,8 +461,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         date: LocalDate,
         bodyWeight: String,
         nutrients: Nutrients,
-        context: Context,
-        showToast: Boolean = true
+        context: Context
     ) {
         if (date.isAfter(LocalDate.now())) {
             throw IllegalStateException(context.getString(R.string.error_archive_date_future))
@@ -451,7 +474,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         if (uiState.value.healthConnectSyncEnabled) {
             viewModelScope.launch {
                 healthConnectManager.syncSingleEntry(date, bodyWeight.toDoubleOrNull() ?: 0.0, nutrients)
-                if (showToast) {
+                if (uiState.value.healthConnectToastsEnabled) {
                     withContext(Dispatchers.Main) {
                         Toast.makeText(context, context.getString(R.string.toast_hc_entry_added), Toast.LENGTH_SHORT).show()
                     }
@@ -493,8 +516,10 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                 }
                 // Sync new/updated entry
                 healthConnectManager.syncSingleEntry(date, bodyWeight.toDoubleOrNull() ?: 0.0, nutrients)
-                withContext(Dispatchers.Main) {
-                    Toast.makeText(context, context.getString(R.string.toast_hc_entry_edited), Toast.LENGTH_SHORT).show()
+                if (uiState.value.healthConnectToastsEnabled) {
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(context, context.getString(R.string.toast_hc_entry_edited), Toast.LENGTH_SHORT).show()
+                    }
                 }
             }
         }
@@ -787,19 +812,28 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                         themeUserSetting = if (themeRow.contains("dark")) AppTheme.MODE_NIGHT else if (themeRow.contains("light")) AppTheme.MODE_DAY else AppTheme.MODE_AUTO
                     )
                 }
-                if (rows.size > 1) {
-                    val hcRow = rows[1]
-                    val savedSyncEnabled = hcRow.contains("true")
-                    viewModelScope.launch {
-                        val granted = healthConnectManager.hasAllPermissions()
-                        _uiState.update { currentState ->
-                            currentState.copy(
+
+                viewModelScope.launch {
+                    val granted = healthConnectManager.hasAllPermissions()
+                    _uiState.update { currentState ->
+                        var newState = currentState
+                        if (rows.size > 1) {
+                            val hcRow = rows[1]
+                            val savedSyncEnabled = hcRow.contains("true")
+                            newState = newState.copy(
                                 healthConnectSyncEnabled = savedSyncEnabled && granted
                             )
                         }
+                        if (rows.size > 2) {
+                            val toastRow = rows[2]
+                            val savedToastsEnabled = toastRow.contains("true")
+                            newState = newState.copy(
+                                healthConnectToastsEnabled = savedToastsEnabled && granted
+                            )
+                        }
+                        newState
                     }
                 }
-
             }
         } catch (_: Exception) {
             // Fallback to default if file is old or corrupted
@@ -816,6 +850,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             }
             writeRow(listOf(theme))
             writeRow(listOf(uiState.value.healthConnectSyncEnabled.toString()))
+            writeRow(listOf(uiState.value.healthConnectToastsEnabled.toString()))
         }
     }
 

@@ -48,7 +48,7 @@
     <string name="dialog_archive_import">L\'importazione di un file di archivio sovrascrive il vecchio file in ogni caso, anche si il nuovo file potrebbe non essere valido.</string>
     <string name="confirmation">Conferma</string>
     <string name="dialog_database_import">L\'importazione di un file di database sovrascrive il vecchio file in ogni caso, anche se il nuovo file potrebbe non essere valido.</string>
-    <string name="dialog_health_connect_sync">Questo sincronizzerà le tue attuali voci dell\'archivio con Health Connect, sovrascrivendo eventuali voci esistenti in Health Connect per quei giorni specifici. Gli altri giorni già presenti in Health Connect non saranno interessati.</string>
+    <string name="dialog_health_connect_sync">Questo sincronizzerà il tuo archivio completo con Health Connect. Se questa app ha precedentemente creato voci Health Connect per i giorni che fanno parte dell\'attuale archivio in-app, queste voci di Health Connect verranno sovrascritte. Le voci di Health Connect per i giorni che NON fanno parte dell\'attuale archivio in-app non saranno interessate.\n\nTieni presente che per archivi che contengono più anni, questo processo può richiedere 10 minuti e oltre. Per garantire una sincronizzazione completa, non dovresti usare il telefono per altre cose durante questo periodo.</string>
     <string name="dialog_database_reset">Stai per ripristinare il tuo database allo stato di fabbrica. Tutte le voci aggiunte andranno perse permanentemente.</string>
 
     <string name="dialog_language">Se desideri cambiare anche la lingua del database, puoi ora ripristinare il database utilizzando l\'opzione «%1$s». Tieni presente che questo caricherà il database predefinito nella lingua corrente e tutte le voci aggiunte nella lingua precedente andranno perse permanentemente.</string>
@@ -133,19 +133,22 @@
     <string name="dropdown_rate">Valuta sul Play Store 🙏❤️</string>
     <string name="dialog_archive_delete">Sei sicuro di voler eliminare questa voce dell\'archivio?</string>
     <string name="dialog_database_delete">Sei sicuro di voler eliminare questa voce dal database?</string>
+    <string name="health_connect">Health Connect</string>
     <string name="health_connect_permissions_missing">Autorizzazioni Health Connect mancanti.</string>
-    <string name="dropdown_sync_health_connect">Auto-sync Health Connect</string>
-    <string name="dropdown_export_archive_health_connect">Esporta Archivio (Health Connect)</string>
-    <string name="information">Informazione</string>
-    <string name="privacy_policy">Informativa sulla privacy</string>
-    <string name="dialog_health_connect_activation">L\'auto-sync di Health Connect è ora attivo. Le future voci dell\'archivio verranno sincronizzate automaticamente. Per sincronizzare le voci dell\'archivio esistenti, utilizza \"Esporta Archivio (Health Connect)\".</string>
+    <string name="dropdown_sync_health_connect">Health Connect Auto-Sync</string>
+    <string name="dropdown_export_archive_health_connect">Sincronizzazione manuale completa di Health Connect</string>
+    <string name="health_connect_notifications">Notifiche Health Connect</string>
+    <string name="information">Information</string>
+    <string name="privacy_policy">Privacy Policy</string>
+    <string name="dialog_health_connect_activation">L\'auto-sync di Health Connect è ora attivo. Le future modifiche all\'archivio verranno sincronizzate automaticamente. Ciò include tutte le aggiunte, le cancellazioni e le modifiche all\'archivio apportate dall\'interno dell\'app, tranne le importazioni e le cancellazioni dell\'archivio.\n\nPer sincronizzare le voci dell\'archivio esistenti, utilizza "Sincronizzazione manuale completa di Health Connect".</string>
+    <string name="dialog_health_connect_toasts">Le notifiche di Health Connect sono ora attive. Verranno visualizzati piccoli messaggi pop-up ad ogni azione di scrittura riuscita su Health Connect.</string>
     <string name="dialog_health_connect_disclosure">Minimalist Calorie Counter utilizza Health Connect per condividere i dati relativi alla nutrizione e al peso con altre app per la salute. Per la piena funzionalità, si prega di concedere TUTTI i permessi richiesti nella schermata successiva. I dati rimangono sul dispositivo e non vengono mai condivisi con terze parti.</string>
     <string name="toast_hc_entry_added">Voce dell\'archivio aggiunta a Health Connect</string>
     <string name="toast_hc_entry_edited">Voce dell\'archivio modificata in Health Connect</string>
     <string name="toast_hc_entry_deleted">Voce dell\'archivio eliminata da Health Connect</string>
     <string name="toast_hc_full_archive_synced">Archivio completo sincronizzato con Health Connect</string>
     <string name="health_connect_sync_error">Si è verificato un errore durante la sincronizzazione di Health Connect: %1$s</string>
-    <string name="syncing_health_connect">A causa del limite di velocità dell\'API Health Connect, la sincronizzazione può richiedere molto tempo per gli archivi di grandi dimensioni. (%1$d/%2$d completato)</string>
+    <string name="syncing_health_connect">Esportazione dell\'intero archivio in Health Connect. A causa dei limiti di velocità di Health Connect, questo processo può richiedere diversi minuti per gli archivi di grandi dimensioni; è prevedibile una velocità di progressione irregolare.\n\nTi preghiamo di tenere l\'app in primo piano e di non spegnere lo schermo manualmente. L\'app manterrà lo schermo acceso fino al termine. (%1$d/%2$d completato)</string>
     <string name="please_wait">Attendere prego</string>
     <string name="error_archive_date_exists">Per questa data esiste già una voce dell\'archivio.</string>
     <string name="error_archive_date_future">Le voci dell\'archivio non possono essere nel futuro.</string>

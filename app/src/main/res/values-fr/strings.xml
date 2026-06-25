@@ -48,7 +48,7 @@
     <string name="dialog_archive_import">L\'importation d\'un fichier d\'archive remplace l\'ancien fichier dans tous les cas, même si le nouveau n\'est pas valide.</string>
     <string name="confirmation">Confirmation</string>
     <string name="dialog_database_import">L\'importation d\'un fichier de base de données remplace l\'ancien fichier dans tous les cas, même si le nouveau n\'est pas valide.</string>
-    <string name="dialog_health_connect_sync">Cela synchronisera vos entrées d\'archive actuelles avec Health Connect, en écrasant toutes les entrées existantes dans Health Connect pour ces jours spécifiques. Les autres jours déjà présents dans Health Connect ne seront pas affectés.</string>
+    <string name="dialog_health_connect_sync">Cela synchronisera votre archive complète avec Health Connect. Si cette application a déjà créé des entrées Health Connect pour des jours faisant partie de l\'archive actuelle de l\'application, ces entrées Health Connect seront écrasées. Les entrées Health Connect pour les jours qui ne font PAS partie de l\'archive actuelle de l\'application ne seront pas affectées.\n\nNotez que pour les archives contenant plusieurs années, ce processus peut prendre 10 minutes et plus. Pour garantir une synchronisation complète, vous ne devez pas utiliser votre téléphone pour d\'autres choses pendant ce temps.</string>
     <string name="dialog_database_reset">Vous êtes sur le point de réinitialiser votre base de données à l\'état d\'usine. Toutes les entrées ajoutées seront définitivement perdues.</string>
 
     <string name="dialog_language">Si vous souhaitez également changer la langue de la base de données, vous pouvez maintenant réinitialiser la base de données en utilisant l\'option « %1$s ». Notez que cela chargera la base de données par défaut dans la langue actuelle, et toutes les entrées que vous avez ajoutées dans la langue précédente seront définitivement perdues.</string>
@@ -133,19 +133,22 @@
     <string name="dropdown_rate">Noter sur le Play Store 🙏❤️</string>
     <string name="dialog_archive_delete">Êtes-vous sûr de vouloir supprimer cette entrée d\'archive ?</string>
     <string name="dialog_database_delete">Êtes-vous sûr de vouloir supprimer cette entrée de la base de données ?</string>
+    <string name="health_connect">Health Connect</string>
     <string name="health_connect_permissions_missing">Autorisations Health Connect manquantes.</string>
-    <string name="dropdown_sync_health_connect">Synchronisation auto Health Connect</string>
-    <string name="dropdown_export_archive_health_connect">Exporter Archive (Health Connect)</string>
+    <string name="dropdown_sync_health_connect">Health Connect Auto-Synchronisation</string>
+    <string name="dropdown_export_archive_health_connect">Synchronisation manuelle complète de Health Connect</string>
+    <string name="health_connect_notifications">Notifications Health Connect</string>
     <string name="information">Information</string>
     <string name="privacy_policy">Politique de confidentialité</string>
-    <string name="dialog_health_connect_activation">La synchronisation auto Health Connect est désormais active. Les futures entrées d\'archive seront synchronisées automatiquement. Pour synchroniser les entrées d\'archive existantes, veuillez utiliser « Exporter Archive (Health Connect) ».</string>
+    <string name="dialog_health_connect_activation">L\'auto-synchronisation de Health Connect est désormais active. Les futures modifications de l\'archive seront synchronisées automatiquement. Cela inclut tous les ajouts, suppressions et modifications apportés à l\'archive depuis l\'application, à l\'exception des importations et des suppressions d\'archives.\n\nPour synchroniser les entrées d\'archive existantes, veuillez utiliser « Synchronisation manuelle complète de Health Connect ».</string>
+    <string name="dialog_health_connect_toasts">Les notifications Health Connect sont désormais actives. Cela affichera de petits messages contextuels à chaque action d\'écriture réussie dans Health Connect.</string>
     <string name="dialog_health_connect_disclosure">Minimalist Calorie Counter utilise Health Connect pour partager vos données de nutrition et de poids avec d\'autres applications de santé. Pour une fonctionnalité complète, veuillez accorder TOUTES les autorisations demandées sur l\'écran suivant. Vos données restent sur votre appareil et ne sont jamais partagées avec des tiers.</string>
     <string name="toast_hc_entry_added">Entrée d\'archive ajoutée à Health Connect</string>
     <string name="toast_hc_entry_edited">Entrée d\'archive modifiée dans Health Connect</string>
     <string name="toast_hc_entry_deleted">Entrée d\'archive supprimée de Health Connect</string>
     <string name="toast_hc_full_archive_synced">Archive complète synchronisée avec Health Connect</string>
     <string name="health_connect_sync_error">Une erreur s\'est produite lors de la synchronisation Health Connect : %1$s</string>
-    <string name="syncing_health_connect">En raison de la limite de débit de l\'API Health Connect, la synchronisation peut être assez longue pour les archives volumineuses. (%1$d/%2$d terminé)</string>
+    <string name="syncing_health_connect">Exportation de l\'archive complète vers Health Connect. En raison des limites de débit de Health Connect, ce processus peut prendre plusieurs minutes pour les archives volumineuses ; une vitesse de progression inégale est à prévoir.\n\nVeuillez garder l\'application au premier plan et ne pas éteindre manuellement l\'écran. L\'application gardera votre écran allumé jusqu\'à la fin. (%1$d/%2$d terminé)</string>
     <string name="please_wait">Veuillez patienter</string>
     <string name="error_archive_date_exists">Pour cette date, une entrée d\'archive existe déjà.</string>
     <string name="error_archive_date_future">Les entrées d\'archive ne peuvent pas être dans le futur.</string>

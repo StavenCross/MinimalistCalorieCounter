@@ -12,14 +12,12 @@ import androidx.health.connect.client.units.Mass
 import com.makstuff.minimalistcaloriecounter.R
 import com.makstuff.minimalistcaloriecounter.classes.Archive
 import com.makstuff.minimalistcaloriecounter.classes.Nutrients
-import androidx.compose.runtime.toMutableStateList
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.time.LocalDate
 import java.time.ZoneId
-
 import kotlin.time.Duration.Companion.milliseconds
 
 class HealthConnectManager(private val context: Context) {
@@ -108,7 +106,6 @@ class HealthConnectManager(private val context: Context) {
         }
     }
 
-
     suspend fun syncArchive(
         archive: Archive,
         onProgress: (Float?, Int, Int) -> Unit,
@@ -127,7 +124,7 @@ class HealthConnectManager(private val context: Context) {
             val totalEntries = archive.entries.size
             var currentEntriesDone = 0
 
-            // Extremely conservative chunking and long delays to satisfy strict API quotas
+            // Conservative chunking to satisfy strict API quotas
             val chunks = archive.entries.chunked(5)
             val totalChunks = chunks.size
 
@@ -138,7 +135,6 @@ class HealthConnectManager(private val context: Context) {
 
                 while (!success && attempts < maxAttempts) {
                     try {
-                        // Check for coroutine cancellation
                         kotlinx.coroutines.yield()
 
                         val nutritionRecords = mutableListOf<NutritionRecord>()
@@ -149,11 +145,9 @@ class HealthConnectManager(private val context: Context) {
                             val endOfDay = date.atTime(23, 59, 59).atZone(ZoneId.systemDefault()).toInstant()
                             val timeRange = TimeRangeFilter.between(startOfDay, endOfDay)
 
-                            // Delete existing records specifically for this day
                             healthConnectClient.deleteRecords(NutritionRecord::class, timeRange)
                             healthConnectClient.deleteRecords(WeightRecord::class, timeRange)
 
-                            // Nutrition
                             nutritionRecords.add(
                                 NutritionRecord(
                                     startTime = startOfDay,
@@ -173,7 +167,6 @@ class HealthConnectManager(private val context: Context) {
                                 )
                             )
 
-                            // Weight
                             if (weight > 0) {
                                 weightRecords.add(
                                     WeightRecord(
@@ -186,22 +179,16 @@ class HealthConnectManager(private val context: Context) {
                             }
                         }
 
-                        if (nutritionRecords.isNotEmpty()) {
-                            healthConnectClient.insertRecords(nutritionRecords)
-                        }
-                        if (weightRecords.isNotEmpty()) {
-                            healthConnectClient.insertRecords(weightRecords)
-                        }
+                        healthConnectClient.insertRecords(nutritionRecords)
+                        healthConnectClient.insertRecords(weightRecords)
                         
                         success = true
                     } catch (e: Exception) {
                         attempts++
                         val isQuotaError = e.message?.contains("quota exceeded", ignoreCase = true) == true
                         if (isQuotaError && attempts < maxAttempts) {
-                            // Hit rate limit: wait 3s, 6s, 9s... then retry this specific chunk
                             kotlinx.coroutines.delay((3000L * attempts).milliseconds)
                         } else {
-                            // Persistent or different error: give up and report
                             throw e
                         }
                     }
@@ -212,7 +199,6 @@ class HealthConnectManager(private val context: Context) {
                     onProgress((index + 1).toFloat() / totalChunks, currentEntriesDone, totalEntries)
                 }
 
-                // Standard delay between successful chunks
                 kotlinx.coroutines.delay(1000.milliseconds)
             }
 
@@ -228,6 +214,4 @@ class HealthConnectManager(private val context: Context) {
             }
         }
     }
-
-
 }
