@@ -34,7 +34,7 @@ Another detail is that during the initial development I was not aware of how wei
 
 ## Screenshots
 
- ![Combo](https://github.com/user-attachments/assets/fe823df8-814a-4ebe-8026-e3526f95ffc5)
+ <img width="3200" height="1563" alt="rect1" src="https://github.com/user-attachments/assets/ad0e5925-3520-4045-8206-b74a737bfdff" />
 
 <a href='https://play.google.com/store/apps/details?id=com.makstuff.minimalistcaloriecounter&pcampaignid=pcampaignidMKT-Other-global-all-co-prtnr-py-PartBadge-Mar2515-1'><img alt='Get it on Google Play' src='https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png' width="200"/></a>
 
