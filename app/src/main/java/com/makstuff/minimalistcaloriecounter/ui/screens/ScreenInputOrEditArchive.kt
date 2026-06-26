@@ -4,7 +4,10 @@ import android.app.DatePickerDialog
 import android.widget.DatePicker
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
@@ -61,7 +64,7 @@ fun ScreenInputOrEditArchive(
         inputDate.dayOfMonth,
     )
 
-    Column {
+    Column(modifier = Modifier.fillMaxSize().imePadding().padding(bottom = 4.dp)) {
         Grid(
             columns = 3,
             reverseUpDown = false,

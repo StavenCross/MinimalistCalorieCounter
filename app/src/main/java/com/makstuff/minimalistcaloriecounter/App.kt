@@ -45,10 +45,12 @@ import androidx.compose.material3.ListItemDefaults
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.draw.alpha
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
@@ -62,6 +64,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringArrayResource
@@ -130,6 +133,8 @@ fun App(
     context.findActivity() // Use the proper unwrap function!
     val lifecycleOwner = LocalLifecycleOwner.current
     val uriHandler = LocalUriHandler.current
+    val focusManager = LocalFocusManager.current
+    val keyboardController = LocalSoftwareKeyboardController.current
     val healthConnectManager = remember { HealthConnectManager(context) }
 
     val healthConnectRequestPermissionLauncher = rememberLauncherForActivityResult(
@@ -140,7 +145,13 @@ fun App(
     )
 
     fun navTo(route: String) {
+        keyboardController?.hide()
         navController.navigate(route)
+    }
+
+    fun navBack() {
+        keyboardController?.hide()
+        navController.popBackStack()
     }
 
     fun editDatabaseEntry(index: Int) {
@@ -600,7 +611,7 @@ fun App(
                                                     true,
                                                     context
                                                 )
-                                                navController.popBackStack()
+                                                navBack()
                                             }
                                             viewModel.setAlertDialogDatabaseDelete(false)
                                         })
@@ -1067,7 +1078,6 @@ fun App(
                 .fillMaxSize()
                 .padding(innerPadding)
                 .consumeWindowInsets(innerPadding)
-                .imePadding()
                 .padding(4.dp),
             navController = navController,
             startDestination = "day_home",
@@ -1203,6 +1213,7 @@ fun App(
 
             composable("archive_create_entry_manually") {
                 fun onConfirm() {
+                    keyboardController?.hide()
                     try {
                         viewModel.archiveAddEntry(
                             date = uiState.inputArchiveEntryDate,
@@ -1238,6 +1249,7 @@ fun App(
 
             composable("archive_create_entry_from_day") {
                 fun onConfirm() {
+                    keyboardController?.hide()
                     try {
                         viewModel.archiveAddEntry(
                             date = uiState.inputArchiveEntryDate,
@@ -1279,6 +1291,7 @@ fun App(
                 if (index != null) {
                     if(index < uiState.archive.entries.size){
                         fun onConfirm() {
+                            keyboardController?.hide()
                             try {
                                 viewModel.archiveEditEntry(
                                     index = index,
@@ -1321,6 +1334,7 @@ fun App(
 
             composable("create_home") {
                 fun onCreateFood() {
+                    keyboardController?.hide()
                     try {
                         viewModel.databaseCreateEntryFromInput(context)
                         navTo("day_home")
@@ -1361,9 +1375,10 @@ fun App(
                 if (index != null) {
                     if(index < uiState.database.size){
                         fun onConfirmEdit() {
+                            keyboardController?.hide()
                             try {
                                 viewModel.databaseEditEntryFromInput(index, context)
-                                navController.popBackStack()
+                                navBack()
                             } catch (e: IllegalStateException) {
                                 Toast.makeText(context, e.message, Toast.LENGTH_LONG).show()
                             }
@@ -1387,7 +1402,7 @@ fun App(
                                 viewModel.toggleDatabaseEntryEditQuickselect()
                             },
                             listOfTextButtons = listOf(
-                                Pair(stringResource(R.string.button_cancel)) { navController.popBackStack() },
+                                Pair(stringResource(R.string.button_cancel)) { navBack() },
                                 Pair(stringResource(R.string.button_delete)) {
                                     viewModel.setAlertDialogDatabaseDelete(true, index)
                                 },
@@ -1500,7 +1515,6 @@ fun App(
                 ScreenWithHoverCard(
                     contentAbove = {
                         Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                            val focusManager = LocalFocusManager.current
                             TextField(
                                 modifier = Modifier
                                     .weight(1f)
@@ -1595,6 +1609,7 @@ fun App(
                 if (index != null) {
                     if(index < uiState.database.size){
                         fun onConfirm() {
+                            keyboardController?.hide()
                             try {
                                 viewModel.dayAddFood(
                                     uiState.inputCurrentComboComponentWeight,
@@ -1625,6 +1640,7 @@ fun App(
                                     ButtonGrid(
                                         text = list.second,
                                         onClick = {
+                                            keyboardController?.hide()
                                             viewModel.dayAddFood(
                                                 list.first,
                                                 uiState.database[index],
@@ -1640,6 +1656,7 @@ fun App(
                                     ButtonGrid(
                                         text = list.second,
                                         onClick = {
+                                            keyboardController?.hide()
                                             viewModel.dayAddFood(
                                                 list.first,
                                                 uiState.database[index],
@@ -1659,6 +1676,7 @@ fun App(
                 if (index != null) {
                     if(index < uiState.day.components.size){
                         fun onConfirm() {
+                            keyboardController?.hide()
                             try {
                                 viewModel.dayEditFoodWeight(
                                     uiState.inputCurrentComboComponentWeight,
@@ -1695,6 +1713,7 @@ fun App(
                                         ButtonGrid(
                                             text = list.second,
                                             onClick = {
+                                                keyboardController?.hide()
                                                 viewModel.dayEditFoodWeight(list.first, index, context)
                                                 navTo("day_home")
                                             },
@@ -1708,6 +1727,7 @@ fun App(
                                         ButtonGrid(
                                             text = list.second,
                                             onClick = {
+                                                keyboardController?.hide()
                                                 viewModel.dayEditFoodWeight(
                                                     list.first,
                                                     index,
@@ -1729,6 +1749,7 @@ fun App(
                 if (index != null) {
                     if(index < uiState.database.size){
                         fun onConfirm() {
+                            keyboardController?.hide()
                             try {
                                 viewModel.currentComboAddComponent(
                                     uiState.inputCurrentComboComponentWeight,
@@ -1760,6 +1781,7 @@ fun App(
                                     ButtonGrid(
                                         text = list.second,
                                         onClick = {
+                                            keyboardController?.hide()
                                             viewModel.currentComboAddComponent(
                                                 list.first,
                                                 uiState.database[index],
@@ -1775,6 +1797,7 @@ fun App(
                                     ButtonGrid(
                                         text = list.second,
                                         onClick = {
+                                            keyboardController?.hide()
                                             viewModel.currentComboAddComponent(
                                                 list.first,
                                                 uiState.database[index],
@@ -1795,6 +1818,7 @@ fun App(
                 if (index != null) {
                     if(index < uiState.currentCombo.components.size){
                         fun onConfirm() {
+                            keyboardController?.hide()
                             try {
                                 viewModel.currentComboEditComponentWeight(
                                     uiState.inputCurrentComboComponentWeight,
@@ -1831,6 +1855,7 @@ fun App(
                                         ButtonGrid(
                                             text = list.second,
                                             onClick = {
+                                                keyboardController?.hide()
                                                 viewModel.currentComboEditComponentWeight(
                                                     list.first,
                                                     index,
@@ -1846,6 +1871,7 @@ fun App(
                                         ButtonGrid(
                                             text = list.second,
                                             onClick = {
+                                                keyboardController?.hide()
                                                 viewModel.currentComboEditComponentWeight(
                                                     list.first,
                                                     index,
