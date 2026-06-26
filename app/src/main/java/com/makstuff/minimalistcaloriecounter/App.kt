@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -45,12 +44,10 @@ import androidx.compose.material3.ListItemDefaults
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
-import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.ui.draw.alpha
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
@@ -240,8 +237,9 @@ fun App(
         contract = ActivityResultContracts.OpenDocument(),
         onResult = { uri ->
             try {
+                val folder = context.getExternalFilesDir(null) ?: context.filesDir
                 uri?.let { context.contentResolver.openInputStream(it) }?.copyTo(
-                    File(context.getExternalFilesDir(null), "database.csv")
+                    File(folder, "database.csv")
                         .outputStream()
                 )
                 viewModel.databaseUpdateFromCSV(context)
@@ -259,8 +257,9 @@ fun App(
     val databaseExporter = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.CreateDocument("text/comma-separated-values"),
         onResult = { uri ->
+            val folder = context.getExternalFilesDir(null) ?: context.filesDir
             uri?.let { context.contentResolver.openOutputStream(it) }?.let {
-                File(context.getExternalFilesDir(null), "database.csv")
+                File(folder, "database.csv")
                     .inputStream().copyTo(it)
             }
         }
@@ -269,8 +268,9 @@ fun App(
         contract = ActivityResultContracts.OpenDocument(),
         onResult = { uri ->
             try {
+                val folder = context.getExternalFilesDir(null) ?: context.filesDir
                 uri?.let { context.contentResolver.openInputStream(it) }?.copyTo(
-                    File(context.getExternalFilesDir(null), "archive.csv")
+                    File(folder, "archive.csv")
                         .outputStream()
                 )
                 viewModel.archiveUpdateFromCSV(context)
@@ -288,8 +288,9 @@ fun App(
     val archiveExporter = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.CreateDocument("text/comma-separated-values"),
         onResult = { uri ->
+            val folder = context.getExternalFilesDir(null) ?: context.filesDir
             uri?.let { context.contentResolver.openOutputStream(it) }?.let {
-                File(context.getExternalFilesDir(null), "archive.csv")
+                File(folder, "archive.csv")
                     .inputStream().copyTo(it)
             }
         }
@@ -837,24 +838,34 @@ fun App(
                                         onToggle = { healthConnectExpanded = !healthConnectExpanded }
                                     )
                                     if (healthConnectExpanded) {
-                                        val availabilityStatus = HealthConnectClient.getSdkStatus(context)
-
                                         fun handleHCInteraction(onSuccess: () -> Unit) {
-                                            if (availabilityStatus == HealthConnectClient.SDK_UNAVAILABLE) {
-                                                Toast.makeText(
-                                                    context,
-                                                    "Health Connect is not available on this device",
-                                                    Toast.LENGTH_LONG
-                                                ).show()
+                                            val availabilityStatus = try {
+                                                HealthConnectClient.getSdkStatus(context)
+                                            } catch (_: Exception) {
+                                                HealthConnectClient.SDK_UNAVAILABLE
+                                            }
+
+                                            if (android.os.Build.VERSION.SDK_INT < 28) {
+                                                Toast.makeText(context, context.getString(R.string.toast_hc_not_available), Toast.LENGTH_LONG).show()
+                                            } else if (availabilityStatus == HealthConnectClient.SDK_UNAVAILABLE) {
+                                                Toast.makeText(context, context.getString(R.string.toast_hc_not_available), Toast.LENGTH_LONG).show()
                                             } else if (availabilityStatus == HealthConnectClient.SDK_UNAVAILABLE_PROVIDER_UPDATE_REQUIRED) {
                                                 val uriString =
                                                     "market://details?id=com.google.android.apps.healthdata&url=healthconnect%3A%2F%2Fonboarding"
-                                                context.startActivity(Intent(Intent.ACTION_VIEW).apply {
-                                                    setPackage("com.android.vending")
-                                                    data = uriString.toUri()
-                                                    putExtra("overlay", true)
-                                                    putExtra("callerId", context.packageName)
-                                                })
+                                                try {
+                                                    context.startActivity(Intent(Intent.ACTION_VIEW).apply {
+                                                        setPackage("com.android.vending")
+                                                        data = uriString.toUri()
+                                                        putExtra("overlay", true)
+                                                        putExtra("callerId", context.packageName)
+                                                    })
+                                                } catch (_: Exception) {
+                                                    try {
+                                                        uriHandler.openUri("https://play.google.com/store/apps/details?id=com.google.android.apps.healthdata")
+                                                    } catch (_: Exception) {
+                                                        Toast.makeText(context, context.getString(R.string.toast_hc_not_available), Toast.LENGTH_LONG).show()
+                                                    }
+                                                }
                                             } else {
                                                 if (uiState.healthConnectPermissionsGranted) {
                                                     onSuccess()

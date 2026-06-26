@@ -691,7 +691,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     fun databaseUpdateFromCSV(context: Context) {
         try {
-            val file = File(context.getExternalFilesDir(null), "database.csv")
+            val folder = context.getExternalFilesDir(null) ?: context.filesDir
+            val file = File(folder, "database.csv")
             val rows: List<List<String>> = csvReader().readAll(file.inputStream())
             check(rows[0].size==11){ context.getString(R.string.database) + ": " + context.getString(R.string.csv_wrong_number_fields)}
             databaseDeleteAll(context, false)
@@ -707,7 +708,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun databaseResetCSV(overwriteIfExists: Boolean, context: Context) {
-        val folder = context.getExternalFilesDir(null)
+        val folder = context.getExternalFilesDir(null) ?: context.filesDir
         val file = File(folder, "database.csv")
         if (!file.exists() || overwriteIfExists) {
             context.resources.openRawResource(R.raw.database).copyTo(file.outputStream())
@@ -715,7 +716,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun currentComboResetCSV(overwriteIfExists: Boolean, context: Context) {
-        val folder = context.getExternalFilesDir(null)
+        val folder = context.getExternalFilesDir(null) ?: context.filesDir
         val file = File(folder, "currentrecipe.csv")
         if (!file.exists() || overwriteIfExists) {
             context.resources.openRawResource(R.raw.currentrecipe).copyTo(file.outputStream())
@@ -723,7 +724,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun archiveResetCSV(overwriteIfExists: Boolean, context: Context) {
-        val folder = context.getExternalFilesDir(null)
+        val folder = context.getExternalFilesDir(null) ?: context.filesDir
         val file = File(folder, "archive.csv")
         if (!file.exists() || overwriteIfExists) {
             context.resources.openRawResource(R.raw.archive).copyTo(file.outputStream())
@@ -731,7 +732,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun dayResetCSV(overwriteIfExists: Boolean, context: Context) {
-        val folder = context.getExternalFilesDir(null)
+        val folder = context.getExternalFilesDir(null) ?: context.filesDir
         val file = File(folder, "day.csv")
         if (!file.exists() || overwriteIfExists) {
             context.resources.openRawResource(R.raw.day).copyTo(file.outputStream())
@@ -739,7 +740,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     private fun databaseWriteToCSV(context: Context) {
-        val file = File(context.getExternalFilesDir(null), "database.csv")
+        val folder = context.getExternalFilesDir(null) ?: context.filesDir
+        val file = File(folder, "database.csv")
         csvWriter().open(file) {
             writeRow(
                 listOf("Name") + NUTRIENT_PROPERTIES.map { it.nameForCSV } + listOf(
@@ -754,7 +756,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     private fun currentComboWriteToCSV(context: Context) {
-        val file = File(context.getExternalFilesDir(null), "currentrecipe.csv")
+        val folder = context.getExternalFilesDir(null) ?: context.filesDir
+        val file = File(folder, "currentrecipe.csv")
         csvWriter().open(file) {
             uiState.value.currentCombo.getCsvString().forEach {
                 writeRow(it)
@@ -763,7 +766,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     private fun dayWriteToCSV(context: Context) {
-        val file = File(context.getExternalFilesDir(null), "day.csv")
+        val folder = context.getExternalFilesDir(null) ?: context.filesDir
+        val file = File(folder, "day.csv")
         csvWriter().open(file) {
             uiState.value.day.getCsvString().forEach {
                 writeRow(it)
@@ -773,7 +777,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     fun currentComboUpdateFromCSV(context: Context) {
         try {
-            val file = File(context.getExternalFilesDir(null), "currentrecipe.csv")
+            val folder = context.getExternalFilesDir(null) ?: context.filesDir
+            val file = File(folder, "currentrecipe.csv")
             val rows: List<List<String>> = csvReader().readAll(file.inputStream())
             _uiState.update { currentState ->
                 currentState.copy(
@@ -788,7 +793,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     fun dayUpdateFromCSV(context: Context) {
         try {
-            val file = File(context.getExternalFilesDir(null), "day.csv")
+            val folder = context.getExternalFilesDir(null) ?: context.filesDir
+            val file = File(folder, "day.csv")
             val rows: List<List<String>> = csvReader().readAll(file.inputStream())
             _uiState.update { currentState ->
                 currentState.copy(
@@ -802,7 +808,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     fun optionsUpdateFromFile(context: Context) {
         try {
-            val file = File(context.getExternalFilesDir(null), "options.csv")
+            val folder = context.getExternalFilesDir(null) ?: context.filesDir
+            val file = File(folder, "options.csv")
             if (!file.exists()) return
             val rows: List<List<String>> = csvReader().readAll(file.inputStream())
             if (rows.isNotEmpty()) {
@@ -841,7 +848,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun optionsWriteToFile(context: Context) {
-        val file = File(context.getExternalFilesDir(null), "options.csv")
+        val folder = context.getExternalFilesDir(null) ?: context.filesDir
+        val file = File(folder, "options.csv")
         csvWriter().open(file) {
             val theme = when (uiState.value.themeUserSetting) {
                 AppTheme.MODE_NIGHT -> "dark"
@@ -855,14 +863,16 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun optionsResetFile(overwriteIfExists: Boolean, context: Context) {
-        val file = File(context.getExternalFilesDir(null), "options.csv")
+        val folder = context.getExternalFilesDir(null) ?: context.filesDir
+        val file = File(folder, "options.csv")
         if (!file.exists() || overwriteIfExists) {
-            File(context.getExternalFilesDir(null), "options.csv").writeText("dark")
+            file.writeText("dark")
         }
     }
 
     private fun archiveWriteToCSV(context: Context) {
-        val file = File(context.getExternalFilesDir(null), "archive.csv")
+        val folder = context.getExternalFilesDir(null) ?: context.filesDir
+        val file = File(folder, "archive.csv")
         csvWriter().open(file) {
             uiState.value.archive.getCsvString().forEach {
                 writeRow(it)
@@ -872,7 +882,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     fun archiveUpdateFromCSV(context: Context) {
         try {
-            val file = File(context.getExternalFilesDir(null), "archive.csv")
+            val folder = context.getExternalFilesDir(null) ?: context.filesDir
+            val file = File(folder, "archive.csv")
             val rows: List<List<String>> = csvReader().readAll(file.inputStream())
             check(rows[0].size==10){context.getString(R.string.archive)+ ": " + context.getString(R.string.csv_wrong_number_fields)}
             _uiState.update { currentState ->

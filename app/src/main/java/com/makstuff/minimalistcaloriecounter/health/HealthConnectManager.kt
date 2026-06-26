@@ -12,16 +12,33 @@ import androidx.health.connect.client.units.Mass
 import com.makstuff.minimalistcaloriecounter.R
 import com.makstuff.minimalistcaloriecounter.classes.Archive
 import com.makstuff.minimalistcaloriecounter.classes.Nutrients
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.time.LocalDate
 import java.time.ZoneId
 import kotlin.time.Duration.Companion.milliseconds
 
 class HealthConnectManager(private val context: Context) {
-    val healthConnectClient by lazy { HealthConnectClient.getOrCreate(context) }
+    
+    private fun getClient(): HealthConnectClient? {
+        return try {
+            if (isSdkAvailable()) {
+                HealthConnectClient.getOrCreate(context)
+            } else {
+                null
+            }
+        } catch (_: Throwable) {
+            null
+        }
+    }
+
+    fun isSdkAvailable(): Boolean {
+        return try {
+            HealthConnectClient.getSdkStatus(context) == HealthConnectClient.SDK_AVAILABLE
+        } catch (_: Throwable) {
+            false
+        }
+    }
 
     val permissions = setOf(
         HealthPermission.getWritePermission(NutritionRecord::class),
@@ -29,14 +46,25 @@ class HealthConnectManager(private val context: Context) {
     )
 
     suspend fun hasAllPermissions(): Boolean {
-        return healthConnectClient.permissionController.getGrantedPermissions().containsAll(permissions)
+        val client = getClient() ?: return false
+        return try {
+            client.permissionController.getGrantedPermissions().containsAll(permissions)
+        } catch (_: Throwable) {
+            false
+        }
     }
 
     suspend fun hasAnyPermissions(): Boolean {
-        return healthConnectClient.permissionController.getGrantedPermissions().isNotEmpty()
+        val client = getClient() ?: return false
+        return try {
+            client.permissionController.getGrantedPermissions().isNotEmpty()
+        } catch (_: Throwable) {
+            false
+        }
     }
 
     suspend fun syncSingleEntry(date: LocalDate, weight: Double, nutrients: Nutrients) {
+        val client = getClient() ?: return
         try {
             if (!hasAllPermissions()) return
 
@@ -45,8 +73,8 @@ class HealthConnectManager(private val context: Context) {
             val timeRange = TimeRangeFilter.between(startOfDay, endOfDay)
 
             // Overwrite by deleting first
-            healthConnectClient.deleteRecords(NutritionRecord::class, timeRange)
-            healthConnectClient.deleteRecords(WeightRecord::class, timeRange)
+            client.deleteRecords(NutritionRecord::class, timeRange)
+            client.deleteRecords(WeightRecord::class, timeRange)
 
             val nutritionRecords = mutableListOf<NutritionRecord>()
             val weightRecords = mutableListOf<WeightRecord>()
@@ -81,9 +109,9 @@ class HealthConnectManager(private val context: Context) {
                 )
             }
 
-            healthConnectClient.insertRecords(nutritionRecords)
-            healthConnectClient.insertRecords(weightRecords)
-        } catch (e: Exception) {
+            client.insertRecords(nutritionRecords)
+            client.insertRecords(weightRecords)
+        } catch (e: Throwable) {
             withContext(Dispatchers.Main) {
                 Toast.makeText(context, "Health Connect Error: ${e.message}", Toast.LENGTH_LONG).show()
             }
@@ -91,15 +119,16 @@ class HealthConnectManager(private val context: Context) {
     }
 
     suspend fun deleteSingleEntry(date: LocalDate) {
+        val client = getClient() ?: return
         try {
             if (!hasAllPermissions()) return
             val startOfDay = date.atStartOfDay(ZoneId.systemDefault()).toInstant()
             val endOfDay = date.atTime(23, 59, 59).atZone(ZoneId.systemDefault()).toInstant()
             val timeRange = TimeRangeFilter.between(startOfDay, endOfDay)
 
-            healthConnectClient.deleteRecords(NutritionRecord::class, timeRange)
-            healthConnectClient.deleteRecords(WeightRecord::class, timeRange)
-        } catch (e: Exception) {
+            client.deleteRecords(NutritionRecord::class, timeRange)
+            client.deleteRecords(WeightRecord::class, timeRange)
+        } catch (e: Throwable) {
             withContext(Dispatchers.Main) {
                 Toast.makeText(context, "Health Connect Error: ${e.message}", Toast.LENGTH_LONG).show()
             }
@@ -111,6 +140,7 @@ class HealthConnectManager(private val context: Context) {
         onProgress: (Float?, Int, Int) -> Unit,
         onError: (String) -> Unit
     ) {
+        val client = getClient() ?: return
         if (archive.entries.isEmpty()) return
 
         try {
@@ -145,8 +175,8 @@ class HealthConnectManager(private val context: Context) {
                             val endOfDay = date.atTime(23, 59, 59).atZone(ZoneId.systemDefault()).toInstant()
                             val timeRange = TimeRangeFilter.between(startOfDay, endOfDay)
 
-                            healthConnectClient.deleteRecords(NutritionRecord::class, timeRange)
-                            healthConnectClient.deleteRecords(WeightRecord::class, timeRange)
+                            client.deleteRecords(NutritionRecord::class, timeRange)
+                            client.deleteRecords(WeightRecord::class, timeRange)
 
                             nutritionRecords.add(
                                 NutritionRecord(
@@ -179,11 +209,11 @@ class HealthConnectManager(private val context: Context) {
                             }
                         }
 
-                        healthConnectClient.insertRecords(nutritionRecords)
-                        healthConnectClient.insertRecords(weightRecords)
+                        client.insertRecords(nutritionRecords)
+                        client.insertRecords(weightRecords)
                         
                         success = true
-                    } catch (e: Exception) {
+                    } catch (e: Throwable) {
                         attempts++
                         val isQuotaError = e.message?.contains("quota exceeded", ignoreCase = true) == true
                         if (isQuotaError && attempts < maxAttempts) {
@@ -208,7 +238,7 @@ class HealthConnectManager(private val context: Context) {
             }
         } catch (e: kotlinx.coroutines.CancellationException) {
             throw e
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
             withContext(Dispatchers.Main) {
                 onError(e.message ?: "Unknown Error")
             }

@@ -11,8 +11,8 @@ android {
         applicationId = "com.makstuff.minimalistcaloriecounter"
         minSdk = 27
         targetSdk = 37
-        versionCode = 35
-        versionName = "5.12"
+        versionCode = 36
+        versionName = "5.13"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {

@@ -152,4 +152,5 @@
     <string name="please_wait">Please wait</string>
     <string name="error_archive_date_exists">For this date, an Archive Entry already exists.</string>
     <string name="error_archive_date_future">Archive Entries cannot be in the future.</string>
+    <string name="toast_hc_not_available">Health Connect is not available on this device.</string>
 </resources>
