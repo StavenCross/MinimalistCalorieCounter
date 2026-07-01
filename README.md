@@ -22,6 +22,16 @@
 - There is no option in the app for that, but if you want to completely clear out the Database, you can import [database_empty.csv](https://github.com/Makstuff/MinimalistCalorieCounter/blob/9da0ef3786e6f7f54b71d335681c2f8e5c225166/database_empty.csv).
 - In case you end up manually editing the database CSV file, ensure it follows the [default format](https://github.com/Makstuff/MinimalistCalorieCounter/tree/3cd6049b0cee640e6fdbafbaff69f8ea3e6b145c/app/src/main/res/raw) and especially avoid illegal symbols like the classic culprits ";|,. Due to my lack of motivation as well as coding skill, the error messages of CSV import function are not particularly useful, so finding small errors like a comma in "3,5% whole milk" can be quite tricky.
 
+#### Missing features
+
+This section is mainly based on emails I have gotten that request various features. I am very open to small tweaks and fixed and QoL stuff, but given the crappy structure of my base code, most major changes and extensions are super annoying to do without breaking anything, and need a lot of motivation. Given that I personally am mostly happy with the app's current set of features, this motivation can be hard to find.
+
+- Recipes are converted to a "normal" Database Entry when saved, and thus can not be edited ingredient-wise once they have been saved. To make this work I would have to somehow distinguish between "base food" and "recipe" in the database and give them separate edit screens, figure out how to combinine recipes with other recipes and how to not break existing databases, etc.. This feature is something I can see having quite a lot of use, even some for my own logging, so I might still do it at some point but no promises.
+
+- Micronutrients (like Vitamins and Minerals) are a similar case. Given how many there are and that most people care either about none at all or a very limited but varying subset of them, essentially the user would have to be able to pick what they want to track. Which would require a custom database structure for each user. Again, not impossible, but annoying to add and rather niche so probably never.
+
+- During the initial development I was not aware of how weird USA and Canada's food labels are with their arbitrary "portions" and including fiber in carbohydrate, so the app is incompatible with this type of labels. All things considered this would be one of the less annoying extensions, but for now, my solution is excluding USA and Canada from the Play Store target regions :P
+
 ## About this app
 
 After testing many calorie counter apps without finding a perfect fit, I finally decided to take matters into my own hand and learn how to code for Android myself. This app is the final result of my efforts.
@@ -30,7 +40,6 @@ It is optimized for a minimum number of clicks in the long-term, for which it sa
  
 The early versions of this app until about version code 3 were coded 100% manually. For more complicated stuff I added later, like Health Connect support and the French, Italian, and Spanish translations, I however did massively rely on Gemini. Since for my skill level these things were pretty much impossible to do on my own, I am just glad I could get them done at all. By the way, if you find nonsensical translations in your language, please let me know.
 
-Another detail is that during the initial development I was not aware of how weird USA and Canada's food labels are with their arbitrary "portions" and including fiber in carbohydrate. So the app is incompatible with this type of labels, and fixing this would be a major headache even with Gemini, so I decided to just exclude USA and Canada from the target regions in the Play Store. If you think your country should be excluded as well, please also let me know.
 
 ## Screenshots
 
