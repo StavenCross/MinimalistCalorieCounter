@@ -4,6 +4,7 @@ import java.time.LocalDateTime
 
 data class HealthConnectNutritionMeal(
     val recordId: String,
+    val clientRecordId: String?,
     val startTime: LocalDateTime,
     val endTime: LocalDateTime,
     val name: String,
@@ -30,4 +31,15 @@ sealed class HealthConnectDeleteResult {
     data object HealthConnectUnavailable : HealthConnectDeleteResult()
     data object PermissionsMissing : HealthConnectDeleteResult()
     data class Failed(val message: String) : HealthConnectDeleteResult()
+}
+
+sealed class HistoricalMealHealthConnectResult {
+    data class Success(
+        val written: Int,
+        val skippedDuplicates: Int,
+        val deleted: Int = 0,
+    ) : HistoricalMealHealthConnectResult()
+    data object HealthConnectUnavailable : HistoricalMealHealthConnectResult()
+    data object PermissionsMissing : HistoricalMealHealthConnectResult()
+    data class Failed(val message: String) : HistoricalMealHealthConnectResult()
 }

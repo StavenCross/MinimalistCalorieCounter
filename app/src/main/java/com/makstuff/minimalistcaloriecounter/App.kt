@@ -1,5 +1,6 @@
 package com.makstuff.minimalistcaloriecounter
 
+import android.app.DatePickerDialog
 import android.content.Intent
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -128,8 +129,10 @@ import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.delay
 import java.io.File
 import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 import android.view.WindowManager
 import androidx.compose.runtime.DisposableEffect
+import com.github.doyaaaaaken.kotlincsv.dsl.csvReader
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -311,6 +314,23 @@ fun App(
             }
         }
     )
+    val historicalMealImporter = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument(),
+        onResult = { uri ->
+            try {
+                val rows = uri?.let { context.contentResolver.openInputStream(it) }?.use {
+                    csvReader().readAll(it)
+                } ?: return@rememberLauncherForActivityResult
+                viewModel.previewHistoricalMealImport(rows)
+            } catch (e: Throwable) {
+                Toast.makeText(
+                    context,
+                    "Historical meal import failed: ${e.message}",
+                    Toast.LENGTH_LONG,
+                ).show()
+            }
+        }
+    )
 
     @Composable
     fun SettingsPageContent() {
@@ -320,6 +340,31 @@ fun App(
         var archiveExpanded by remember { mutableStateOf(false) }
         var databaseExpanded by remember { mutableStateOf(false) }
         var supportExpanded by remember { mutableStateOf(false) }
+        var historicalCleanupConfirmVisible by remember { mutableStateOf(false) }
+        val cleanupStartDate = uiState.healthConnectNutritionCleanupStartDate
+        val cleanupEndDate = uiState.healthConnectNutritionCleanupEndDate
+        val cleanupStartPicker = remember(cleanupStartDate) {
+            DatePickerDialog(
+                context,
+                { _, year, month, day ->
+                    viewModel.updateHealthConnectNutritionCleanupStartDate(java.time.LocalDate.of(year, month + 1, day))
+                },
+                cleanupStartDate.year,
+                cleanupStartDate.monthValue - 1,
+                cleanupStartDate.dayOfMonth,
+            )
+        }
+        val cleanupEndPicker = remember(cleanupEndDate) {
+            DatePickerDialog(
+                context,
+                { _, year, month, day ->
+                    viewModel.updateHealthConnectNutritionCleanupEndDate(java.time.LocalDate.of(year, month + 1, day))
+                },
+                cleanupEndDate.year,
+                cleanupEndDate.monthValue - 1,
+                cleanupEndDate.dayOfMonth,
+            )
+        }
 
         fun handleHCInteraction(onSuccess: () -> Unit) {
             val availabilityStatus = try {
@@ -355,6 +400,29 @@ fun App(
                     viewModel.setAlertDialogHealthConnectPermissions(true)
                 }
             }
+        }
+
+        if (historicalCleanupConfirmVisible) {
+            AlertDialog(
+                onDismissRequest = { historicalCleanupConfirmVisible = false },
+                confirmButton = {
+                    ButtonText(
+                        text = stringResource(R.string.button_continue),
+                        onClick = {
+                            historicalCleanupConfirmVisible = false
+                            handleHCInteraction { viewModel.removeHealthConnectNutritionRange() }
+                        },
+                    )
+                },
+                dismissButton = {
+                    ButtonText(
+                        text = stringResource(R.string.button_cancel),
+                        onClick = { historicalCleanupConfirmVisible = false },
+                    )
+                },
+                title = { Text(stringResource(R.string.confirmation)) },
+                text = { Text("Remove all meal and nutrition records written by this app from ${cleanupStartDate} through ${cleanupEndDate}? This includes Quick add, historical imports, and legacy Daily Total nutrition rows in that range.") },
+            )
         }
 
         LazyColumn(
@@ -498,6 +566,81 @@ fun App(
                         text = stringResource(R.string.dropdown_export_archive_health_connect),
                         onClick = { handleHCInteraction { viewModel.setAlertDialogHealthConnectSync(true) } },
                     )
+                }
+                item {
+                    OptionsItem(
+                        text = "Preview historical meal CSV",
+                        onClick = { historicalMealImporter.launch(arrayOf("text/*", "text/comma-separated-values")) },
+                    )
+                }
+                uiState.historicalMealImportPreview?.let { preview ->
+                    item {
+                        Text(
+                            text = listOfNotNull(
+                                "Historical CSV: ${preview.validRows} foods",
+                                "${preview.mealCount} meals",
+                                "${preview.skippedRows} skipped",
+                                preview.startDate?.let { start -> preview.endDate?.let { end -> "$start to $end" } },
+                            ).joinToString(" | "),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
+                        )
+                    }
+                    if (preview.issues.isNotEmpty()) {
+                        item {
+                            Text(
+                                text = preview.issues.take(3).joinToString("\n") { "Row ${it.rowNumber}: ${it.message}" },
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.error,
+                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
+                            )
+                        }
+                    }
+                    item {
+                        OptionsItem(
+                            text = if (uiState.historicalMealImportInProgress) "Writing historical meals..." else "Write historical meals to Health Connect",
+                            onClick = { handleHCInteraction { viewModel.writeHistoricalMealImport() } },
+                        )
+                    }
+                }
+                item { HorizontalDivider(Modifier.padding(vertical = 8.dp)) }
+                item {
+                    OptionsSectionHeader(text = "Remove Health Connect meals and nutrition")
+                }
+                item {
+                    OptionsItem(
+                        text = "Start date",
+                        trailingText = cleanupStartDate.format(DateTimeFormatter.ISO_LOCAL_DATE),
+                        onClick = { cleanupStartPicker.show() },
+                    )
+                }
+                item {
+                    OptionsItem(
+                        text = "End date",
+                        trailingText = cleanupEndDate.format(DateTimeFormatter.ISO_LOCAL_DATE),
+                        onClick = { cleanupEndPicker.show() },
+                    )
+                }
+                item {
+                    OptionsItem(
+                        text = if (uiState.historicalMealImportInProgress) {
+                            "Removal in progress..."
+                        } else {
+                            "Remove Health Connect meals and nutrition"
+                        },
+                        onClick = { historicalCleanupConfirmVisible = true },
+                    )
+                }
+                uiState.historicalMealImportMessage?.let { message ->
+                    item {
+                        Text(
+                            text = message,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
+                        )
+                    }
                 }
             }
 

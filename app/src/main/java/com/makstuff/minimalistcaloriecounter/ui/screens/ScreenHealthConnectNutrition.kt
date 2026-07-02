@@ -12,20 +12,20 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Restaurant
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.ElevatedButton
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -34,6 +34,10 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -64,6 +68,30 @@ fun ScreenHealthConnectNutrition(
 
     val selectedDate = uiState.healthConnectViewerDate
     val meals = uiState.healthConnectViewerMeals
+    var selectedFood by remember { mutableStateOf<HealthConnectNutritionMeal?>(null) }
+    var selectedMealGroup by remember { mutableStateOf<MealGroup?>(null) }
+
+    selectedFood?.let { food ->
+        FoodDetailDialog(
+            meal = food,
+            onDismiss = { selectedFood = null },
+            onDelete = {
+                selectedFood = null
+                onDeleteMeal(food.recordId)
+            },
+        )
+    }
+
+    selectedMealGroup?.let { group ->
+        MealDetailDialog(
+            group = group,
+            onDismiss = { selectedMealGroup = null },
+            onFoodClick = {
+                selectedMealGroup = null
+                selectedFood = it
+            },
+        )
+    }
 
     LazyColumn(
         modifier = Modifier
@@ -107,12 +135,10 @@ fun ScreenHealthConnectNutrition(
 
         groups.forEach { group ->
             item {
-                MealGroupHeader(group)
-            }
-            items(group.foods) { meal ->
-                FoodRecordCard(
-                    meal = meal,
-                    onDelete = { onDeleteMeal(meal.recordId) },
+                MealCard(
+                    group = group,
+                    onMealClick = { selectedMealGroup = group },
+                    onFoodClick = { selectedFood = it },
                 )
             }
         }
@@ -338,74 +364,269 @@ private fun DaySummaryCard(
 }
 
 @Composable
-private fun MealGroupHeader(group: MealGroup) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(top = 2.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically,
+private fun MealCard(
+    group: MealGroup,
+    onMealClick: () -> Unit,
+    onFoodClick: (HealthConnectNutritionMeal) -> Unit,
+) {
+    val calories = group.foods.sumOf { it.energy }
+    val protein = group.foods.sumOf { it.protein }
+    val carbs = group.foods.sumOf { it.totalCarbohydrate }
+    val fat = group.foods.sumOf { it.totalFat }
+    val fiber = group.foods.sumOf { it.dietaryFiber }
+
+    SurfacePanel(
+        modifier = Modifier.clickable(onClick = onMealClick),
+        borderColor = group.color.copy(alpha = 0.34f),
+        backgroundColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+        contentPadding = 10,
     ) {
         Row(
+            modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Box(
-                modifier = Modifier
-                    .size(30.dp)
-                    .clip(CircleShape)
-                    .background(group.color.copy(alpha = 0.16f)),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Restaurant,
-                    contentDescription = null,
-                    tint = group.color,
-                    modifier = Modifier.size(17.dp),
-                )
-            }
-            Column {
-                Text(
-                    text = group.label,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                )
-                Text(
-                    text = "${group.foods.size} foods",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+            MealTitle(
+                group = group,
+                modifier = Modifier.weight(1f),
+            )
+            MacroSummaryChip("C", carbs)
+            MacroSummaryChip("P", protein)
+            MacroSummaryChip("F", fat)
+            MacroSummaryChip("Fi", fiber)
+            Text(
+                text = "${calories.toFormattedString(true)} kcal",
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1,
+            )
+        }
+
+        Column(
+            verticalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            group.foods.forEach { food ->
+                CompactFoodRow(
+                    meal = food,
+                    accentColor = group.color,
+                    onClick = { onFoodClick(food) },
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun MealTitle(
+    group: MealGroup,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            modifier = Modifier
+                .size(34.dp)
+                .clip(CircleShape)
+                .background(group.color.copy(alpha = 0.16f)),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                imageVector = Icons.Default.Restaurant,
+                contentDescription = null,
+                tint = group.color,
+                modifier = Modifier.size(18.dp),
+            )
+        }
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(1.dp),
+        ) {
+            Text(
+                text = group.label,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Text(
+                text = "${group.foods.size} foods",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+            )
+        }
+    }
+}
+
+@Composable
+private fun MacroSummaryChip(
+    label: String,
+    value: Double,
+) {
+    Row(
+        modifier = Modifier
+            .clip(RoundedCornerShape(7.dp))
+            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.72f))
+            .border(
+                BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.18f)),
+                RoundedCornerShape(7.dp),
+            )
+            .heightIn(min = 46.dp)
+            .padding(horizontal = 10.dp, vertical = 7.dp),
+        horizontalArrangement = Arrangement.spacedBy(5.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
         Text(
-            text = "${group.foods.sumOf { it.energy }.toFormattedString(true)} kcal",
-            style = MaterialTheme.typography.labelLarge,
+            text = label,
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+        )
+        Text(
+            text = value.toFormattedString(true),
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onSurface,
+            maxLines = 1,
         )
     }
 }
 
 @Composable
-private fun FoodRecordCard(
+private fun CompactFoodRow(
     meal: HealthConnectNutritionMeal,
+    accentColor: Color,
+    onClick: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(8.dp))
+            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.70f))
+            .border(
+                BorderStroke(1.dp, accentColor.copy(alpha = 0.18f)),
+                RoundedCornerShape(8.dp),
+            )
+            .clickable(onClick = onClick)
+            .padding(horizontal = 10.dp, vertical = 9.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = meal.name,
+            modifier = Modifier.weight(1f),
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.SemiBold,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+        Text(
+            text = "${meal.energy.toFormattedString(true)} kcal",
+            modifier = Modifier.padding(start = 10.dp),
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+        )
+    }
+}
+
+@Composable
+private fun MealDetailDialog(
+    group: MealGroup,
+    onDismiss: () -> Unit,
+    onFoodClick: (HealthConnectNutritionMeal) -> Unit,
+) {
+    val calories = group.foods.sumOf { it.energy }
+    val protein = group.foods.sumOf { it.protein }
+    val carbs = group.foods.sumOf { it.totalCarbohydrate }
+    val fat = group.foods.sumOf { it.totalFat }
+    val fiber = group.foods.sumOf { it.dietaryFiber }
+    val sugar = group.foods.sumOf { it.sugar }
+    val saturatedFat = group.foods.sumOf { it.saturatedFat }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                MealTitle(
+                    group = group,
+                    modifier = Modifier.weight(1f),
+                )
+                Text(
+                    text = "${calories.toFormattedString(true)} kcal",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                )
+            }
+        },
+        text = {
+            Column(
+                modifier = Modifier.verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    MacroSummaryChip("C", carbs)
+                    MacroSummaryChip("P", protein)
+                    MacroSummaryChip("F", fat)
+                    MacroSummaryChip("Fi", fiber)
+                }
+                MacroGrid(
+                    items = listOf(
+                        "Calories" to "${calories.toFormattedString(true)} kcal",
+                        "Carbs" to "${carbs.toFormattedString(true)}g",
+                        "Protein" to "${protein.toFormattedString(true)}g",
+                        "Fat" to "${fat.toFormattedString(true)}g",
+                        "Fiber" to "${fiber.toFormattedString(true)}g",
+                        "Sugar" to "${sugar.toFormattedString(true)}g",
+                        "Sat fat" to "${saturatedFat.toFormattedString(true)}g",
+                    )
+                )
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    group.foods.forEach { food ->
+                        CompactFoodRow(
+                            meal = food,
+                            accentColor = group.color,
+                            onClick = { onFoodClick(food) },
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Close")
+            }
+        },
+    )
+}
+
+@Composable
+private fun FoodDetailDialog(
+    meal: HealthConnectNutritionMeal,
+    onDismiss: () -> Unit,
     onDelete: () -> Unit,
 ) {
-    SurfacePanel(contentPadding = 10) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.Top,
-        ) {
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(4.dp),
-            ) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(
                     text = meal.name,
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.SemiBold,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
                 )
                 Text(
                     text = meal.startTime.format(DateTimeFormatter.ofPattern("h:mm a")),
@@ -413,32 +634,43 @@ private fun FoodRecordCard(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            IconButton(onClick = onDelete, modifier = Modifier.size(36.dp)) {
-                Icon(
-                    imageVector = Icons.Default.Delete,
-                    contentDescription = "Delete food record",
-                    tint = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.size(19.dp),
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                MacroGrid(
+                    items = listOf(
+                        "Calories" to "${meal.energy.toFormattedString(true)} kcal",
+                        "Carbs" to "${meal.totalCarbohydrate.toFormattedString(true)}g",
+                        "Protein" to "${meal.protein.toFormattedString(true)}g",
+                        "Fat" to "${meal.totalFat.toFormattedString(true)}g",
+                        "Fiber" to "${meal.dietaryFiber.toFormattedString(true)}g",
+                        "Sugar" to "${meal.sugar.toFormattedString(true)}g",
+                        "Sat fat" to "${meal.saturatedFat.toFormattedString(true)}g",
+                        "Fat kcal" to meal.energyFromFat?.let { "${it.toFormattedString(true)} kcal" }.orEmpty(),
+                    )
                 )
             }
-        }
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
-        ) {
-            StatPill("kcal", meal.energy.toFormattedString(true), Modifier.weight(1f))
-            StatPill("carbs", "${meal.totalCarbohydrate.toFormattedString(true)}g", Modifier.weight(1f))
-            StatPill("protein", "${meal.protein.toFormattedString(true)}g", Modifier.weight(1f))
-        }
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
-        ) {
-            StatPill("fat", "${meal.totalFat.toFormattedString(true)}g", Modifier.weight(1f))
-            StatPill("fiber", "${meal.dietaryFiber.toFormattedString(true)}g", Modifier.weight(1f))
-            StatPill("sugar", "${meal.sugar.toFormattedString(true)}g", Modifier.weight(1f))
-        }
-    }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Close")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDelete) {
+                Icon(
+                    imageVector = Icons.Default.Delete,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.size(18.dp),
+                )
+                Text(
+                    text = "Delete",
+                    color = MaterialTheme.colorScheme.error,
+                )
+            }
+        },
+    )
 }
 
 @Composable

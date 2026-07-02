@@ -14,9 +14,14 @@ import androidx.health.connect.client.units.Energy
 import androidx.health.connect.client.units.Mass
 import com.makstuff.minimalistcaloriecounter.R
 import com.makstuff.minimalistcaloriecounter.classes.Archive
+import com.makstuff.minimalistcaloriecounter.classes.HistoricalMealFood
+import com.makstuff.minimalistcaloriecounter.classes.HistoricalMealImporter
 import com.makstuff.minimalistcaloriecounter.classes.Nutrients
 import com.makstuff.minimalistcaloriecounter.classes.QuickImportHealthPayload
 import com.makstuff.minimalistcaloriecounter.classes.QuickImportHealthWriteResult
+import com.makstuff.minimalistcaloriecounter.classes.QuickImportMealType
+import com.makstuff.minimalistcaloriecounter.classes.QuickImportNutrients
+import androidx.health.connect.client.records.metadata.Metadata
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.time.LocalDate
@@ -157,7 +162,7 @@ class HealthConnectManager(private val context: Context) {
                         dietaryFiber = Mass.grams(payload.dietaryFiber),
                         mealType = payload.mealType,
                         name = payload.name,
-                        metadata = androidx.health.connect.client.records.metadata.Metadata.manualEntry(),
+                        metadata = payload.clientRecordId?.let { Metadata.manualEntry(it, 1L) } ?: Metadata.manualEntry(),
                 )
             })
             Log.i("MCCHealthConnect", "Quick food nutrition write succeeded: ${payloads.size} records")
@@ -191,6 +196,7 @@ class HealthConnectManager(private val context: Context) {
     private fun NutritionRecord.toHealthConnectNutritionMeal(): HealthConnectNutritionMeal {
         return HealthConnectNutritionMeal(
             recordId = metadata.id,
+            clientRecordId = metadata.clientRecordId,
             startTime = LocalDateTime.ofInstant(startTime, ZoneId.systemDefault()),
             endTime = LocalDateTime.ofInstant(endTime, ZoneId.systemDefault()),
             name = name ?: "Nutrition record",
@@ -203,6 +209,221 @@ class HealthConnectManager(private val context: Context) {
             saturatedFat = saturatedFat?.inGrams ?: 0.0,
             dietaryFiber = dietaryFiber?.inGrams ?: 0.0,
             mealType = mealType,
+        )
+    }
+
+    suspend fun writeHistoricalMealFoods(
+        foods: List<HistoricalMealFood>,
+        onProgress: (Float?, Int, Int) -> Unit,
+    ): HistoricalMealHealthConnectResult {
+        if (foods.isEmpty()) return HistoricalMealHealthConnectResult.Success(written = 0, skippedDuplicates = 0)
+        if (!isSdkAvailable()) return HistoricalMealHealthConnectResult.HealthConnectUnavailable
+        val client = getClient() ?: return HistoricalMealHealthConnectResult.HealthConnectUnavailable
+
+        return try {
+            if (!hasWritePermissions() || !hasReadNutritionPermissions()) {
+                return HistoricalMealHealthConnectResult.PermissionsMissing
+            }
+
+            val existingFingerprints = mutableSetOf<String>()
+            val existingClientRecordIds = mutableSetOf<String>()
+            foods.map { it.dateTime.toLocalDate() }.distinct().forEach { date ->
+                readNutritionRecords(client, date).forEach { record ->
+                    record.metadata.clientRecordId?.let(existingClientRecordIds::add)
+                    existingFingerprint(record)?.let(existingFingerprints::add)
+                }
+            }
+
+            val candidates = foods.filter { food ->
+                food.clientRecordId !in existingClientRecordIds && food.fingerprint !in existingFingerprints
+            }
+            val total = candidates.size
+            if (total == 0) {
+                withContext(Dispatchers.Main) { onProgress(1.0f, 0, 0) }
+                return HistoricalMealHealthConnectResult.Success(written = 0, skippedDuplicates = foods.size)
+            }
+
+            var written = 0
+            candidates.chunked(25).forEachIndexed { index, chunk ->
+                var success = false
+                var attempts = 0
+                while (!success && attempts < 5) {
+                    try {
+                        kotlinx.coroutines.yield()
+                        client.insertRecords(chunk.map { it.toHealthPayload().toNutritionRecord() })
+                        success = true
+                    } catch (e: Throwable) {
+                        attempts++
+                        val isQuotaError = e.message?.contains("quota exceeded", ignoreCase = true) == true
+                        if (isQuotaError && attempts < 5) {
+                            kotlinx.coroutines.delay((3000L * attempts).milliseconds)
+                        } else {
+                            throw e
+                        }
+                    }
+                }
+                written += chunk.size
+                withContext(Dispatchers.Main) {
+                    onProgress((index + 1).toFloat() / candidates.chunked(25).size, written, total)
+                }
+                kotlinx.coroutines.delay(500.milliseconds)
+            }
+
+            HistoricalMealHealthConnectResult.Success(
+                written = written,
+                skippedDuplicates = foods.size - written,
+            )
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
+        } catch (e: Throwable) {
+            HistoricalMealHealthConnectResult.Failed(e.message ?: "Unknown historical meal import error")
+        }
+    }
+
+    suspend fun cleanupHistoricalMealRecords(dates: Set<LocalDate>): HistoricalMealHealthConnectResult {
+        if (dates.isEmpty()) return HistoricalMealHealthConnectResult.Success(written = 0, skippedDuplicates = 0, deleted = 0)
+        if (!isSdkAvailable()) return HistoricalMealHealthConnectResult.HealthConnectUnavailable
+        val client = getClient() ?: return HistoricalMealHealthConnectResult.HealthConnectUnavailable
+
+        return try {
+            if (!hasWritePermissions() || !hasReadNutritionPermissions()) {
+                return HistoricalMealHealthConnectResult.PermissionsMissing
+            }
+
+            var deleted = 0
+            dates.forEach { date ->
+                val records = readNutritionRecords(client, date)
+                val recordIds = records
+                    .filter { record ->
+                        record.metadata.clientRecordId?.startsWith(HistoricalMealImporter.CLIENT_RECORD_ID_PREFIX) == true ||
+                            (record.name == "Daily Total" && record.mealType == androidx.health.connect.client.records.MealType.MEAL_TYPE_UNKNOWN)
+                    }
+                    .map { it.metadata.id }
+                    .filter { it.isNotBlank() }
+
+                recordIds.chunked(100).forEach { ids ->
+                    if (ids.isNotEmpty()) {
+                        client.deleteRecords(
+                            NutritionRecord::class,
+                            recordIdsList = ids,
+                            clientRecordIdsList = emptyList(),
+                        )
+                        deleted += ids.size
+                    }
+                }
+            }
+
+            HistoricalMealHealthConnectResult.Success(written = 0, skippedDuplicates = 0, deleted = deleted)
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
+        } catch (e: Throwable) {
+            HistoricalMealHealthConnectResult.Failed(e.message ?: "Unknown historical meal cleanup error")
+        }
+    }
+
+    suspend fun deleteNutritionRecordsInRange(
+        startDate: LocalDate,
+        endDate: LocalDate,
+        onProgress: (Float?, Int, Int) -> Unit,
+    ): HistoricalMealHealthConnectResult {
+        if (!isSdkAvailable()) return HistoricalMealHealthConnectResult.HealthConnectUnavailable
+        val client = getClient() ?: return HistoricalMealHealthConnectResult.HealthConnectUnavailable
+
+        return try {
+            if (!hasWritePermissions() || !hasReadNutritionPermissions()) {
+                return HistoricalMealHealthConnectResult.PermissionsMissing
+            }
+            val firstDate = minOf(startDate, endDate)
+            val lastDate = maxOf(startDate, endDate)
+            val dates = generateSequence(firstDate) { current ->
+                current.plusDays(1).takeIf { it <= lastDate }
+            }.toList()
+
+            val idsToDelete = mutableListOf<String>()
+            dates.forEachIndexed { index, date ->
+                idsToDelete += readNutritionRecords(client, date)
+                    .map { it.metadata.id }
+                    .filter { it.isNotBlank() }
+                withContext(Dispatchers.Main) {
+                    onProgress((index + 1).toFloat() / dates.size, index + 1, dates.size)
+                }
+            }
+
+            var deleted = 0
+            idsToDelete.chunked(100).forEach { ids ->
+                client.deleteRecords(
+                    NutritionRecord::class,
+                    recordIdsList = ids,
+                    clientRecordIdsList = emptyList(),
+                )
+                deleted += ids.size
+            }
+
+            HistoricalMealHealthConnectResult.Success(written = 0, skippedDuplicates = 0, deleted = deleted)
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
+        } catch (e: Throwable) {
+            HistoricalMealHealthConnectResult.Failed(e.message ?: "Unknown Health Connect nutrition cleanup error")
+        }
+    }
+
+    private suspend fun readNutritionRecords(client: HealthConnectClient, date: LocalDate): List<NutritionRecord> {
+        val startOfDay = date.atStartOfDay(ZoneId.systemDefault()).toInstant()
+        val endOfDay = date.plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant()
+        return client.readRecords(
+            ReadRecordsRequest(
+                recordType = NutritionRecord::class,
+                timeRangeFilter = TimeRangeFilter.between(startOfDay, endOfDay),
+                dataOriginFilter = setOf(DataOrigin(context.packageName)),
+                ascendingOrder = true,
+            )
+        ).records
+    }
+
+    private fun QuickImportHealthPayload.toNutritionRecord(): NutritionRecord {
+        val startTime = dateTime.atZone(ZoneId.systemDefault()).toInstant()
+        val endTime = dateTime.plusMinutes(1).atZone(ZoneId.systemDefault()).toInstant()
+        return NutritionRecord(
+            startTime = startTime,
+            startZoneOffset = ZoneId.systemDefault().rules.getOffset(startTime),
+            endTime = endTime,
+            endZoneOffset = ZoneId.systemDefault().rules.getOffset(endTime),
+            energy = Energy.kilocalories(energy),
+            energyFromFat = Energy.kilocalories(energyFromFat),
+            totalCarbohydrate = Mass.grams(totalCarbohydrate),
+            sugar = Mass.grams(sugar),
+            protein = Mass.grams(protein),
+            totalFat = Mass.grams(totalFat),
+            saturatedFat = Mass.grams(saturatedFat),
+            dietaryFiber = Mass.grams(dietaryFiber),
+            mealType = mealType,
+            name = name,
+            metadata = clientRecordId?.let { Metadata.manualEntry(it, 1L) } ?: Metadata.manualEntry(),
+        )
+    }
+
+    private fun existingFingerprint(record: NutritionRecord): String? {
+        val dateTime = LocalDateTime.ofInstant(record.startTime, ZoneId.systemDefault())
+        val mealType = when (record.mealType) {
+            androidx.health.connect.client.records.MealType.MEAL_TYPE_BREAKFAST -> QuickImportMealType.Breakfast
+            androidx.health.connect.client.records.MealType.MEAL_TYPE_LUNCH -> QuickImportMealType.Lunch
+            androidx.health.connect.client.records.MealType.MEAL_TYPE_DINNER -> QuickImportMealType.Dinner
+            androidx.health.connect.client.records.MealType.MEAL_TYPE_SNACK -> QuickImportMealType.Snack
+            else -> QuickImportMealType.inferFrom(dateTime)
+        }
+        return HistoricalMealImporter.fingerprint(
+            dateTime = dateTime,
+            mealType = mealType,
+            name = record.name ?: "",
+            nutrients = QuickImportNutrients(
+                energy = record.energy?.inKilocalories ?: 0.0,
+                carbohydrate = record.totalCarbohydrate?.inGrams ?: 0.0,
+                sugar = record.sugar?.inGrams ?: 0.0,
+                protein = record.protein?.inGrams ?: 0.0,
+                fat = record.totalFat?.inGrams ?: 0.0,
+                saturatedFat = record.saturatedFat?.inGrams ?: 0.0,
+                fiber = record.dietaryFiber?.inGrams ?: 0.0,
+            ),
         )
     }
 

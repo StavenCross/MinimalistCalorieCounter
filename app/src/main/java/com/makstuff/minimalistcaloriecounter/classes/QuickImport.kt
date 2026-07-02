@@ -87,6 +87,7 @@ data class QuickImportHealthPayload(
     val saturatedFat: Double,
     val dietaryFiber: Double,
     val name: String,
+    val clientRecordId: String? = null,
 )
 
 enum class QuickImportMealType(val label: String, val healthConnectValue: Int) {

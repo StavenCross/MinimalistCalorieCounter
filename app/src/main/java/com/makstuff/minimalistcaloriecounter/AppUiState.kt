@@ -9,6 +9,7 @@ import com.makstuff.minimalistcaloriecounter.classes.Archive
 import com.makstuff.minimalistcaloriecounter.classes.Combo
 import com.makstuff.minimalistcaloriecounter.classes.DatabaseEntry
 import com.makstuff.minimalistcaloriecounter.classes.GridButtonData
+import com.makstuff.minimalistcaloriecounter.classes.HistoricalMealImportPreview
 import com.makstuff.minimalistcaloriecounter.classes.QuickImportMeal
 import com.makstuff.minimalistcaloriecounter.classes.QuickImportMealType
 import com.makstuff.minimalistcaloriecounter.classes.QuickImportResult
@@ -123,6 +124,11 @@ data class AppUiState(
     val healthConnectViewerMeals: List<HealthConnectNutritionMeal> = emptyList(),
     val healthConnectViewerLoading: Boolean = false,
     val healthConnectViewerMessage: String? = null,
+    val historicalMealImportPreview: HistoricalMealImportPreview? = null,
+    val historicalMealImportMessage: String? = null,
+    val historicalMealImportInProgress: Boolean = false,
+    val healthConnectNutritionCleanupStartDate: LocalDate = LocalDateTime.now().minusHours(12).toLocalDate(),
+    val healthConnectNutritionCleanupEndDate: LocalDate = LocalDateTime.now().minusHours(12).toLocalDate(),
     val loading: Boolean = true,
 
     val alertDialogArchiveReset: Boolean = false,

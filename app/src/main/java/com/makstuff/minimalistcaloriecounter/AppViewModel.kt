@@ -14,6 +14,7 @@ import com.makstuff.minimalistcaloriecounter.classes.Archive
 import com.makstuff.minimalistcaloriecounter.classes.Combo
 import com.makstuff.minimalistcaloriecounter.classes.CustomWeights
 import com.makstuff.minimalistcaloriecounter.classes.DatabaseEntry
+import com.makstuff.minimalistcaloriecounter.classes.HistoricalMealImporter
 import com.makstuff.minimalistcaloriecounter.classes.Nutrients
 import com.makstuff.minimalistcaloriecounter.classes.QuickImportCommitOptions
 import com.makstuff.minimalistcaloriecounter.classes.QuickImportDatabaseEntryDraft
@@ -23,6 +24,7 @@ import com.makstuff.minimalistcaloriecounter.classes.QuickImportResult
 import com.makstuff.minimalistcaloriecounter.health.HealthConnectDeleteResult
 import com.makstuff.minimalistcaloriecounter.health.HealthConnectNutritionReadResult
 import com.makstuff.minimalistcaloriecounter.health.HealthConnectManager
+import com.makstuff.minimalistcaloriecounter.health.HistoricalMealHealthConnectResult
 import com.makstuff.minimalistcaloriecounter.essentials.NUTRIENT_PROPERTIES
 import com.makstuff.minimalistcaloriecounter.essentials.NavButton
 import com.makstuff.minimalistcaloriecounter.essentials.checkValidNumber
@@ -230,6 +232,219 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                         it.copy(
                             healthConnectViewerLoading = false,
                             healthConnectViewerMessage = result.message,
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    fun previewHistoricalMealImport(rows: List<List<String>>) {
+        val preview = HistoricalMealImporter.parseCsv(rows)
+        _uiState.update {
+            it.copy(
+                historicalMealImportPreview = preview,
+                historicalMealImportMessage = "Preview: ${preview.validRows} foods, ${preview.mealCount} meals, ${preview.skippedRows} skipped rows.",
+            )
+        }
+    }
+
+    fun writeHistoricalMealImport() {
+        val preview = uiState.value.historicalMealImportPreview ?: return
+        if (preview.foods.isEmpty()) {
+            _uiState.update { it.copy(historicalMealImportMessage = "No valid historical foods to write.") }
+            return
+        }
+        _uiState.update {
+            it.copy(
+                historicalMealImportInProgress = true,
+                historicalMealImportMessage = "Writing historical meals to Health Connect.",
+                healthConnectSyncProgress = 0f,
+                healthConnectSyncCurrentCount = 0,
+                healthConnectSyncTotalCount = preview.foods.size,
+            )
+        }
+        viewModelScope.launch {
+            when (val result = healthConnectManager.writeHistoricalMealFoods(
+                foods = preview.foods,
+                onProgress = { progress, current, total ->
+                    _uiState.update {
+                        it.copy(
+                            healthConnectSyncProgress = progress,
+                            healthConnectSyncCurrentCount = current,
+                            healthConnectSyncTotalCount = total,
+                        )
+                    }
+                },
+            )) {
+                is HistoricalMealHealthConnectResult.Success -> {
+                    _uiState.update {
+                        it.copy(
+                            historicalMealImportInProgress = false,
+                            healthConnectSyncProgress = null,
+                            historicalMealImportMessage = "Historical import complete: ${result.written} written, ${result.skippedDuplicates} duplicates skipped.",
+                        )
+                    }
+                    readHealthConnectNutritionMeals()
+                }
+                HistoricalMealHealthConnectResult.HealthConnectUnavailable -> {
+                    _uiState.update {
+                        it.copy(
+                            historicalMealImportInProgress = false,
+                            healthConnectSyncProgress = null,
+                            historicalMealImportMessage = getApplication<Application>().getString(R.string.toast_hc_not_available),
+                        )
+                    }
+                }
+                HistoricalMealHealthConnectResult.PermissionsMissing -> {
+                    _uiState.update {
+                        it.copy(
+                            historicalMealImportInProgress = false,
+                            healthConnectSyncProgress = null,
+                            historicalMealImportMessage = getApplication<Application>().getString(R.string.health_connect_permissions_missing),
+                        )
+                    }
+                }
+                is HistoricalMealHealthConnectResult.Failed -> {
+                    _uiState.update {
+                        it.copy(
+                            historicalMealImportInProgress = false,
+                            healthConnectSyncProgress = null,
+                            historicalMealImportMessage = result.message,
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    fun cleanupHistoricalMealImport() {
+        val preview = uiState.value.historicalMealImportPreview ?: run {
+            _uiState.update { it.copy(historicalMealImportMessage = "Import a historical meal CSV first so cleanup knows the date range.") }
+            return
+        }
+        _uiState.update {
+            it.copy(
+                historicalMealImportInProgress = true,
+                historicalMealImportMessage = "Removing historical import and legacy Daily Total rows.",
+            )
+        }
+        viewModelScope.launch {
+            when (val result = healthConnectManager.cleanupHistoricalMealRecords(preview.dates)) {
+                is HistoricalMealHealthConnectResult.Success -> {
+                    _uiState.update {
+                        it.copy(
+                            historicalMealImportInProgress = false,
+                            historicalMealImportMessage = "Cleanup complete: ${result.deleted} Health Connect records removed.",
+                        )
+                    }
+                    readHealthConnectNutritionMeals()
+                }
+                HistoricalMealHealthConnectResult.HealthConnectUnavailable -> {
+                    _uiState.update {
+                        it.copy(
+                            historicalMealImportInProgress = false,
+                            historicalMealImportMessage = getApplication<Application>().getString(R.string.toast_hc_not_available),
+                        )
+                    }
+                }
+                HistoricalMealHealthConnectResult.PermissionsMissing -> {
+                    _uiState.update {
+                        it.copy(
+                            historicalMealImportInProgress = false,
+                            historicalMealImportMessage = getApplication<Application>().getString(R.string.health_connect_permissions_missing),
+                        )
+                    }
+                }
+                is HistoricalMealHealthConnectResult.Failed -> {
+                    _uiState.update {
+                        it.copy(
+                            historicalMealImportInProgress = false,
+                            historicalMealImportMessage = result.message,
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    fun updateHealthConnectNutritionCleanupStartDate(date: LocalDate) {
+        _uiState.update {
+            it.copy(
+                healthConnectNutritionCleanupStartDate = date,
+                historicalMealImportMessage = null,
+            )
+        }
+    }
+
+    fun updateHealthConnectNutritionCleanupEndDate(date: LocalDate) {
+        _uiState.update {
+            it.copy(
+                healthConnectNutritionCleanupEndDate = date,
+                historicalMealImportMessage = null,
+            )
+        }
+    }
+
+    fun removeHealthConnectNutritionRange() {
+        val state = uiState.value
+        _uiState.update {
+            it.copy(
+                historicalMealImportInProgress = true,
+                historicalMealImportMessage = "Removing Health Connect meals and nutrition.",
+                healthConnectSyncProgress = 0f,
+                healthConnectSyncCurrentCount = 0,
+                healthConnectSyncTotalCount = 0,
+            )
+        }
+        viewModelScope.launch {
+            when (val result = healthConnectManager.deleteNutritionRecordsInRange(
+                startDate = state.healthConnectNutritionCleanupStartDate,
+                endDate = state.healthConnectNutritionCleanupEndDate,
+                onProgress = { progress, current, total ->
+                    _uiState.update {
+                        it.copy(
+                            healthConnectSyncProgress = progress,
+                            healthConnectSyncCurrentCount = current,
+                            healthConnectSyncTotalCount = total,
+                        )
+                    }
+                },
+            )) {
+                is HistoricalMealHealthConnectResult.Success -> {
+                    _uiState.update {
+                        it.copy(
+                            historicalMealImportInProgress = false,
+                            healthConnectSyncProgress = null,
+                            historicalMealImportMessage = "Removed ${result.deleted} Health Connect meal/nutrition records.",
+                        )
+                    }
+                    readHealthConnectNutritionMeals()
+                }
+                HistoricalMealHealthConnectResult.HealthConnectUnavailable -> {
+                    _uiState.update {
+                        it.copy(
+                            historicalMealImportInProgress = false,
+                            healthConnectSyncProgress = null,
+                            historicalMealImportMessage = getApplication<Application>().getString(R.string.toast_hc_not_available),
+                        )
+                    }
+                }
+                HistoricalMealHealthConnectResult.PermissionsMissing -> {
+                    _uiState.update {
+                        it.copy(
+                            historicalMealImportInProgress = false,
+                            healthConnectSyncProgress = null,
+                            historicalMealImportMessage = getApplication<Application>().getString(R.string.health_connect_permissions_missing),
+                        )
+                    }
+                }
+                is HistoricalMealHealthConnectResult.Failed -> {
+                    _uiState.update {
+                        it.copy(
+                            historicalMealImportInProgress = false,
+                            healthConnectSyncProgress = null,
+                            historicalMealImportMessage = result.message,
                         )
                     }
                 }
