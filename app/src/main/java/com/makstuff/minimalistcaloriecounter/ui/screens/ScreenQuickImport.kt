@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -27,13 +26,14 @@ import androidx.compose.material.icons.filled.CloudDone
 import androidx.compose.material.icons.filled.Event
 import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material.icons.filled.Storage
-import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.ElevatedButton
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -80,8 +80,8 @@ fun ScreenQuickImport(
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = 10.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
+            .padding(horizontal = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
         item {
             CapturePanel(
@@ -163,8 +163,8 @@ fun ScreenQuickImport(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 12.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
+                    .padding(bottom = 14.dp),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 TextButton(onClick = onBack) {
@@ -173,10 +173,16 @@ fun ScreenQuickImport(
                 TextButton(onClick = onClear) {
                     Text("Clear")
                 }
-                ElevatedButton(
+                Button(
                     onClick = onImport,
                     enabled = canImport,
-                    modifier = Modifier.testTag("quick_import_import_button"),
+                    modifier = Modifier
+                        .weight(1f)
+                        .testTag("quick_import_import_button"),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary,
+                    ),
                 ) {
                     Text(if (uiState.quickImportInProgress) "Importing" else "Import")
                 }
@@ -190,42 +196,76 @@ private fun CapturePanel(
     value: String,
     onValueChange: (String) -> Unit,
 ) {
-    SurfacePanel(
-        backgroundColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-        contentPadding = 10,
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(14.dp))
+            .background(
+                Brush.linearGradient(
+                    colors = listOf(
+                        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.82f),
+                        MaterialTheme.colorScheme.surfaceContainerHighest,
+                    ),
+                ),
+            )
+            .border(
+                BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.24f)),
+                RoundedCornerShape(14.dp),
+            )
+            .padding(12.dp),
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            AccentDot()
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = "Quick capture",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                )
-                Text(
-                    text = "Paste the ChatGPT nutrition blurb",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(42.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.16f)),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        Icons.Default.Restaurant,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(23.dp),
+                    )
+                }
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "Quick capture",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                    )
+                    Text(
+                        text = "Paste the nutrition blurb and let the app turn it into foods",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
+            OutlinedTextField(
+                value = value,
+                onValueChange = onValueChange,
+                label = { Text("Nutrition blurb") },
+                keyboardOptions = KeyboardOptions.Default,
+                minLines = 8,
+                maxLines = 14,
+                shape = RoundedCornerShape(12.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.86f),
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.74f),
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.26f),
+                ),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("quick_import_paste"),
+            )
         }
-        Spacer(Modifier.height(8.dp))
-        OutlinedTextField(
-            value = value,
-            onValueChange = onValueChange,
-            label = { Text("Nutrition blurb") },
-            keyboardOptions = KeyboardOptions.Default,
-            minLines = 8,
-            maxLines = 14,
-            shape = RoundedCornerShape(8.dp),
-            modifier = Modifier
-                .fillMaxWidth()
-                .testTag("quick_import_paste"),
-        )
     }
 }
 
@@ -308,7 +348,10 @@ private fun MealTimePanel(
         ).show()
     }
 
-    SurfacePanel(contentPadding = 8) {
+    SurfacePanel(
+        contentPadding = 10,
+        borderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.14f),
+    ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -321,15 +364,15 @@ private fun MealTimePanel(
             ) {
                 Box(
                     modifier = Modifier
-                        .size(36.dp)
+                        .size(38.dp)
                         .clip(CircleShape)
-                        .background(AccentGreen.copy(alpha = 0.14f)),
+                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.14f)),
                     contentAlignment = Alignment.Center,
                 ) {
                     Icon(
                         Icons.Default.Restaurant,
                         contentDescription = null,
-                        tint = AccentGreen,
+                        tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(20.dp),
                     )
                 }
@@ -352,20 +395,34 @@ private fun MealTimePanel(
                 }
             }
             Row(
-                horizontalArrangement = Arrangement.spacedBy(2.dp),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                TextButton(onClick = openDateTimePicker) {
-                    Text("Edit")
-                }
-                TextButton(onClick = onRefreshDateTime) {
-                    Text("Now")
-                }
-                TextButton(onClick = onToggleSnackOverride) {
-                    Text(if (snackOverride) "Use time" else "Snack")
-                }
+                SmallActionChip("Edit", onClick = openDateTimePicker)
+                SmallActionChip("Now", onClick = onRefreshDateTime)
+                SmallActionChip(if (snackOverride) "Use time" else "Snack", onClick = onToggleSnackOverride)
             }
         }
+    }
+}
+
+@Composable
+private fun SmallActionChip(
+    text: String,
+    onClick: () -> Unit,
+) {
+    Surface(
+        onClick = onClick,
+        shape = RoundedCornerShape(999.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerHighest,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.18f)),
+    ) {
+        Text(
+            text = text,
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 7.dp),
+        )
     }
 }
 
@@ -384,12 +441,12 @@ private fun DestinationToggle(
             .border(
                 BorderStroke(
                     1.dp,
-                    if (checked) AccentGreen.copy(alpha = 0.55f) else MaterialTheme.colorScheme.outline.copy(alpha = 0.35f),
+                if (checked) MaterialTheme.colorScheme.primary.copy(alpha = 0.55f) else MaterialTheme.colorScheme.outline.copy(alpha = 0.35f),
                 ),
                 RoundedCornerShape(8.dp),
             )
             .background(
-                if (checked) AccentGreen.copy(alpha = 0.10f) else Color.Transparent,
+                if (checked) MaterialTheme.colorScheme.primary.copy(alpha = 0.10f) else Color.Transparent,
             )
             .padding(horizontal = 6.dp, vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -422,18 +479,18 @@ private fun MealTotalsPanel(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(8.dp))
+            .clip(RoundedCornerShape(14.dp))
             .background(
                 Brush.linearGradient(
                     colors = listOf(
-                        MaterialTheme.colorScheme.primary.copy(alpha = 0.16f),
-                        AccentGreen.copy(alpha = 0.12f),
+                        MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.58f),
+                        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.70f),
                     ),
                 ),
             )
             .border(
                 BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.25f)),
-                RoundedCornerShape(8.dp),
+                RoundedCornerShape(14.dp),
             )
             .padding(12.dp),
     ) {
@@ -476,15 +533,15 @@ private fun FoodPreviewRow(food: QuickImportFood) {
         ) {
             Box(
                 modifier = Modifier
-                    .size(30.dp)
-                    .clip(CircleShape)
-                    .background(AccentGreen.copy(alpha = 0.14f)),
+                        .size(30.dp)
+                        .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)),
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
                     Icons.Default.Restaurant,
                     contentDescription = null,
-                    tint = AccentGreen,
+                    tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(18.dp),
                 )
             }
@@ -530,7 +587,7 @@ private fun MacroPill(
     Column(
         modifier = modifier
             .clip(RoundedCornerShape(8.dp))
-            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.62f))
+            .background(MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.74f))
             .border(
                 BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.20f)),
                 RoundedCornerShape(8.dp),
@@ -576,7 +633,7 @@ private fun SurfacePanel(
         shape = RoundedCornerShape(8.dp),
         color = backgroundColor,
         border = BorderStroke(1.dp, borderColor),
-        tonalElevation = 1.dp,
+        tonalElevation = 2.dp,
     ) {
         Column(
             modifier = Modifier.padding(contentPadding.dp),
@@ -585,18 +642,6 @@ private fun SurfacePanel(
         )
     }
 }
-
-@Composable
-private fun AccentDot() {
-    Box(
-        modifier = Modifier
-            .size(12.dp)
-            .clip(CircleShape)
-            .background(AccentGreen),
-    )
-}
-
-private val AccentGreen = Color(0xFF34A853)
 
 private fun quickImportResultText(
     databaseEntriesAdded: Int,

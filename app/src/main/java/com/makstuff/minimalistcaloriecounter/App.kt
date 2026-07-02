@@ -8,6 +8,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -77,6 +78,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.window.DialogProperties
@@ -417,8 +419,18 @@ fun App(
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 4.dp),
+                .padding(horizontal = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
+            item {
+                Text(
+                    text = "App controls",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onBackground,
+                    modifier = Modifier.padding(top = 4.dp, bottom = 2.dp),
+                )
+            }
             item {
                 val currentLocale = AppCompatDelegate.getApplicationLocales().toLanguageTags()
                 val currentLanguageLabel = when {
@@ -515,7 +527,6 @@ fun App(
                 )
             }
 
-            item { HorizontalDivider(Modifier.padding(vertical = 8.dp)) }
             item {
                 OptionsSectionHeader(
                     text = stringResource(R.string.health_connect),
@@ -593,9 +604,8 @@ fun App(
                         )
                     }
                 }
-                item { HorizontalDivider(Modifier.padding(vertical = 8.dp)) }
                 item {
-                    OptionsSectionHeader(text = "Remove Health Connect meals and nutrition")
+                    OptionsSectionHeader(text = "Cleanup tools")
                 }
                 item {
                     OptionsItem(
@@ -633,10 +643,9 @@ fun App(
                 }
             }
 
-            item { HorizontalDivider(Modifier.padding(vertical = 8.dp)) }
             item {
                 OptionsSectionHeader(
-                    text = stringResource(R.string.archive),
+                    text = "Archive tools",
                     isExpanded = archiveExpanded,
                     onToggle = { archiveExpanded = !archiveExpanded },
                 )
@@ -659,10 +668,9 @@ fun App(
                 }
             }
 
-            item { HorizontalDivider(Modifier.padding(vertical = 8.dp)) }
             item {
                 OptionsSectionHeader(
-                    text = stringResource(R.string.database),
+                    text = "Database tools",
                     isExpanded = databaseExpanded,
                     onToggle = { databaseExpanded = !databaseExpanded },
                 )
@@ -685,7 +693,6 @@ fun App(
                 }
             }
 
-            item { HorizontalDivider(Modifier.padding(vertical = 8.dp)) }
             item {
                 OptionsSectionHeader(
                     text = stringResource(R.string.support),
@@ -2172,21 +2179,24 @@ fun OptionsSectionHeader(text: String, isExpanded: Boolean? = null, onToggle: ((
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.50f))
             .then(if (onToggle != null) Modifier.clickable { onToggle() } else Modifier)
-            .padding(horizontal = 16.dp, vertical = 8.dp),
+            .padding(horizontal = 14.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Text(
             text = text,
-            style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.primary,
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onPrimaryContainer,
         )
         if (isExpanded != null) {
             Icon(
                 imageVector = if (isExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
+                tint = MaterialTheme.colorScheme.onPrimaryContainer,
                 modifier = Modifier.size(20.dp)
             )
         }
@@ -2219,7 +2229,11 @@ fun OptionsItem(
 ) {
     ListItem(
         headlineContent = {
-            Text(text)
+            Text(
+                text = text,
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.Medium,
+            )
         },
         trailingContent = trailingContent ?: trailingText?.let { {
             Text(
@@ -2228,7 +2242,16 @@ fun OptionsItem(
                 color = MaterialTheme.colorScheme.secondary
             ) 
         } },
-        modifier = Modifier.clickable { onClick() },
-        colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+            .border(
+                width = 1.dp,
+                color = MaterialTheme.colorScheme.outline.copy(alpha = 0.14f),
+                shape = RoundedCornerShape(12.dp),
+            )
+            .clickable { onClick() },
+        colors = ListItemDefaults.colors(containerColor = Color.Transparent)
     )
 }

@@ -96,8 +96,8 @@ fun ScreenHealthConnectNutrition(
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = 10.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
+            .padding(horizontal = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
         item {
             MonthCalendarCard(
@@ -133,13 +133,18 @@ fun ScreenHealthConnectNutrition(
             }
         }
 
-        groups.forEach { group ->
+        if (groups.isNotEmpty()) {
             item {
-                MealCard(
-                    group = group,
-                    onMealClick = { selectedMealGroup = group },
-                    onFoodClick = { selectedFood = it },
-                )
+                SectionTitle("Meals")
+            }
+            groups.forEach { group ->
+                item {
+                    MealCard(
+                        group = group,
+                        onMealClick = { selectedMealGroup = group },
+                        onFoodClick = { selectedFood = it },
+                    )
+                }
             }
         }
 
@@ -166,7 +171,8 @@ private fun MonthCalendarCard(
 
     SurfacePanel(
         backgroundColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-        contentPadding = 10,
+        borderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.14f),
+        contentPadding = 12,
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -196,7 +202,7 @@ private fun MonthCalendarCard(
 
         CalendarWeekLabels()
 
-        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Column(verticalArrangement = Arrangement.spacedBy(7.dp)) {
             cells.chunked(7).forEach { week ->
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -248,13 +254,13 @@ private fun CalendarDayCell(
 
     Box(
         modifier = modifier
-            .height(40.dp)
+            .height(42.dp)
             .clip(shape)
             .background(
                 when {
                     selected -> MaterialTheme.colorScheme.primary
                     isToday -> AccentGold.copy(alpha = 0.16f)
-                    else -> MaterialTheme.colorScheme.surface
+                    else -> MaterialTheme.colorScheme.surfaceContainerHighest
                 }
             )
             .border(
@@ -302,13 +308,13 @@ private fun DaySummaryCard(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(8.dp))
+            .clip(RoundedCornerShape(14.dp))
             .background(MaterialTheme.colorScheme.surfaceContainerHigh)
             .border(
                 BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.22f)),
-                RoundedCornerShape(8.dp),
+                RoundedCornerShape(14.dp),
             )
-            .padding(12.dp),
+            .padding(14.dp),
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Row(
@@ -332,16 +338,28 @@ private fun DaySummaryCard(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.LocalFireDepartment,
-                        contentDescription = null,
-                        tint = AccentGold,
-                    )
-                    Text(
-                        text = "${meals.size} foods",
-                        style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+                    Surface(
+                        shape = RoundedCornerShape(999.dp),
+                        color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.62f),
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 7.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(5.dp),
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.LocalFireDepartment,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.secondary,
+                                modifier = Modifier.size(18.dp),
+                            )
+                            Text(
+                                text = "${meals.size} foods",
+                                style = MaterialTheme.typography.labelLarge,
+                                color = MaterialTheme.colorScheme.onSecondaryContainer,
+                            )
+                        }
+                    }
                 }
             }
             if (message != null && meals.isNotEmpty()) {
@@ -377,13 +395,13 @@ private fun MealCard(
 
     SurfacePanel(
         modifier = Modifier.clickable(onClick = onMealClick),
-        borderColor = group.color.copy(alpha = 0.34f),
+        borderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.16f),
         backgroundColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-        contentPadding = 10,
+        contentPadding = 12,
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalArrangement = Arrangement.spacedBy(7.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             MealTitle(
@@ -408,7 +426,6 @@ private fun MealCard(
             group.foods.forEach { food ->
                 CompactFoodRow(
                     meal = food,
-                    accentColor = group.color,
                     onClick = { onFoodClick(food) },
                 )
             }
@@ -429,8 +446,8 @@ private fun MealTitle(
         Box(
             modifier = Modifier
                 .size(34.dp)
-                .clip(CircleShape)
-                .background(group.color.copy(alpha = 0.16f)),
+            .clip(CircleShape)
+            .background(group.color.copy(alpha = 0.16f)),
             contentAlignment = Alignment.Center,
         ) {
             Icon(
@@ -469,7 +486,7 @@ private fun MacroSummaryChip(
     Row(
         modifier = Modifier
             .clip(RoundedCornerShape(7.dp))
-            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.72f))
+            .background(MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.86f))
             .border(
                 BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.18f)),
                 RoundedCornerShape(7.dp),
@@ -499,18 +516,14 @@ private fun MacroSummaryChip(
 @Composable
 private fun CompactFoodRow(
     meal: HealthConnectNutritionMeal,
-    accentColor: Color,
     onClick: () -> Unit,
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(8.dp))
-            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.70f))
-            .border(
-                BorderStroke(1.dp, accentColor.copy(alpha = 0.18f)),
-                RoundedCornerShape(8.dp),
-            )
+            .background(MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.78f))
+            .border(BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.12f)), RoundedCornerShape(8.dp))
             .clickable(onClick = onClick)
             .padding(horizontal = 10.dp, vertical = 9.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -598,7 +611,6 @@ private fun MealDetailDialog(
                     group.foods.forEach { food ->
                         CompactFoodRow(
                             meal = food,
-                            accentColor = group.color,
                             onClick = { onFoodClick(food) },
                         )
                     }
@@ -701,7 +713,7 @@ private fun StatPill(
     Column(
         modifier = modifier
             .clip(RoundedCornerShape(8.dp))
-            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.70f))
+            .background(MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.78f))
             .border(
                 BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.18f)),
                 RoundedCornerShape(8.dp),
@@ -733,6 +745,17 @@ private fun StatusCard(text: String) {
 }
 
 @Composable
+private fun SectionTitle(text: String) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.titleMedium,
+        fontWeight = FontWeight.Bold,
+        color = MaterialTheme.colorScheme.onBackground,
+        modifier = Modifier.padding(start = 2.dp, top = 2.dp, end = 2.dp),
+    )
+}
+
+@Composable
 private fun SurfacePanel(
     modifier: Modifier = Modifier,
     borderColor: Color = MaterialTheme.colorScheme.outline.copy(alpha = 0.24f),
@@ -742,10 +765,10 @@ private fun SurfacePanel(
 ) {
     Surface(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(8.dp),
+        shape = RoundedCornerShape(12.dp),
         color = backgroundColor,
         border = BorderStroke(1.dp, borderColor),
-        tonalElevation = 1.dp,
+        tonalElevation = 2.dp,
     ) {
         Column(
             modifier = Modifier.padding(contentPadding.dp),
