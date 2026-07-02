@@ -6,6 +6,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.ui.graphics.Color
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -32,6 +33,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.TopAppBar
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.width
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.LinearProgressIndicator
@@ -46,11 +48,13 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.runtime.remember
@@ -59,6 +63,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.platform.LocalContext
@@ -110,6 +115,7 @@ import com.makstuff.minimalistcaloriecounter.ui.screens.ScreenDatabaseEntry
 import com.makstuff.minimalistcaloriecounter.ui.screens.ScreenHealthConnectNutrition
 import com.makstuff.minimalistcaloriecounter.ui.screens.ScreenEnterWeightOfFood
 import com.makstuff.minimalistcaloriecounter.ui.screens.ScreenInputOrEditArchive
+import com.makstuff.minimalistcaloriecounter.ui.screens.DestinationDialog
 import com.makstuff.minimalistcaloriecounter.ui.screens.ScreenQuickImport
 import com.makstuff.minimalistcaloriecounter.ui.screens.ScreenShowFoodAll
 import com.makstuff.minimalistcaloriecounter.ui.screens.ScreenShowFoodSelection
@@ -142,6 +148,7 @@ fun App(
     val currentBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = currentBackStackEntry?.destination?.route
     var mainMenuExpanded by remember { mutableStateOf(false) }
+    var quickImportSettingsVisible by remember { mutableStateOf(false) }
 
     val healthConnectRequestPermissionLauncher = rememberLauncherForActivityResult(
         contract = PermissionController.createRequestPermissionResultContract(),
@@ -305,39 +312,320 @@ fun App(
         }
     )
 
+    @Composable
+    fun SettingsPageContent() {
+        var languageMenuExpanded by remember { mutableStateOf(false) }
+        var themeMenuExpanded by remember { mutableStateOf(false) }
+        var healthConnectExpanded by remember { mutableStateOf(true) }
+        var archiveExpanded by remember { mutableStateOf(false) }
+        var databaseExpanded by remember { mutableStateOf(false) }
+        var supportExpanded by remember { mutableStateOf(false) }
+
+        fun handleHCInteraction(onSuccess: () -> Unit) {
+            val availabilityStatus = try {
+                HealthConnectClient.getSdkStatus(context)
+            } catch (_: Exception) {
+                HealthConnectClient.SDK_UNAVAILABLE
+            }
+
+            if (android.os.Build.VERSION.SDK_INT < 28) {
+                Toast.makeText(context, context.getString(R.string.toast_hc_not_available), Toast.LENGTH_LONG).show()
+            } else if (availabilityStatus == HealthConnectClient.SDK_UNAVAILABLE) {
+                Toast.makeText(context, context.getString(R.string.toast_hc_not_available), Toast.LENGTH_LONG).show()
+            } else if (availabilityStatus == HealthConnectClient.SDK_UNAVAILABLE_PROVIDER_UPDATE_REQUIRED) {
+                val uriString = "market://details?id=com.google.android.apps.healthdata&url=healthconnect%3A%2F%2Fonboarding"
+                try {
+                    context.startActivity(Intent(Intent.ACTION_VIEW).apply {
+                        setPackage("com.android.vending")
+                        data = uriString.toUri()
+                        putExtra("overlay", true)
+                        putExtra("callerId", context.packageName)
+                    })
+                } catch (_: Exception) {
+                    try {
+                        uriHandler.openUri("https://play.google.com/store/apps/details?id=com.google.android.apps.healthdata")
+                    } catch (_: Exception) {
+                        Toast.makeText(context, context.getString(R.string.toast_hc_not_available), Toast.LENGTH_LONG).show()
+                    }
+                }
+            } else {
+                if (uiState.healthConnectPermissionsGranted) {
+                    onSuccess()
+                } else {
+                    viewModel.setAlertDialogHealthConnectPermissions(true)
+                }
+            }
+        }
+
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 4.dp),
+        ) {
+            item {
+                val currentLocale = AppCompatDelegate.getApplicationLocales().toLanguageTags()
+                val currentLanguageLabel = when {
+                    currentLocale.contains("en") -> stringResource(R.string.always_english)
+                    currentLocale.contains("de") -> stringResource(R.string.always_german)
+                    currentLocale.contains("fr") -> stringResource(R.string.always_french)
+                    currentLocale.contains("it") -> stringResource(R.string.always_italian)
+                    currentLocale.contains("es") -> stringResource(R.string.always_spanish)
+                    else -> stringResource(R.string.system_default)
+                }
+
+                OptionsItem(
+                    text = stringResource(R.string.choose_language),
+                    trailingContent = {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box {
+                                DropdownMenu(
+                                    expanded = languageMenuExpanded,
+                                    onDismissRequest = { languageMenuExpanded = false },
+                                    items = listOf(
+                                        DropdownMenuItemData(stringResource(R.string.always_english)) {
+                                            AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags("en"))
+                                            viewModel.setDialogLanguageInfo(bool = true)
+                                        },
+                                        DropdownMenuItemData(stringResource(R.string.always_german)) {
+                                            AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags("de"))
+                                            viewModel.setDialogLanguageInfo(bool = true)
+                                        },
+                                        DropdownMenuItemData(stringResource(R.string.always_french)) {
+                                            AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags("fr"))
+                                            viewModel.setDialogLanguageInfo(bool = true)
+                                        },
+                                        DropdownMenuItemData(stringResource(R.string.always_italian)) {
+                                            AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags("it"))
+                                            viewModel.setDialogLanguageInfo(bool = true)
+                                        },
+                                        DropdownMenuItemData(stringResource(R.string.always_spanish)) {
+                                            AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags("es"))
+                                            viewModel.setDialogLanguageInfo(bool = true)
+                                        },
+                                        DropdownMenuItemData(stringResource(R.string.system_default)) {
+                                            AppCompatDelegate.setApplicationLocales(LocaleListCompat.getEmptyLocaleList())
+                                            viewModel.setDialogLanguageInfo(bool = true)
+                                        },
+                                    ),
+                                )
+                            }
+                            Text(
+                                text = currentLanguageLabel,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.secondary,
+                            )
+                        }
+                    },
+                    onClick = { languageMenuExpanded = true },
+                )
+            }
+
+            item {
+                val currentThemeLabel = when (uiState.themeUserSetting) {
+                    AppTheme.MODE_AUTO -> stringArrayResource(R.array.dark_mode_options)[0]
+                    AppTheme.MODE_DAY -> stringArrayResource(R.array.dark_mode_options)[1]
+                    AppTheme.MODE_NIGHT -> stringArrayResource(R.array.dark_mode_options)[2]
+                }
+                OptionsItem(
+                    text = stringResource(R.string.dark_mode),
+                    trailingContent = {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box {
+                                DropdownMenu(
+                                    expanded = themeMenuExpanded,
+                                    onDismissRequest = { themeMenuExpanded = false },
+                                    items = listOf(
+                                        DropdownMenuItemData(stringArrayResource(R.array.dark_mode_options)[0]) {
+                                            viewModel.setTheme(AppTheme.MODE_AUTO, context)
+                                        },
+                                        DropdownMenuItemData(stringArrayResource(R.array.dark_mode_options)[1]) {
+                                            viewModel.setTheme(AppTheme.MODE_DAY, context)
+                                        },
+                                        DropdownMenuItemData(stringArrayResource(R.array.dark_mode_options)[2]) {
+                                            viewModel.setTheme(AppTheme.MODE_NIGHT, context)
+                                        },
+                                    ),
+                                )
+                            }
+                            Text(
+                                text = currentThemeLabel,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.secondary,
+                            )
+                        }
+                    },
+                    onClick = { themeMenuExpanded = true },
+                )
+            }
+
+            item { HorizontalDivider(Modifier.padding(vertical = 8.dp)) }
+            item {
+                OptionsSectionHeader(
+                    text = stringResource(R.string.health_connect),
+                    isExpanded = healthConnectExpanded,
+                    onToggle = { healthConnectExpanded = !healthConnectExpanded },
+                )
+            }
+            if (healthConnectExpanded) {
+                item {
+                    OptionsItem(
+                        text = stringResource(R.string.dropdown_sync_health_connect),
+                        trailingContent = {
+                            Switch(
+                                checked = uiState.healthConnectSyncEnabled && uiState.healthConnectPermissionsGranted,
+                                enabled = uiState.healthConnectPermissionsGranted,
+                                onCheckedChange = null,
+                            )
+                        },
+                        onClick = { handleHCInteraction { viewModel.toggleHealthConnectSyncEnabled(context) } },
+                    )
+                }
+                item {
+                    OptionsItem(
+                        text = stringResource(R.string.health_connect_notifications),
+                        trailingContent = {
+                            Switch(
+                                checked = uiState.healthConnectToastsEnabled && uiState.healthConnectPermissionsGranted,
+                                enabled = uiState.healthConnectPermissionsGranted,
+                                onCheckedChange = null,
+                            )
+                        },
+                        onClick = { handleHCInteraction { viewModel.toggleHealthConnectToastsEnabled(context) } },
+                    )
+                }
+                item {
+                    OptionsItem(
+                        text = stringResource(R.string.dropdown_export_archive_health_connect),
+                        onClick = { handleHCInteraction { viewModel.setAlertDialogHealthConnectSync(true) } },
+                    )
+                }
+            }
+
+            item { HorizontalDivider(Modifier.padding(vertical = 8.dp)) }
+            item {
+                OptionsSectionHeader(
+                    text = stringResource(R.string.archive),
+                    isExpanded = archiveExpanded,
+                    onToggle = { archiveExpanded = !archiveExpanded },
+                )
+            }
+            if (archiveExpanded) {
+                item {
+                    OptionsItem(stringResource(R.string.dropdown_import_archive) + " (*.csv)") {
+                        viewModel.setAlertDialogArchiveImport(true)
+                    }
+                }
+                item {
+                    OptionsItem(stringResource(R.string.dropdown_backup_archive) + " (*.csv)") {
+                        archiveExporter.launch("archive_backup.csv")
+                    }
+                }
+                item {
+                    OptionsItem(stringResource(R.string.dropdown_clear_archive)) {
+                        viewModel.setAlertDialogArchiveReset(true)
+                    }
+                }
+            }
+
+            item { HorizontalDivider(Modifier.padding(vertical = 8.dp)) }
+            item {
+                OptionsSectionHeader(
+                    text = stringResource(R.string.database),
+                    isExpanded = databaseExpanded,
+                    onToggle = { databaseExpanded = !databaseExpanded },
+                )
+            }
+            if (databaseExpanded) {
+                item {
+                    OptionsItem(stringResource(R.string.dropdown_import_database) + " (*.csv)") {
+                        viewModel.setAlertDialogDatabaseImport(true)
+                    }
+                }
+                item {
+                    OptionsItem(stringResource(R.string.dropdown_backup_database) + " (*.csv)") {
+                        databaseExporter.launch("database_backup.csv")
+                    }
+                }
+                item {
+                    OptionsItem(stringResource(R.string.dropdown_reset_database)) {
+                        viewModel.setAlertDialogDatabaseReset(true)
+                    }
+                }
+            }
+
+            item { HorizontalDivider(Modifier.padding(vertical = 8.dp)) }
+            item {
+                OptionsSectionHeader(
+                    text = stringResource(R.string.support),
+                    isExpanded = supportExpanded,
+                    onToggle = { supportExpanded = !supportExpanded },
+                )
+            }
+            if (supportExpanded) {
+                item {
+                    OptionsItem(stringResource(R.string.dropdown_github)) {
+                        uriHandler.openUri("https://github.com/Makstuff/MinimalistCalorieCounter")
+                    }
+                }
+                item {
+                    OptionsItem(stringResource(R.string.privacy_policy)) {
+                        uriHandler.openUri("https://github.com/Makstuff/MinimalistCalorieCounter/blob/master/PRIVACY_POLICY.md")
+                    }
+                }
+                item {
+                    OptionsItem(stringResource(R.string.report_problem)) {
+                        val intent = Intent(Intent.ACTION_SENDTO).apply {
+                            val uriString = "mailto:message.makstuff@outlook.com?subject=Minimalist Calorie Counter"
+                            data = uriString.replace(" ", "%20").toUri()
+                        }
+                        try {
+                            context.startActivity(intent)
+                        } catch (_: Exception) {
+                            Toast.makeText(context, "No email app found", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                }
+                item {
+                    OptionsItem(stringResource(R.string.dropdown_rate)) {
+                        val appId = "com.makstuff.minimalistcaloriecounter"
+                        val intent = Intent(Intent.ACTION_VIEW).apply {
+                            data = "market://details?id=$appId".toUri()
+                        }
+                        try {
+                            context.startActivity(intent)
+                        } catch (_: Exception) {
+                            uriHandler.openUri("https://play.google.com/store/apps/details?id=$appId")
+                        }
+                    }
+                }
+            }
+            item { Spacer(Modifier.height(16.dp)) }
+        }
+    }
+
+    Box(modifier = Modifier.fillMaxSize()) {
+    if (quickImportSettingsVisible) {
+        DestinationDialog(
+            addDatabase = uiState.quickImportAddFoodsToDatabase,
+            addDay = uiState.quickImportAddFoodsToDay,
+            writeHealthConnect = uiState.quickImportWriteHealthConnect,
+            onToggleAddDatabase = { viewModel.toggleQuickImportAddFoodsToDatabase() },
+            onToggleAddDay = { viewModel.toggleQuickImportAddFoodsToDay() },
+            onToggleHealthConnect = { viewModel.toggleQuickImportWriteHealthConnect() },
+            onDismiss = { quickImportSettingsVisible = false },
+        )
+    }
+
     Scaffold(
         containerColor = MaterialTheme.colorScheme.surfaceContainer,
         topBar = {
             TopAppBar(
                 title = { Text(text = uiState.topBarTitle) },
                 navigationIcon = {
-                    Box {
-                        IconButton(onClick = { mainMenuExpanded = true }) {
-                            Icon(
-                                imageVector = Icons.Default.Menu,
-                                contentDescription = "Open navigation menu",
-                            )
-                        }
-                        DropdownMenu(
-                            expanded = mainMenuExpanded,
-                            onDismissRequest = { mainMenuExpanded = false },
-                            offset = DpOffset(8.dp, 0.dp),
-                            items = listOf(
-                                DropdownMenuItemData(stringResource(R.string.database_navbar)) {
-                                    navTo("database_home")
-                                },
-                                DropdownMenuItemData(stringResource(R.string.food)) {
-                                    viewModel.resetDatabaseEntryCreateAllInput()
-                                    navTo("create_home")
-                                },
-                                DropdownMenuItemData("Recipe") {
-                                    viewModel.currentComboReset(context)
-                                    navTo("combine_home")
-                                },
-                                DropdownMenuItemData("Archive tools") {
-                                    navTo("archive_home")
-                                },
-                            ),
+                    IconButton(onClick = { mainMenuExpanded = true }) {
+                        Icon(
+                            imageVector = Icons.Default.Menu,
+                            contentDescription = "Open navigation menu",
                         )
                     }
                 },
@@ -346,11 +634,13 @@ fun App(
                     actionIconContentColor = MaterialTheme.colorScheme.onSurface,
                 ),
                 actions = {
-                    IconButton(onClick = { viewModel.updateOptionsSheetVisible(true) }) {
-                        Icon(
-                            painterResource(id = R.drawable.options),
-                            stringResource(R.string.options)
-                        )
+                    if (currentRoute == "quick_import") {
+                        IconButton(onClick = { quickImportSettingsVisible = true }) {
+                            Icon(
+                                imageVector = Icons.Default.MoreVert,
+                                contentDescription = "Quick Import settings",
+                            )
+                        }
                     }
                     when {
                         uiState.alertDialogArchiveReset -> {
@@ -1248,6 +1538,10 @@ fun App(
                     onDeleteMeal = { viewModel.deleteHealthConnectNutritionMeal(it) },
                 )
             }
+
+            composable("settings_home") {
+                SettingsPageContent()
+            }
             
 
 
@@ -1945,6 +2239,56 @@ fun App(
         }
     }
 
+        if (mainMenuExpanded) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.38f))
+                    .clickable { mainMenuExpanded = false },
+            )
+            Column(
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .width(304.dp)
+                    .clip(RoundedCornerShape(topEnd = 12.dp, bottomEnd = 12.dp))
+                    .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                    .clickable { }
+                    .padding(top = 28.dp, start = 12.dp, end = 12.dp, bottom = 12.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                Text(
+                    text = "Menu",
+                    style = MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp),
+                )
+                DrawerNavItem(stringResource(R.string.database_navbar)) {
+                    mainMenuExpanded = false
+                    navTo("database_home")
+                }
+                DrawerNavItem(stringResource(R.string.food)) {
+                    mainMenuExpanded = false
+                    viewModel.resetDatabaseEntryCreateAllInput()
+                    navTo("create_home")
+                }
+                DrawerNavItem("Recipe") {
+                    mainMenuExpanded = false
+                    viewModel.currentComboReset(context)
+                    navTo("combine_home")
+                }
+                DrawerNavItem("Archive tools") {
+                    mainMenuExpanded = false
+                    navTo("archive_home")
+                }
+                HorizontalDivider(Modifier.padding(vertical = 8.dp))
+                DrawerNavItem(stringResource(R.string.options)) {
+                    mainMenuExpanded = false
+                    navTo("settings_home")
+                }
+            }
+        }
+    }
+
     if (uiState.healthConnectSyncProgress != null) {
         val window = context.findActivity()?.window
         DisposableEffect(Unit) {
@@ -2043,6 +2387,23 @@ fun OptionsSectionHeader(text: String, isExpanded: Boolean? = null, onToggle: ((
             )
         }
     }
+}
+
+@Composable
+fun DrawerNavItem(
+    text: String,
+    onClick: () -> Unit,
+) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.bodyLarge,
+        color = MaterialTheme.colorScheme.onSurface,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(8.dp))
+            .clickable { onClick() }
+            .padding(horizontal = 12.dp, vertical = 12.dp),
+    )
 }
 
 @Composable

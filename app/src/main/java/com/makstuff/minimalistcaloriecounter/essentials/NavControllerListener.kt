@@ -47,6 +47,9 @@ fun NavControllerListener(
             "health_connect_nutrition" ->
                 setNav("Meals", NAV_ARCHIVE)
 
+            "settings_home" ->
+                setNav(context.getString(R.string.options), NAV_DAY)
+
             "archive_create_entry_manually" ->
                 setNav(context.getString(R.string.title_create_new_archive_entry), NAV_ARCHIVE)
 

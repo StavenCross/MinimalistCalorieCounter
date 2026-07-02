@@ -26,24 +26,18 @@ import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.CloudDone
 import androidx.compose.material.icons.filled.Event
 import androidx.compose.material.icons.filled.Restaurant
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ElevatedButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -82,19 +76,6 @@ fun ScreenQuickImport(
         uiState.quickImportAddFoodsToDay ||
         uiState.quickImportWriteHealthConnect
     val canImport = meal != null && hasDestination && !uiState.quickImportInProgress
-    var destinationDialogVisible by remember { mutableStateOf(false) }
-
-    if (destinationDialogVisible) {
-        DestinationDialog(
-            addDatabase = uiState.quickImportAddFoodsToDatabase,
-            addDay = uiState.quickImportAddFoodsToDay,
-            writeHealthConnect = uiState.quickImportWriteHealthConnect,
-            onToggleAddDatabase = onToggleAddDatabase,
-            onToggleAddDay = onToggleAddDay,
-            onToggleHealthConnect = onToggleHealthConnect,
-            onDismiss = { destinationDialogVisible = false },
-        )
-    }
 
     LazyColumn(
         modifier = Modifier
@@ -106,7 +87,6 @@ fun ScreenQuickImport(
             CapturePanel(
                 value = uiState.inputQuickImportText,
                 onValueChange = onTextChange,
-                onOpenSettings = { destinationDialogVisible = true },
             )
         }
 
@@ -209,7 +189,6 @@ fun ScreenQuickImport(
 private fun CapturePanel(
     value: String,
     onValueChange: (String) -> Unit,
-    onOpenSettings: () -> Unit,
 ) {
     SurfacePanel(
         backgroundColor = MaterialTheme.colorScheme.surfaceContainerHigh,
@@ -233,13 +212,6 @@ private fun CapturePanel(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            IconButton(onClick = onOpenSettings) {
-                Icon(
-                    imageVector = Icons.Default.Settings,
-                    contentDescription = "Quick Import settings",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
         }
         Spacer(Modifier.height(8.dp))
         OutlinedTextField(
@@ -258,7 +230,7 @@ private fun CapturePanel(
 }
 
 @Composable
-private fun DestinationDialog(
+fun DestinationDialog(
     addDatabase: Boolean,
     addDay: Boolean,
     writeHealthConnect: Boolean,
