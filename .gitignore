@@ -10,6 +10,7 @@
 .DS_Store
 /build
 /captures
+.android/
 .externalNativeBuild
 .cxx
 local.properties
