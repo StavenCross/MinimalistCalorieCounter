@@ -49,6 +49,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.runtime.remember
@@ -76,6 +77,7 @@ import androidx.core.os.LocaleListCompat
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.makstuff.minimalistcaloriecounter.classes.Nutrients
 import com.makstuff.minimalistcaloriecounter.essentials.ALPHABET
@@ -105,6 +107,7 @@ import com.makstuff.minimalistcaloriecounter.ui.reused.TileLegendArchive
 import com.makstuff.minimalistcaloriecounter.ui.screens.ScreenDatabaseEntry
 import com.makstuff.minimalistcaloriecounter.ui.screens.ScreenEnterWeightOfFood
 import com.makstuff.minimalistcaloriecounter.ui.screens.ScreenInputOrEditArchive
+import com.makstuff.minimalistcaloriecounter.ui.screens.ScreenQuickImport
 import com.makstuff.minimalistcaloriecounter.ui.screens.ScreenShowFoodAll
 import com.makstuff.minimalistcaloriecounter.ui.screens.ScreenShowFoodSelection
 import com.makstuff.minimalistcaloriecounter.ui.screens.ScreenWithHoverCard
@@ -133,6 +136,8 @@ fun App(
     val focusManager = LocalFocusManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
     val healthConnectManager = remember { HealthConnectManager(context) }
+    val currentBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = currentBackStackEntry?.destination?.route
 
     val healthConnectRequestPermissionLauncher = rememberLauncherForActivityResult(
         contract = PermissionController.createRequestPermissionResultContract(),
@@ -306,6 +311,14 @@ fun App(
                     actionIconContentColor = MaterialTheme.colorScheme.onSurface,
                 ),
                 actions = {
+                    if (currentRoute == "day_home" || currentRoute == "day_content") {
+                        IconButton(onClick = { navTo("quick_import") }) {
+                            Icon(
+                                imageVector = Icons.Default.Add,
+                                contentDescription = "Quick Import",
+                            )
+                        }
+                    }
                     IconButton(onClick = { viewModel.updateOptionsSheetVisible(true) }) {
                         Icon(
                             painterResource(id = R.drawable.options),
@@ -1519,6 +1532,20 @@ fun App(
                         )
                     },
                     context=context
+                )
+            }
+
+            composable("quick_import") {
+                ScreenQuickImport(
+                    uiState = uiState,
+                    onTextChange = { viewModel.updateQuickImportText(it) },
+                    onToggleAddDatabase = { viewModel.toggleQuickImportAddFoodsToDatabase() },
+                    onToggleAddDay = { viewModel.toggleQuickImportAddFoodsToDay() },
+                    onToggleHealthConnect = { viewModel.toggleQuickImportWriteHealthConnect() },
+                    onRefreshDateTime = { viewModel.refreshQuickImportDateTime() },
+                    onImport = { viewModel.quickImportCommit(context) },
+                    onClear = { viewModel.resetQuickImport() },
+                    onBack = { navTo("day_home") },
                 )
             }
 

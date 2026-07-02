@@ -69,6 +69,11 @@ dependencies {
     implementation("com.google.android.play:review-ktx:2.0.2")
     implementation("androidx.health.connect:connect-client:1.1.0")
     implementation("androidx.work:work-runtime-ktx:2.11.2")
+    testImplementation("junit:junit:4.13.2")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2")
+    androidTestImplementation("androidx.compose.ui:ui-test-junit4:1.7.8")
+    androidTestImplementation("androidx.test.ext:junit:1.3.0")
+    debugImplementation("androidx.compose.ui:ui-test-manifest:1.7.8")
 }
 java {
     toolchain {

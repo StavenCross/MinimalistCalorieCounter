@@ -82,6 +82,7 @@
     <string name="options">Options</string>
     <string name="overall_weight">Overall Weight</string>
     <string name="quickselect_value_">\"Quickselect\" value can only be \"y\" or \"n\".</string>
+    <string name="quick_import">Quick Import</string>
     <string name="recipe">Recipe</string>
     <string name="recipename">Recipe Name</string>
     <string name="sum_if_empty">Sum if empty</string>

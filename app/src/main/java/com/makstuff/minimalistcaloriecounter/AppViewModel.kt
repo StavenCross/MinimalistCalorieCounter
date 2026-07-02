@@ -15,6 +15,11 @@ import com.makstuff.minimalistcaloriecounter.classes.Combo
 import com.makstuff.minimalistcaloriecounter.classes.CustomWeights
 import com.makstuff.minimalistcaloriecounter.classes.DatabaseEntry
 import com.makstuff.minimalistcaloriecounter.classes.Nutrients
+import com.makstuff.minimalistcaloriecounter.classes.QuickImportCommitOptions
+import com.makstuff.minimalistcaloriecounter.classes.QuickImportDatabaseEntryDraft
+import com.makstuff.minimalistcaloriecounter.classes.QuickImportParser
+import com.makstuff.minimalistcaloriecounter.classes.QuickImportPlanner
+import com.makstuff.minimalistcaloriecounter.classes.QuickImportResult
 import com.makstuff.minimalistcaloriecounter.health.HealthConnectManager
 import com.makstuff.minimalistcaloriecounter.essentials.NUTRIENT_PROPERTIES
 import com.makstuff.minimalistcaloriecounter.essentials.NavButton
@@ -457,6 +462,158 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         dayWriteToCSV(context)
     }
 
+    fun updateQuickImportText(text: String) {
+        val parsed = runCatching { QuickImportParser.parse(text) }
+        _uiState.update { currentState ->
+            currentState.copy(
+                inputQuickImportText = text,
+                quickImportMeal = parsed.getOrNull(),
+                quickImportError = if (text.isBlank()) null else parsed.exceptionOrNull()?.message,
+                quickImportResult = null,
+            )
+        }
+    }
+
+    fun resetQuickImport() {
+        _uiState.update { currentState ->
+            currentState.copy(
+                inputQuickImportText = "",
+                inputQuickImportDateTime = LocalDateTime.now(),
+                quickImportMeal = null,
+                quickImportError = null,
+                quickImportResult = null,
+                quickImportAddFoodsToDatabase = true,
+                quickImportAddFoodsToDay = true,
+                quickImportWriteHealthConnect = true,
+                quickImportInProgress = false,
+            )
+        }
+    }
+
+    fun refreshQuickImportDateTime() {
+        _uiState.update { currentState ->
+            currentState.copy(inputQuickImportDateTime = LocalDateTime.now())
+        }
+    }
+
+    fun toggleQuickImportAddFoodsToDatabase() {
+        _uiState.update { currentState ->
+            currentState.copy(
+                quickImportAddFoodsToDatabase = !currentState.quickImportAddFoodsToDatabase,
+                quickImportResult = null,
+            )
+        }
+    }
+
+    fun toggleQuickImportAddFoodsToDay() {
+        _uiState.update { currentState ->
+            currentState.copy(
+                quickImportAddFoodsToDay = !currentState.quickImportAddFoodsToDay,
+                quickImportResult = null,
+            )
+        }
+    }
+
+    fun toggleQuickImportWriteHealthConnect() {
+        _uiState.update { currentState ->
+            currentState.copy(
+                quickImportWriteHealthConnect = !currentState.quickImportWriteHealthConnect,
+                quickImportResult = null,
+            )
+        }
+    }
+
+    fun quickImportCommit(context: Context) {
+        val state = uiState.value
+        val meal = state.quickImportMeal ?: run {
+            updateQuickImportText(state.inputQuickImportText)
+            uiState.value.quickImportMeal ?: return
+        }
+        val options = QuickImportCommitOptions(
+            addFoodsToDatabase = state.quickImportAddFoodsToDatabase,
+            addFoodsToDay = state.quickImportAddFoodsToDay,
+            writeHealthConnect = state.quickImportWriteHealthConnect,
+        )
+
+        val plan = try {
+            QuickImportPlanner.build(
+                meal = meal,
+                options = options,
+                dateTime = state.inputQuickImportDateTime,
+                existingDatabaseNames = state.database.map { it.name }.toSet(),
+            )
+        } catch (e: IllegalArgumentException) {
+            _uiState.update { it.copy(quickImportError = e.message, quickImportResult = null) }
+            return
+        }
+
+        val databaseEntries = try {
+            plan.foodDrafts.map { it.toDatabaseEntry(context) }
+        } catch (e: IllegalStateException) {
+            _uiState.update { it.copy(quickImportError = e.message, quickImportResult = null) }
+            return
+        }
+
+        _uiState.update { it.copy(quickImportInProgress = true, quickImportError = null, quickImportResult = null) }
+        viewModelScope.launch {
+            var databaseEntriesAdded = 0
+            var dayFoodsAdded = 0
+
+            try {
+                if (options.addFoodsToDatabase) {
+                    databaseEntries.forEach {
+                        databaseAddEntry(context, false, it)
+                    }
+                    databaseSortByName()
+                    databaseQuickselectUpdate()
+                    databaseLetterReset()
+                    databaseWriteToCSV(context)
+                    databaseEntriesAdded = databaseEntries.size
+                }
+
+                if (options.addFoodsToDay) {
+                    databaseEntries.zip(plan.foodDrafts).forEach { (entry, draft) ->
+                        _uiState.value.day.addComponent(draft.grams, entry)
+                    }
+                    dayWriteToCSV(context)
+                    dayFoodsAdded = databaseEntries.size
+                }
+
+                val healthResult = plan.healthPayload?.let { healthConnectManager.insertQuickMealNutrition(it) }
+                _uiState.update {
+                    it.copy(
+                        quickImportInProgress = false,
+                        quickImportResult = QuickImportResult(
+                            databaseEntriesAdded = databaseEntriesAdded,
+                            dayFoodsAdded = dayFoodsAdded,
+                            healthWriteResult = healthResult,
+                        ),
+                    )
+                }
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                _uiState.update { it.copy(quickImportInProgress = false) }
+                throw e
+            } catch (e: Throwable) {
+                _uiState.update {
+                    it.copy(
+                        quickImportInProgress = false,
+                        quickImportError = e.message ?: "Quick Import failed.",
+                    )
+                }
+            }
+        }
+    }
+
+    private fun QuickImportDatabaseEntryDraft.toDatabaseEntry(context: Context): DatabaseEntry {
+        return DatabaseEntry(
+            name = name,
+            nutrients = Nutrients(nutrientsPer100g.toAppValues().toMutableStateList(), context = context),
+            customWeights = CustomWeights(context = context),
+            quickselect = true,
+            context = context,
+        )
+    }
+
     fun archiveAddEntry(
         date: LocalDate,
         bodyWeight: String,
@@ -694,11 +851,11 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             val folder = context.getExternalFilesDir(null) ?: context.filesDir
             val file = File(folder, "database.csv")
             val rows: List<List<String>> = csvReader().readAll(file.inputStream())
+            check(rows.isNotEmpty()) { context.getString(R.string.database) + ": " + context.getString(R.string.csv_wrong_number_fields) }
             check(rows[0].size==11){ context.getString(R.string.database) + ": " + context.getString(R.string.csv_wrong_number_fields)}
-            databaseDeleteAll(context, false)
-            rows.forEachIndexed { index, csvLine ->
-                if (index > 0) databaseAddEntry(context, false, DatabaseEntry.fromCSV(csvLine,context))
-            }
+            val parsedEntries = rows.drop(1).map { csvLine -> DatabaseEntry.fromCSV(csvLine, context) }
+            _uiState.value.database.clear()
+            _uiState.value.database.addAll(parsedEntries)
             databaseSortByName()
             databaseQuickselectUpdate()
             databaseLetterReset()
@@ -885,6 +1042,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             val folder = context.getExternalFilesDir(null) ?: context.filesDir
             val file = File(folder, "archive.csv")
             val rows: List<List<String>> = csvReader().readAll(file.inputStream())
+            check(rows.isNotEmpty()) { context.getString(R.string.archive)+ ": " + context.getString(R.string.csv_wrong_number_fields) }
             check(rows[0].size==10){context.getString(R.string.archive)+ ": " + context.getString(R.string.csv_wrong_number_fields)}
             _uiState.update { currentState ->
                 currentState.copy(

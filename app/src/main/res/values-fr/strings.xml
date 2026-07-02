@@ -153,4 +153,5 @@
     <string name="error_archive_date_exists">Pour cette date, une entrée d\'archive existe déjà.</string>
     <string name="error_archive_date_future">Les entrées d\'archive ne peuvent pas être dans le futur.</string>
     <string name="toast_hc_not_available">Health Connect n\'est pas disponible sur cet appareil.</string>
+    <string name="quick_import">Import rapide</string>
 </resources>

@@ -12,6 +12,8 @@ import androidx.health.connect.client.units.Mass
 import com.makstuff.minimalistcaloriecounter.R
 import com.makstuff.minimalistcaloriecounter.classes.Archive
 import com.makstuff.minimalistcaloriecounter.classes.Nutrients
+import com.makstuff.minimalistcaloriecounter.classes.QuickImportHealthPayload
+import com.makstuff.minimalistcaloriecounter.classes.QuickImportHealthWriteResult
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.time.LocalDate
@@ -60,6 +62,44 @@ class HealthConnectManager(private val context: Context) {
             client.permissionController.getGrantedPermissions().isNotEmpty()
         } catch (_: Throwable) {
             false
+        }
+    }
+
+    suspend fun insertQuickMealNutrition(payload: QuickImportHealthPayload): QuickImportHealthWriteResult {
+        if (!isSdkAvailable()) return QuickImportHealthWriteResult.HealthConnectUnavailable
+        val client = getClient() ?: return QuickImportHealthWriteResult.HealthConnectUnavailable
+
+        return try {
+            if (!hasAllPermissions()) return QuickImportHealthWriteResult.PermissionsMissing
+
+            val startTime = payload.dateTime.atZone(ZoneId.systemDefault()).toInstant()
+            val endTime = payload.dateTime.plusMinutes(1).atZone(ZoneId.systemDefault()).toInstant()
+
+            client.insertRecords(
+                listOf(
+                    NutritionRecord(
+                        startTime = startTime,
+                        startZoneOffset = ZoneId.systemDefault().rules.getOffset(startTime),
+                        endTime = endTime,
+                        endZoneOffset = ZoneId.systemDefault().rules.getOffset(endTime),
+                        energy = Energy.kilocalories(payload.energy),
+                        totalCarbohydrate = Mass.grams(payload.totalCarbohydrate),
+                        sugar = Mass.grams(payload.sugar),
+                        protein = Mass.grams(payload.protein),
+                        totalFat = Mass.grams(payload.totalFat),
+                        saturatedFat = Mass.grams(payload.saturatedFat),
+                        dietaryFiber = Mass.grams(payload.dietaryFiber),
+                        mealType = 0,
+                        name = payload.name,
+                        metadata = androidx.health.connect.client.records.metadata.Metadata.manualEntry(),
+                    )
+                )
+            )
+            QuickImportHealthWriteResult.Success
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
+        } catch (e: Throwable) {
+            QuickImportHealthWriteResult.Failed(e.message ?: "Unknown Health Connect error")
         }
     }
 

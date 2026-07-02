@@ -9,6 +9,8 @@ import com.makstuff.minimalistcaloriecounter.classes.Archive
 import com.makstuff.minimalistcaloriecounter.classes.Combo
 import com.makstuff.minimalistcaloriecounter.classes.DatabaseEntry
 import com.makstuff.minimalistcaloriecounter.classes.GridButtonData
+import com.makstuff.minimalistcaloriecounter.classes.QuickImportMeal
+import com.makstuff.minimalistcaloriecounter.classes.QuickImportResult
 import com.makstuff.minimalistcaloriecounter.essentials.NAV_DAY
 import com.makstuff.minimalistcaloriecounter.essentials.NavButton
 import com.makstuff.minimalistcaloriecounter.ui.theme.AppTheme
@@ -89,6 +91,16 @@ data class AppUiState(
 
     val inputCurrentComboComponentWeight: String = "",
     val inputDayFoodWeight: String = "",
+
+    val inputQuickImportText: String = "",
+    val inputQuickImportDateTime: LocalDateTime = LocalDateTime.now(),
+    val quickImportMeal: QuickImportMeal? = null,
+    val quickImportError: String? = null,
+    val quickImportResult: QuickImportResult? = null,
+    val quickImportAddFoodsToDatabase: Boolean = true,
+    val quickImportAddFoodsToDay: Boolean = true,
+    val quickImportWriteHealthConnect: Boolean = true,
+    val quickImportInProgress: Boolean = false,
 
     val nameFoodCombineAdd: String = "",
     val nameFoodCombineEdit: String = "",

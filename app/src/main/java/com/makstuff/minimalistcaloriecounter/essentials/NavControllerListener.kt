@@ -29,6 +29,9 @@ fun NavControllerListener(
             "day_content" ->
                 setNav(context.getString(R.string.title_edit_food_in_day), NAV_DAY)
 
+            "quick_import" ->
+                setNav(context.getString(R.string.quick_import), NAV_DAY)
+
             "day_add_food" ->
                 setNav(context.getString(R.string.title_pick_food), NAV_DAY)
 
