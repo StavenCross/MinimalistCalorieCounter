@@ -10,11 +10,9 @@
     <string name="button_add_food">Aggiungi cibo</string>
     <string name="button_add_ingredient">Aggiungi ingrediente</string>
     <string name="button_add_to_day">Aggiungi al giorno</string>
-    <string name="button_add_to_recipe">Aggiungi alla ricetta</string>
     <string name="button_back">Indietro</string>
     <string name="button_cancel">Annulla</string>
     <string name="button_clear_input">Cancella input</string>
-    <string name="button_clear_recipe">Ripristina</string>
 
     <string name="button_continue">Continua</string>
     <string name="button_finish">Fine</string>
@@ -32,7 +30,6 @@
     <string name="carbohydrate_protein_fat_combined">La somma di carbo, proteine, grassi e fibre: max 100g.</string>
     <string name="carbohydrates_include_sugar">Lo zucchero non può superare i carboidrati totali.</string>
     <string name="choose_language">Lingua (Language)</string>
-    <string name="combine">Ricetta</string>
     <string name="csv_wrong_number_fields">Il CSV ha un numero errato di campi.</string>
     <string name="custom_weights">Pesi di selezione rapida personalizzati</string>
     <string name="custom_weights_example">es: \"55:1 Cucchiaio-110:2 Cucchiai\"</string>
@@ -53,7 +50,6 @@
 
     <string name="dialog_language">Se desideri cambiare anche la lingua del database, puoi ora ripristinare il database utilizzando l\'opzione «%1$s». Tieni presente che questo caricherà il database predefinito nella lingua corrente e tutte le voci aggiunte nella lingua precedente andranno perse permanentemente.</string>
     <string name="dialog_reset_day">Questo eliminerà tutto il cibo nella tua giornata.</string>
-    <string name="dialog_reset_recipe">Questo eliminerà tutti gli ingredienti nella tua ricetta.</string>
     <string name="dropdown_backup_archive">Esporta Archivio</string>
     <string name="dropdown_backup_database">Esporta Database</string>
     <string name="dropdown_clear_archive">Cancella Archivio</string>
@@ -61,8 +57,6 @@
     <string name="dropdown_import_archive">Importa Archivio</string>
     <string name="dropdown_import_database">Importa Database</string>
     <string name="dropdown_reset_database">Ripristina Database</string>
-    <string name="entry_from_empty_recipe">Impossibile creare una voce di database da una ricetta vuota.</string>
-    <string name="example_recipe_name">es: \"Stufato\"</string>
     <string name="fat_includes_saturated_fat">I grassi saturi non possono superare i grassi totali.</string>
     <string name="food">Cibo</string>
     <string name="food_name_example">es: \"Mela\"</string>
@@ -82,12 +76,9 @@
     <string name="options">Opzioni</string>
     <string name="overall_weight">Peso totale</string>
     <string name="quickselect_value_">Il valore della selezione rapida può essere solo \"y\" o \"n\".</string>
-    <string name="recipe">Ricetta</string>
-    <string name="recipename">Nome ricetta</string>
     <string name="sum_if_empty">somma se vuoto</string>
     <string name="system_default">Predefinita di sistema\n(System default)</string>
     <string name="title_add_food_to_day">Aggiungi cibo al giorno</string>
-    <string name="title_add_ingredient_to_recipe">Aggiungi ingrediente</string>
     <string name="title_create_new_archive_entry">Crea nuova voce archivio</string>
     <string name="title_create_new_database_entry">Crea nuova voce database</string>
     <string name="title_edit_archive_entry">Modifica voce archivio</string>
@@ -96,7 +87,6 @@
     <string name="title_edit_weight_of">Modifica il peso di</string>
     <string name="title_enter_body_weight">Inserisci peso corporeo</string>
     <string name="title_enter_weight_of">Inserisci peso di</string>
-    <string name="title_ingredients_of_recipe">Ingredienti della ricetta</string>
     <string name="title_pick_food">Scegli cibo</string>
     <string name="title_pick_ingredient">Scegli ingrediente</string>
     <string name="weight">Peso</string>

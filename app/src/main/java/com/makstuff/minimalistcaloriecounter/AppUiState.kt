@@ -40,7 +40,6 @@ data class AppUiState(
     val archive: Archive,
 
     val day: Combo,
-    val currentCombo: Combo,
 
     val navigationBarHighlight: NavButton = NAV_DAY,
     val topBarTitle: String = "",
@@ -106,8 +105,6 @@ data class AppUiState(
     val quickImportWriteHealthConnect: Boolean = true,
     val quickImportInProgress: Boolean = false,
 
-    val nameFoodCombineAdd: String = "",
-    val nameFoodCombineEdit: String = "",
     val nameFoodDayAdd: String = "",
     val nameFoodDayEdit: String = "",
 
@@ -139,7 +136,6 @@ data class AppUiState(
     val alertDialogHealthConnectActivation: Boolean = false,
     val alertDialogHealthConnectToasts: Boolean = false,
     val alertDialogHealthConnectPermissions: Boolean = false,
-    val alertDialogRecipeReset: Boolean = false,
     val alertDialogDayReset: Boolean = false,
     val dialogLanguage: Boolean = false,
     val dialogLanguageInfo: Boolean = false,

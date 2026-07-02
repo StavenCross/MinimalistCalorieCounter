@@ -5,14 +5,12 @@ enum class NavButton {
     ARCHIVE,
     DATABASE,
     CREATE,
-    COMBINE,
 }
 
 val NAV_DAY = NavButton.DAY
 val NAV_ARCHIVE = NavButton.ARCHIVE
 val NAV_DATABASE = NavButton.DATABASE
 val NAV_CREATE = NavButton.CREATE
-val NAV_COMBINE = NavButton.COMBINE
 
 val GENERAL_WEIGHTS: List<Pair<String, String>> = listOf(
     Pair("5", "5"),
@@ -80,5 +78,4 @@ val ALPHABET: List<Char> = listOf(
     'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
     'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'
 )
-
 

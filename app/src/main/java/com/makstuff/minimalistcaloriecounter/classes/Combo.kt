@@ -60,15 +60,6 @@ data class Combo(
         return list
     }
 
-    fun toDatabaseEntry(): DatabaseEntry {
-        if (inputOverallWeight != "") {
-            checkValidNumber(inputOverallWeight, context.getString(R.string.overall_weight), context)
-        }
-        check(overallWeight!! > 0) { context.getString(R.string.entry_from_empty_recipe) }
-        return DatabaseEntry(name, overallNutrients.times(100 / overallWeight!!,context),
-            CustomWeights(context = context),context = context)
-    }
-
     fun addComponent(weight: Double, databaseEntry: DatabaseEntry) {
         checkComponentWeight(weight)
         components.add(
@@ -113,6 +104,5 @@ data class Combo(
         overallNutrients = tempNutrients
     }
 }
-
 
 

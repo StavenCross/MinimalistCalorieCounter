@@ -10,11 +10,9 @@
     <string name="button_add_food">Add Food</string>
     <string name="button_add_ingredient">Add Ingredient</string>
     <string name="button_add_to_day">Add to Day</string>
-    <string name="button_add_to_recipe">Add to Recipe</string>
     <string name="button_back">Back</string>
     <string name="button_cancel">Cancel</string>
     <string name="button_clear_input">Clear Input</string>
-    <string name="button_clear_recipe">Reset</string>
 
     <string name="button_continue">Continue</string>
     <string name="button_finish">Finish</string>
@@ -32,7 +30,6 @@
     <string name="carbohydrate_protein_fat_combined">Total carbs, protein, fat and fiber must be max 100g.</string>
     <string name="carbohydrates_include_sugar">Sugar cannot exceed total carbohydrates.</string>
     <string name="choose_language">Language</string>
-    <string name="combine">Recipe</string>
     <string name="csv_wrong_number_fields">CSV has wrong number of fields.</string>
     <string name="custom_weights">Custom Quickselect Weights</string>
     <string name="custom_weights_example">e.g. \"55:1 Scoop-110:2 Scoops\"</string>
@@ -53,7 +50,6 @@
 
     <string name="dialog_language">If you also want to change the Database language, you can now reset the Database using the option \"%1$s\". Note that this will load the default Database in the current language, and all the Database Entries you added in the previous language will be permanently lost.</string>
     <string name="dialog_reset_day">This will delete all the Food in your Day.</string>
-    <string name="dialog_reset_recipe">This will delete all the Ingredients in your Recipe.</string>
     <string name="dropdown_backup_archive">Export Archive</string>
     <string name="dropdown_backup_database">Export Database</string>
     <string name="dropdown_clear_archive">Clear Archive</string>
@@ -61,8 +57,6 @@
     <string name="dropdown_import_archive">Import Archive</string>
     <string name="dropdown_import_database">Import Database</string>
     <string name="dropdown_reset_database">Reset Database</string>
-    <string name="entry_from_empty_recipe">Can\'t create Database Entry from empty Recipe.</string>
-    <string name="example_recipe_name">e.g. \"Stew\"</string>
     <string name="fat_includes_saturated_fat">Saturated fat cannot exceed total fat.</string>
     <string name="food">Food</string>
     <string name="food_name_example">e.g. \"Apple\"</string>
@@ -83,12 +77,9 @@
     <string name="overall_weight">Overall Weight</string>
     <string name="quickselect_value_">\"Quickselect\" value can only be \"y\" or \"n\".</string>
     <string name="quick_import">Quick Import</string>
-    <string name="recipe">Recipe</string>
-    <string name="recipename">Recipe Name</string>
     <string name="sum_if_empty">Sum if empty</string>
     <string name="system_default">System Default</string>
     <string name="title_add_food_to_day">Add Food to Day</string>
-    <string name="title_add_ingredient_to_recipe">Add Ingredient to Recipe</string>
     <string name="title_create_new_archive_entry">Create New Archive Entry</string>
     <string name="title_create_new_database_entry">Create New Database Entry</string>
     <string name="title_edit_archive_entry">Edit Archive Entry</string>
@@ -97,7 +88,6 @@
     <string name="title_edit_weight_of">Edit Weight of</string>
     <string name="title_enter_body_weight">Enter Body Weight</string>
     <string name="title_enter_weight_of">Enter Weight of</string>
-    <string name="title_ingredients_of_recipe">Ingredients of Recipe</string>
     <string name="title_pick_food">Pick Food</string>
     <string name="title_pick_ingredient">Pick Ingredient</string>
     <string name="weight">Weight</string>

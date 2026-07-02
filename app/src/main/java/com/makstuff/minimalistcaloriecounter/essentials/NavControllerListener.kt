@@ -10,8 +10,6 @@ import com.makstuff.minimalistcaloriecounter.R
 
 @Composable
 fun NavControllerListener(
-    nameFoodCombineAdd: String,
-    nameFoodCombineEdit: String,
     nameFoodDayAdd: String,
     nameFoodDayEdit: String,
     navController: NavHostController,
@@ -21,7 +19,7 @@ fun NavControllerListener(
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
-    LaunchedEffect(currentRoute, nameFoodCombineAdd, nameFoodCombineEdit, nameFoodDayAdd, nameFoodDayEdit) {
+    LaunchedEffect(currentRoute, nameFoodDayAdd, nameFoodDayEdit) {
         when (currentRoute) {
             "day_home" ->
                 setNav(context.getString(R.string.title_add_food_to_day), NAV_DAY)
@@ -68,20 +66,6 @@ fun NavControllerListener(
             "create_home" ->
                 setNav(context.getString(R.string.title_create_new_database_entry), NAV_CREATE)
 
-            "combine_home" ->
-                setNav(context.getString(R.string.title_add_ingredient_to_recipe), NAV_COMBINE)
-
-            "combine_content" ->
-                setNav(context.getString(R.string.title_ingredients_of_recipe), NAV_COMBINE)
-
-            "combine_add_component" ->
-                setNav(context.getString(R.string.title_pick_ingredient), NAV_COMBINE)
-
-            "combine_add_weight/{index}" ->
-                setNav(context.getString(R.string.title_enter_weight_of) + " " + nameFoodCombineAdd, NAV_COMBINE)
-
-            "combine_edit_weight/{index}" ->
-                setNav(context.getString(R.string.title_edit_weight_of) + " " + nameFoodCombineEdit, NAV_COMBINE)
         }
     }
 }

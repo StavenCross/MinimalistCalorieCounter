@@ -10,11 +10,9 @@
     <string name="button_add_food">Essen\nhinzufügen</string>
     <string name="button_add_ingredient">Zutat hinzufügen</string>
     <string name="button_add_to_day">Zu Tag hinzufügen</string>
-    <string name="button_add_to_recipe">Zu Rezept hinzufügen</string>
     <string name="button_back">Zurück</string>
     <string name="button_cancel">Abbrechen</string>
     <string name="button_clear_input">Zurücksetzen</string>
-    <string name="button_clear_recipe">Zurücksetzen</string>
 
     <string name="button_continue">Fortsetzen</string>
     <string name="button_finish">Fertig</string>
@@ -32,7 +30,6 @@
     <string name="carbohydrate_protein_fat_combined">Makros und Ballaststoffe dürfen max. 100g ergeben.</string>
     <string name="carbohydrates_include_sugar">Kohlenhydrate inkludieren Zucker, deswegen kann Zucker kein höheres Gewicht haben.</string>
     <string name="choose_language">Sprache (Language)</string>
-    <string name="combine">Rezept</string>
     <string name="csv_wrong_number_fields">CSV hat die falsche Anzahl von Feldern.</string>
     <string name="custom_weights">Eigene Schnellauswahl-Gewichte</string>
     <string name="custom_weights_example">z.b. \"55:1 Löffel-110:2 Löffel\"</string>
@@ -53,7 +50,6 @@
 
     <string name="dialog_language">Falls Du auch die Sprache der Datenbank ändern willst, kannst Du die Datenbank nun über die Option „%1$s“ zurücksetzen. Beachte, dass dabei die Standard-Datenbank in der aktuellen Sprache geladen wird und alle Einträge, die Du in der vorherigen Sprache hinzugefügt hast, unwiederbringlich gelöscht werden.</string>
     <string name="dialog_reset_day">Du bist dabei, alle Essenseinträge in deinem Tag zu löschen.</string>
-    <string name="dialog_reset_recipe">Du bist dabei, alle Zutaten in deinem Rezept zu löschen.</string>
     <string name="dropdown_backup_archive">Archiv exportieren</string>
     <string name="dropdown_backup_database">Datenbank exportieren</string>
     <string name="dropdown_clear_archive">Archiv löschen</string>
@@ -61,8 +57,6 @@
     <string name="dropdown_import_archive">Archiv importieren</string>
     <string name="dropdown_import_database">Datenbank importieren</string>
     <string name="dropdown_reset_database">Datenbank zurücksetzen</string>
-    <string name="entry_from_empty_recipe">Kann keinen Datenbankeintrag aus leerem Rezept erstellen.</string>
-    <string name="example_recipe_name">z.B. \"Eintopf\"</string>
     <string name="fat_includes_saturated_fat">Gesättigte Fette dürfen Gesamtfett nicht übersteigen.</string>
     <string name="food">Essen</string>
     <string name="food_name_example">z.b. \"Apfel\"</string>
@@ -82,12 +76,9 @@
     <string name="options">Optionen</string>
     <string name="overall_weight">Gesamtgewicht</string>
     <string name="quickselect_value_">\"Quickselect\" kann nur \"y\" oder \"n\" sein.</string>
-    <string name="recipe">Rezept</string>
-    <string name="recipename">Rezeptname</string>
     <string name="sum_if_empty">sonst Summe</string>
     <string name="system_default">Systemstandard\n(System default)</string>
     <string name="title_add_food_to_day">Essen zu Tag hinzufügen</string>
-    <string name="title_add_ingredient_to_recipe">Zutat zu Rezept hinzufügen</string>
     <string name="title_create_new_archive_entry">Neuen Archiveintrag erstellen</string>
     <string name="title_create_new_database_entry">Datenbankeintrag erstellen</string>
     <string name="title_edit_archive_entry">Archiveintrag bearbeiten</string>
@@ -96,7 +87,6 @@
     <string name="title_edit_weight_of">Bearbeite Gewicht von </string>
     <string name="title_enter_body_weight">Körpergewicht eingeben</string>
     <string name="title_enter_weight_of">Wähle Gewicht von</string>
-    <string name="title_ingredients_of_recipe">Zutaten im Rezept</string>
     <string name="title_pick_food">Essen wählen</string>
     <string name="title_pick_ingredient">Zutat wählen</string>
     <string name="weight">Gewicht</string>

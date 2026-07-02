@@ -42,7 +42,7 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 
 class AppViewModel(app: Application) : AndroidViewModel(app) {
-    private val _uiState = MutableStateFlow(AppUiState(archive = Archive(context = app.applicationContext),day = Combo(context = app.applicationContext), currentCombo = Combo(context = app.applicationContext)))
+    private val _uiState = MutableStateFlow(AppUiState(archive = Archive(context = app.applicationContext), day = Combo(context = app.applicationContext)))
     val uiState = _uiState.asStateFlow()
 
     private val healthConnectManager = HealthConnectManager(getApplication<Application>().applicationContext)
@@ -714,22 +714,6 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    fun currentComboUpdateOverallWeight(string: String) {
-        _uiState.update { currentState ->
-            currentState.copy(
-                currentCombo = uiState.value.currentCombo.copy(inputOverallWeight = string)
-            )
-        }
-    }
-
-    fun currentComboUpdateName(string: String) {
-        _uiState.update { currentState ->
-            currentState.copy(
-                currentCombo = uiState.value.currentCombo.copy(name = string)
-            )
-        }
-    }
-
     fun updateDatabaseEntryEditNutrient(string: String, index: Int) {
         _uiState.value.inputDatabaseEntryEditNutrients[index] = string
     }
@@ -742,15 +726,6 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             )
         }
         dayWriteToCSV(context)
-    }
-
-    fun currentComboReset(context: Context) {
-        _uiState.update { currentState ->
-            currentState.copy(
-                currentCombo = Combo(context = context)
-            )
-        }
-        currentComboWriteToCSV(context)
     }
 
     fun databaseDeleteAll(context: Context, updateDependencies: Boolean = true) {
@@ -768,12 +743,6 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                 navigationBarHighlight = button
             )
         }
-    }
-
-    fun currentComboAddComponent(weight: String, databaseEntry: DatabaseEntry, context: Context) {
-        checkValidNumber(weight, context.getString(R.string.weight), context)
-        _uiState.value.currentCombo.addComponent(weight.toDouble(), databaseEntry)
-        currentComboWriteToCSV(context)
     }
 
     fun dayAddFood(weight: String, databaseEntry: DatabaseEntry, context: Context) {
@@ -1031,20 +1000,6 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    fun currentComboDeleteComponent(index: Int, context: Context) {
-        _uiState.value.currentCombo.deleteComponent(index)
-        currentComboWriteToCSV(context)
-    }
-
-
-    fun currentComboEditComponentWeight(weightString: String, index: Int, context: Context) {
-        checkValidNumber(weightString, context.getString(R.string.weight), context)
-        _uiState.value.currentCombo.editComponentWeight(
-            weightString.toDouble().toFormattedString(true).toDouble(), index
-        )
-        currentComboWriteToCSV(context)
-    }
-
     fun dayEditFoodWeight(weightString: String, index: Int, context: Context) {
         checkValidNumber(weightString, context.getString(R.string.weight), context)
         _uiState.value.day.editComponentWeight(
@@ -1073,13 +1028,6 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         _uiState.update { currentState ->
             currentState.copy(
                 alertDialogDayReset = bool
-            )
-        }
-    }
-    fun setAlertDialogRecipeReset(bool: Boolean){
-        _uiState.update { currentState ->
-            currentState.copy(
-                alertDialogRecipeReset = bool
             )
         }
     }
@@ -1221,14 +1169,6 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    fun currentComboResetCSV(overwriteIfExists: Boolean, context: Context) {
-        val folder = context.getExternalFilesDir(null) ?: context.filesDir
-        val file = File(folder, "currentrecipe.csv")
-        if (!file.exists() || overwriteIfExists) {
-            context.resources.openRawResource(R.raw.currentrecipe).copyTo(file.outputStream())
-        }
-    }
-
     fun archiveResetCSV(overwriteIfExists: Boolean, context: Context) {
         val folder = context.getExternalFilesDir(null) ?: context.filesDir
         val file = File(folder, "archive.csv")
@@ -1261,16 +1201,6 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    private fun currentComboWriteToCSV(context: Context) {
-        val folder = context.getExternalFilesDir(null) ?: context.filesDir
-        val file = File(folder, "currentrecipe.csv")
-        csvWriter().open(file) {
-            uiState.value.currentCombo.getCsvString().forEach {
-                writeRow(it)
-            }
-        }
-    }
-
     private fun dayWriteToCSV(context: Context) {
         val folder = context.getExternalFilesDir(null) ?: context.filesDir
         val file = File(folder, "day.csv")
@@ -1278,21 +1208,6 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             uiState.value.day.getCsvString().forEach {
                 writeRow(it)
             }
-        }
-    }
-
-    fun currentComboUpdateFromCSV(context: Context) {
-        try {
-            val folder = context.getExternalFilesDir(null) ?: context.filesDir
-            val file = File(folder, "currentrecipe.csv")
-            val rows: List<List<String>> = csvReader().readAll(file.inputStream())
-            _uiState.update { currentState ->
-                currentState.copy(
-                    currentCombo = Combo.fromCSV(rows,context)
-                )
-            }
-        } catch (_: CSVFieldNumDifferentException) {
-            throw IllegalStateException(context.getString(R.string.recipe) + ": " + context.getString(R.string.csv_wrong_number_fields))
         }
     }
 
@@ -1400,22 +1315,6 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             }
         } catch (_: CSVFieldNumDifferentException) {
             throw IllegalStateException(context.getString(R.string.archive)+ ": " + context.getString(R.string.csv_wrong_number_fields))
-        }
-    }
-
-    fun setNameFoodCombineAdd(string: String) {
-        _uiState.update { currentState ->
-            currentState.copy(
-                nameFoodCombineAdd = string
-            )
-        }
-    }
-
-    fun setNameFoodCombineEdit(string: String) {
-        _uiState.update { currentState ->
-            currentState.copy(
-                nameFoodCombineEdit = string
-            )
         }
     }
 

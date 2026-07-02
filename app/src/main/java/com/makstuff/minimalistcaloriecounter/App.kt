@@ -90,7 +90,6 @@ import androidx.navigation.compose.rememberNavController
 import com.makstuff.minimalistcaloriecounter.classes.Nutrients
 import com.makstuff.minimalistcaloriecounter.essentials.ALPHABET
 import com.makstuff.minimalistcaloriecounter.essentials.NAV_ARCHIVE
-import com.makstuff.minimalistcaloriecounter.essentials.NAV_COMBINE
 import com.makstuff.minimalistcaloriecounter.essentials.NAV_CREATE
 import com.makstuff.minimalistcaloriecounter.essentials.NAV_DATABASE
 import com.makstuff.minimalistcaloriecounter.essentials.NAV_DAY
@@ -188,8 +187,6 @@ fun App(
     }
     //lambda argument moved out of parenthesis because good practice and whatnot
     NavControllerListener(
-        nameFoodCombineAdd = uiState.nameFoodCombineAdd,
-        nameFoodCombineEdit = uiState.nameFoodCombineEdit,
         nameFoodDayAdd = uiState.nameFoodDayAdd,
         nameFoodDayEdit = uiState.nameFoodDayEdit,
         navController = navController,
@@ -209,7 +206,6 @@ fun App(
     LaunchedEffect(Unit) {
         viewModel.updateHealthConnectPermissionsStatus()
         viewModel.databaseResetCSV(false, context)
-        viewModel.currentComboResetCSV(false, context)
         viewModel.archiveResetCSV(false, context)
         viewModel.dayResetCSV(false, context)
         viewModel.optionsResetFile(false, context)
@@ -233,13 +229,6 @@ fun App(
         } catch (e: IllegalStateException) {
             Toast.makeText(
                 context, context.getString(R.string.database)  + " CSV: " + e.message, Toast.LENGTH_LONG
-            ).show()
-        }
-        try {
-            viewModel.currentComboUpdateFromCSV(context)
-        } catch (e: IllegalStateException) {
-            Toast.makeText(
-                context, context.getString(R.string.recipe) + " CSV: " + e.message, Toast.LENGTH_LONG
             ).show()
         }
         try {
@@ -1020,27 +1009,6 @@ fun App(
                         }
                     }
                     when {
-                        uiState.alertDialogRecipeReset -> {
-                            AlertDialog(
-                                onDismissRequest = { viewModel.setAlertDialogRecipeReset(false) },
-                                confirmButton = {
-                                    ButtonText(
-                                        text = stringResource(R.string.button_continue),
-                                        onClick = {
-                                            viewModel.currentComboReset(context)
-                                            viewModel.setAlertDialogRecipeReset(false)
-                                        })
-                                },
-                                dismissButton = {
-                                    ButtonText(
-                                        text = stringResource(R.string.button_cancel),
-                                        onClick = { viewModel.setAlertDialogRecipeReset(false) })
-                                },
-                                text = { Text(stringResource(R.string.dialog_reset_recipe)) },
-                                title = { Text(stringResource(R.string.confirmation)) })
-                        }
-                    }
-                    when {
                         uiState.alertDialogArchiveDelete -> {
                             AlertDialog(
                                 onDismissRequest = { viewModel.setAlertDialogArchiveDelete(false) },
@@ -1595,49 +1563,6 @@ fun App(
                     context=context
                 )
             }
-            composable("combine_content") {
-                ScreenWithHoverCard(
-                    contentAbove = {},
-                    nutrients = uiState.currentCombo.overallNutrients,
-                    content = {
-                        ScrollColumn(
-                            items = uiState.currentCombo.components.mapIndexed { index: Int, component ->
-                                {
-                                    TileIngredient(
-                                        component = component,
-                                        onClick = {
-                                            viewModel.updateCurrentComboComponentWeight(
-                                                component.first.toFormattedString(
-                                                    true
-                                                )
-                                            )
-                                            viewModel.setNameFoodCombineEdit(component.second.name)
-                                            navTo("combine_edit_weight/$index")
-                                        },
-                                    )
-                                }
-                            }
-                        )
-                    },
-                    listOfTextButtons = listOf(
-                        Pair(stringResource(R.string.button_clear_recipe)) { viewModel.setAlertDialogRecipeReset(true) },
-                        Pair(stringResource(R.string.button_add_ingredient)) { navTo("combine_home") },
-                        Pair(stringResource(R.string.button_turn_to_database_entry)) {
-                            try {
-                                val food = uiState.currentCombo.toDatabaseEntry()
-                                viewModel.databaseAddEntry(context, true, food)
-                                viewModel.currentComboReset(context)
-                                navTo("database_home")
-                            } catch (e: IllegalStateException) {
-                                Toast.makeText(context, e.message, Toast.LENGTH_LONG)
-                                    .show()
-                            }
-                        }
-                    ),
-                    context=context
-                )
-            }
-
             composable("archive_home") {
                     ScreenWithHoverCard(
                         nutrients = uiState.archive.averageNutrients,
@@ -1892,21 +1817,6 @@ fun App(
                     }
                 }}
 
-            composable("combine_add_component") {
-                ScreenShowFoodSelection(
-                    indexList = uiState.databaseLetter,
-                    database = uiState.database,
-                    onFoodClicked = { index ->
-                        viewModel.updateCurrentComboComponentWeight("")
-                        viewModel.setNameFoodCombineAdd(uiState.database[index].name)
-                        navTo("combine_add_weight/$index")
-                    },
-                    onFoodLongClicked = { index -> editDatabaseEntry(index) },
-                    onBack = {navTo("combine_home")}
-                )
-
-            }
-
             composable("day_add_food") {
                 ScreenShowFoodSelection(
                     indexList = uiState.databaseLetter,
@@ -2003,99 +1913,6 @@ fun App(
                     onBack = { navTo("day_home") },
                 )
             }
-
-            composable("combine_home") {
-                ScreenWithHoverCard(
-                    contentAbove = {
-                        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                            TextField(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .padding(horizontal = 4.dp),
-                                value = uiState.currentCombo.name,
-                                onValueChange = {viewModel.currentComboUpdateName(it.replaceFirstChar { it -> it.uppercase() }) },
-                                label = stringResource(R.string.recipename),
-                                placeholder = stringResource(R.string.example_recipe_name),
-                                keyboardOptions = KeyboardOptions(
-                                    capitalization = KeyboardCapitalization.Sentences,
-                                    imeAction = ImeAction.Next
-                                ),
-                                keyboardActions = KeyboardActions(
-                                    onNext = { focusManager.moveFocus(FocusDirection.Next) }
-                                )
-                            )
-                            TextField(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .padding(horizontal = 4.dp),
-                                value = uiState.currentCombo.inputOverallWeight,
-                                onValueChange = {
-                                    viewModel.currentComboUpdateOverallWeight(
-                                        it
-                                    )
-                                },
-                                label = stringResource(R.string.overall_weight),
-                                placeholder = "g ("+ stringResource(R.string.sum_if_empty) +")",
-                                keyboardOptions = KeyboardOptions(
-                                    keyboardType = KeyboardType.Number,
-                                    imeAction = ImeAction.Next
-                                ),
-                                keyboardActions = KeyboardActions(
-                                    onNext = { focusManager.moveFocus(FocusDirection.Next) }
-                                )
-                            )
-                        }
-                    },
-                    nutrients = uiState.currentCombo.overallNutrients,
-                    listOfTextButtons = listOf(
-                        Pair(stringResource(R.string.button_clear_recipe)) { viewModel.setAlertDialogRecipeReset(true) },
-                        Pair(stringResource(R.string.button_edit)) { navTo("combine_content") },
-                        Pair(stringResource(R.string.button_turn_to_database_entry)) {
-                            try {
-                                val food = uiState.currentCombo.toDatabaseEntry()
-                                viewModel.databaseAddEntry(context, true, food)
-                                navTo("day_home")
-                            } catch (e: IllegalStateException) {
-                                Toast.makeText(context, e.message, Toast.LENGTH_LONG)
-                                    .show()
-                            }
-                        }),
-                    content = {
-                        Grid(
-                            modifier = Modifier.fillMaxHeight(),
-                            columns = 8,
-                            reverseUpDown = true,
-                            reverseLeftRight = true,
-                            items = ALPHABET.map {
-                                Pair<Int, @Composable () -> Unit>(1) {
-                                    ButtonGrid(
-                                        text = it.toString(),
-                                        onClick = {
-                                            viewModel.databaseLetterFilter(it)
-                                            navTo("combine_add_component") }
-                                    )
-                                }
-                            }.reversed() + uiState.databaseQuickselect.map {
-                                Pair<Int, @Composable () -> Unit>(2) {
-                                    ButtonGrid(
-                                        text = it.second.name,
-                                        onClick = {
-                                            viewModel.updateCurrentComboComponentWeight("")
-                                            viewModel.setNameFoodCombineAdd(it.second.name)
-                                            navTo("combine_add_weight/${it.first}")
-                                        },
-                                        onLongClick = {
-                                            editDatabaseEntry(it.first)
-                                        }
-                                    )
-                                }
-                            }.reversed()
-                        )
-                    },
-                    context=context
-                )
-            }
-
 
             composable("day_add_weight/{index}") {
                 val index = it.arguments?.getString("index")?.toIntOrNull()
@@ -2237,148 +2054,6 @@ fun App(
                 }
             }
 
-            composable("combine_add_weight/{index}") {
-                val index = it.arguments?.getString("index")?.toIntOrNull()
-                if (index != null) {
-                    if(index < uiState.database.size){
-                        fun onConfirm() {
-                            keyboardController?.hide()
-                            try {
-                                viewModel.currentComboAddComponent(
-                                    uiState.inputCurrentComboComponentWeight,
-                                    uiState.database[index],
-                                    context
-                                )
-                                navTo("combine_home")
-                            } catch (e: IllegalStateException) {
-                                Toast.makeText(
-                                    context, e.message, Toast.LENGTH_LONG
-                                ).show()
-                            }
-
-                        }
-                        ScreenEnterWeightOfFood(
-                            currentWeight = uiState.inputCurrentComboComponentWeight,
-                            onWeightChange = { string ->
-                                viewModel.updateCurrentComboComponentWeight(string)
-                            },
-                            onConfirm = { onConfirm() },
-                            listOfTextButtons = listOf(
-                                Pair(stringResource(R.string.button_cancel)) { navTo("combine_home") },
-                                Pair(stringResource(R.string.button_add_to_recipe)) {
-                                    onConfirm()
-                                }
-                            ),
-                            listOfItems = GENERAL_WEIGHTS.map { list ->
-                                Pair<Int, @Composable () -> Unit>(1) {
-                                    ButtonGrid(
-                                        text = list.second,
-                                        onClick = {
-                                            keyboardController?.hide()
-                                            viewModel.currentComboAddComponent(
-                                                list.first,
-                                                uiState.database[index],
-                                                context
-                                            )
-                                            navTo("combine_home")
-                                        }
-                                    )
-                                }
-                            },
-                            listOfQSItems = uiState.database[index].customWeights.listOfStrings.map { list ->
-                                Pair<Int, @Composable () -> Unit>(1) {
-                                    ButtonGrid(
-                                        text = list.second,
-                                        onClick = {
-                                            keyboardController?.hide()
-                                            viewModel.currentComboAddComponent(
-                                                list.first,
-                                                uiState.database[index],
-                                                context
-                                            )
-                                            navTo("combine_home")
-                                        }
-                                    )
-                                }
-                            }.reversed()
-                        )
-                    }
-                }
-            }
-
-            composable("combine_edit_weight/{index}") {
-                val index = it.arguments?.getString("index")?.toIntOrNull()
-                if (index != null) {
-                    if(index < uiState.currentCombo.components.size){
-                        fun onConfirm() {
-                            keyboardController?.hide()
-                            try {
-                                viewModel.currentComboEditComponentWeight(
-                                    uiState.inputCurrentComboComponentWeight,
-                                    index,
-                                    context
-                                )
-                                navTo("combine_content")
-                            } catch (e: IllegalStateException) {
-                                Toast.makeText(
-                                    context, e.message, Toast.LENGTH_LONG
-                                ).show()
-                            }
-
-                        }
-                        ScreenEnterWeightOfFood(
-                            currentWeight = uiState.inputCurrentComboComponentWeight,
-                            onWeightChange = { string ->
-                                viewModel.updateCurrentComboComponentWeight(string)
-                            },
-                            onConfirm = { onConfirm() },
-                            listOfTextButtons = listOf(
-                                Pair(stringResource(R.string.button_cancel)) { navTo("combine_content") },
-                                Pair(stringResource(R.string.button_delete)) {
-                                    viewModel.currentComboDeleteComponent(index, context)
-                                    navTo("combine_content")
-                                },
-                                Pair(stringResource(R.string.button_save_new_weight)) {
-                                    onConfirm()
-                                }
-                            ),
-                            listOfItems = remember {
-                                GENERAL_WEIGHTS.map { list ->
-                                    Pair<Int, @Composable () -> Unit>(1) {
-                                        ButtonGrid(
-                                            text = list.second,
-                                            onClick = {
-                                                keyboardController?.hide()
-                                                viewModel.currentComboEditComponentWeight(
-                                                    list.first,
-                                                    index,
-                                                    context
-                                                )
-                                                navTo("combine_content")
-                                            }
-                                        )
-                                    }
-                                }},
-                            listOfQSItems = remember { uiState.currentCombo.components[index].second.customWeights.listOfStrings.map { list ->
-                                    Pair<Int, @Composable () -> Unit>(1) {
-                                        ButtonGrid(
-                                            text = list.second,
-                                            onClick = {
-                                                keyboardController?.hide()
-                                                viewModel.currentComboEditComponentWeight(
-                                                    list.first,
-                                                    index,
-                                                    context
-                                                )
-                                                navTo("combine_content")
-                                            }
-                                        )
-                                    }
-                                }.reversed()
-                            }
-                        )
-                    }
-                }}
         }
     }
 
@@ -2408,20 +2083,6 @@ fun App(
                 DrawerNavItem(stringResource(R.string.database_navbar)) {
                     mainMenuExpanded = false
                     navTo("database_home")
-                }
-                DrawerNavItem(stringResource(R.string.food)) {
-                    mainMenuExpanded = false
-                    viewModel.resetDatabaseEntryCreateAllInput()
-                    navTo("create_home")
-                }
-                DrawerNavItem("Recipe") {
-                    mainMenuExpanded = false
-                    viewModel.currentComboReset(context)
-                    navTo("combine_home")
-                }
-                DrawerNavItem("Archive tools") {
-                    mainMenuExpanded = false
-                    navTo("archive_home")
                 }
                 HorizontalDivider(Modifier.padding(vertical = 8.dp))
                 DrawerNavItem(stringResource(R.string.options)) {

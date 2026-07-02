@@ -82,7 +82,6 @@ class ScreenQuickImportTest {
         return AppUiState(
             archive = Archive(context = context),
             day = Combo(context = context),
-            currentCombo = Combo(context = context),
         )
     }
 }
