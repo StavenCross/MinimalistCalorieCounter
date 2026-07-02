@@ -146,6 +146,34 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         readHealthConnectNutritionMeals()
     }
 
+    fun requestNavigation(route: String) {
+        _uiState.update { currentState ->
+            currentState.copy(automationRouteRequest = route)
+        }
+    }
+
+    fun clearNavigationRequest(route: String? = null) {
+        _uiState.update { currentState ->
+            if (route == null || currentState.automationRouteRequest == route) {
+                currentState.copy(automationRouteRequest = null)
+            } else {
+                currentState
+            }
+        }
+    }
+
+    fun updateActiveSettingsSheet(sheet: String?) {
+        _uiState.update { currentState ->
+            currentState.copy(activeSettingsSheet = sheet)
+        }
+    }
+
+    fun updateQuickImportSettingsVisible(visible: Boolean) {
+        _uiState.update { currentState ->
+            currentState.copy(quickImportSettingsVisible = visible)
+        }
+    }
+
     fun readHealthConnectNutritionMeals() {
         _uiState.update { currentState ->
             currentState.copy(
@@ -809,10 +837,28 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    fun updateQuickImportSnackOverride(enabled: Boolean) {
+        _uiState.update { currentState ->
+            currentState.copy(
+                quickImportSnackOverride = enabled,
+                quickImportResult = null,
+            )
+        }
+    }
+
     fun toggleQuickImportAddFoodsToDatabase() {
         _uiState.update { currentState ->
             currentState.copy(
                 quickImportAddFoodsToDatabase = !currentState.quickImportAddFoodsToDatabase,
+                quickImportResult = null,
+            )
+        }
+    }
+
+    fun updateQuickImportAddFoodsToDatabase(enabled: Boolean) {
+        _uiState.update { currentState ->
+            currentState.copy(
+                quickImportAddFoodsToDatabase = enabled,
                 quickImportResult = null,
             )
         }
@@ -827,10 +873,28 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    fun updateQuickImportAddFoodsToDay(enabled: Boolean) {
+        _uiState.update { currentState ->
+            currentState.copy(
+                quickImportAddFoodsToDay = enabled,
+                quickImportResult = null,
+            )
+        }
+    }
+
     fun toggleQuickImportWriteHealthConnect() {
         _uiState.update { currentState ->
             currentState.copy(
                 quickImportWriteHealthConnect = !currentState.quickImportWriteHealthConnect,
+                quickImportResult = null,
+            )
+        }
+    }
+
+    fun updateQuickImportWriteHealthConnect(enabled: Boolean) {
+        _uiState.update { currentState ->
+            currentState.copy(
+                quickImportWriteHealthConnect = enabled,
                 quickImportResult = null,
             )
         }

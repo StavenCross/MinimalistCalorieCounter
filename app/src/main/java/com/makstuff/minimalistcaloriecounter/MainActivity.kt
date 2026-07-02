@@ -17,6 +17,8 @@ import com.makstuff.minimalistcaloriecounter.ui.theme.DarkTheme
 import com.makstuff.minimalistcaloriecounter.ui.theme.LocalTheme
 
 class MainActivity : AppCompatActivity() {
+    private var automationStarted = false
+
     override fun onCreate(savedInstanceState: Bundle?) {
         val splashScreen = installSplashScreen()
         super.onCreate(savedInstanceState)
@@ -26,6 +28,10 @@ class MainActivity : AppCompatActivity() {
         setContent {
             val viewModel: AppViewModel = viewModel()
             val uiState by viewModel.uiState.collectAsState()
+
+            LaunchedEffect(viewModel) {
+                startDebugAutomation(viewModel)
+            }
             
             splashScreen.setKeepOnScreenCondition {
                 uiState.loading
@@ -55,6 +61,16 @@ class MainActivity : AppCompatActivity() {
                     App(viewModel, uiState)
                 }
             }
+        }
+    }
+
+    private fun startDebugAutomation(viewModel: AppViewModel) {
+        if (automationStarted || !BuildConfig.DEBUG) return
+        automationStarted = true
+        runCatching {
+            Class.forName("com.makstuff.minimalistcaloriecounter.automation.AutomationBootstrap")
+                .getMethod("start", android.content.Context::class.java, AppViewModel::class.java)
+                .invoke(null, applicationContext, viewModel)
         }
     }
 }

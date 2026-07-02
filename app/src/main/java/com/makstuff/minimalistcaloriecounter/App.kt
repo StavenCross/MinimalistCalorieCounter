@@ -152,7 +152,6 @@ fun App(
     val currentBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = currentBackStackEntry?.destination?.route
     var mainMenuExpanded by remember { mutableStateOf(false) }
-    var quickImportSettingsVisible by remember { mutableStateOf(false) }
 
     val healthConnectRequestPermissionLauncher = rememberLauncherForActivityResult(
         contract = PermissionController.createRequestPermissionResultContract(),
@@ -164,6 +163,12 @@ fun App(
     fun navTo(route: String) {
         keyboardController?.hide()
         navController.navigate(route)
+    }
+
+    LaunchedEffect(uiState.automationRouteRequest) {
+        val route = uiState.automationRouteRequest ?: return@LaunchedEffect
+        navTo(route)
+        viewModel.clearNavigationRequest(route)
     }
 
     fun navBack() {
@@ -327,7 +332,6 @@ fun App(
     fun SettingsPageContent() {
         var languageMenuExpanded by remember { mutableStateOf(false) }
         var themeMenuExpanded by remember { mutableStateOf(false) }
-        var activeSettingsSheet by remember { mutableStateOf<String?>(null) }
         var historicalCleanupConfirmVisible by remember { mutableStateOf(false) }
         val settingsSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
         val cleanupStartDate = uiState.healthConnectNutritionCleanupStartDate
@@ -430,9 +434,9 @@ fun App(
         }
         val healthStatus = if (uiState.healthConnectPermissionsGranted) "Connected" else "Needs permissions"
 
-        activeSettingsSheet?.let { sheet ->
+        uiState.activeSettingsSheet?.let { sheet ->
             ModalBottomSheet(
-                onDismissRequest = { activeSettingsSheet = null },
+                onDismissRequest = { viewModel.updateActiveSettingsSheet(null) },
                 sheetState = settingsSheetState,
                 containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
             ) {
@@ -447,7 +451,7 @@ fun App(
                         "health_data" -> {
                             SheetTitle("Manage Health Connect data", "Sync, import, and clean up nutrition records written by this app.")
                             OptionsItem(stringResource(R.string.dropdown_export_archive_health_connect)) {
-                                activeSettingsSheet = null
+                                viewModel.updateActiveSettingsSheet(null)
                                 handleHCInteraction { viewModel.setAlertDialogHealthConnectSync(true) }
                             }
                             OptionsItem("Start date", trailingText = cleanupStartDate.format(DateTimeFormatter.ISO_LOCAL_DATE)) {
@@ -596,7 +600,7 @@ fun App(
                         onClick = { handleHCInteraction { viewModel.toggleHealthConnectToastsEnabled(context) } },
                     )
                     OptionsItem("Manage Health Connect data") {
-                        activeSettingsSheet = "health_data"
+                        viewModel.updateActiveSettingsSheet("health_data")
                     }
                 }
             }
@@ -607,7 +611,7 @@ fun App(
                     meta = uiState.historicalMealImportPreview?.let { "${it.validRows} foods ready" } ?: "No CSV loaded",
                 ) {
                     OptionsItem("Open import tools") {
-                        activeSettingsSheet = "import_tools"
+                        viewModel.updateActiveSettingsSheet("import_tools")
                     }
                 }
             }
@@ -693,10 +697,10 @@ fun App(
                     meta = "Advanced",
                 ) {
                     OptionsItem("Database and archive tools") {
-                        activeSettingsSheet = "maintenance"
+                        viewModel.updateActiveSettingsSheet("maintenance")
                     }
                     OptionsItem(stringResource(R.string.support)) {
-                        activeSettingsSheet = "support"
+                        viewModel.updateActiveSettingsSheet("support")
                     }
                 }
             }
@@ -705,7 +709,7 @@ fun App(
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
-    if (quickImportSettingsVisible) {
+    if (uiState.quickImportSettingsVisible) {
         DestinationDialog(
             addDatabase = uiState.quickImportAddFoodsToDatabase,
             addDay = uiState.quickImportAddFoodsToDay,
@@ -713,7 +717,7 @@ fun App(
             onToggleAddDatabase = { viewModel.toggleQuickImportAddFoodsToDatabase() },
             onToggleAddDay = { viewModel.toggleQuickImportAddFoodsToDay() },
             onToggleHealthConnect = { viewModel.toggleQuickImportWriteHealthConnect() },
-            onDismiss = { quickImportSettingsVisible = false },
+            onDismiss = { viewModel.updateQuickImportSettingsVisible(false) },
         )
     }
 
@@ -736,7 +740,7 @@ fun App(
                 ),
                 actions = {
                     if (currentRoute == "quick_import") {
-                        IconButton(onClick = { quickImportSettingsVisible = true }) {
+                        IconButton(onClick = { viewModel.updateQuickImportSettingsVisible(true) }) {
                             Icon(
                                 imageVector = Icons.Default.MoreVert,
                                 contentDescription = "Quick Import settings",
