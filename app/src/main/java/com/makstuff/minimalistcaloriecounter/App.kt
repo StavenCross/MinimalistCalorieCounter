@@ -327,11 +327,9 @@ fun App(
     fun SettingsPageContent() {
         var languageMenuExpanded by remember { mutableStateOf(false) }
         var themeMenuExpanded by remember { mutableStateOf(false) }
-        var healthConnectExpanded by remember { mutableStateOf(true) }
-        var archiveExpanded by remember { mutableStateOf(false) }
-        var databaseExpanded by remember { mutableStateOf(false) }
-        var supportExpanded by remember { mutableStateOf(false) }
+        var activeSettingsSheet by remember { mutableStateOf<String?>(null) }
         var historicalCleanupConfirmVisible by remember { mutableStateOf(false) }
+        val settingsSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
         val cleanupStartDate = uiState.healthConnectNutritionCleanupStartDate
         val cleanupEndDate = uiState.healthConnectNutritionCleanupEndDate
         val cleanupStartPicker = remember(cleanupStartDate) {
@@ -416,15 +414,152 @@ fun App(
             )
         }
 
+        val currentLocale = AppCompatDelegate.getApplicationLocales().toLanguageTags()
+        val currentLanguageLabel = when {
+            currentLocale.contains("en") -> stringResource(R.string.always_english)
+            currentLocale.contains("de") -> stringResource(R.string.always_german)
+            currentLocale.contains("fr") -> stringResource(R.string.always_french)
+            currentLocale.contains("it") -> stringResource(R.string.always_italian)
+            currentLocale.contains("es") -> stringResource(R.string.always_spanish)
+            else -> stringResource(R.string.system_default)
+        }
+        val currentThemeLabel = when (uiState.themeUserSetting) {
+            AppTheme.MODE_AUTO -> stringArrayResource(R.array.dark_mode_options)[0]
+            AppTheme.MODE_DAY -> stringArrayResource(R.array.dark_mode_options)[1]
+            AppTheme.MODE_NIGHT -> stringArrayResource(R.array.dark_mode_options)[2]
+        }
+        val healthStatus = if (uiState.healthConnectPermissionsGranted) "Connected" else "Needs permissions"
+
+        activeSettingsSheet?.let { sheet ->
+            ModalBottomSheet(
+                onDismissRequest = { activeSettingsSheet = null },
+                sheetState = settingsSheetState,
+                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp)
+                        .padding(bottom = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    when (sheet) {
+                        "health_data" -> {
+                            SheetTitle("Manage Health Connect data", "Sync, import, and clean up nutrition records written by this app.")
+                            OptionsItem(stringResource(R.string.dropdown_export_archive_health_connect)) {
+                                activeSettingsSheet = null
+                                handleHCInteraction { viewModel.setAlertDialogHealthConnectSync(true) }
+                            }
+                            OptionsItem("Start date", trailingText = cleanupStartDate.format(DateTimeFormatter.ISO_LOCAL_DATE)) {
+                                cleanupStartPicker.show()
+                            }
+                            OptionsItem("End date", trailingText = cleanupEndDate.format(DateTimeFormatter.ISO_LOCAL_DATE)) {
+                                cleanupEndPicker.show()
+                            }
+                            OptionsItem(
+                                text = if (uiState.historicalMealImportInProgress) "Removal in progress..." else "Remove meals and nutrition",
+                            ) {
+                                historicalCleanupConfirmVisible = true
+                            }
+                            uiState.historicalMealImportMessage?.let { message ->
+                                SheetNote(message, isError = false)
+                            }
+                        }
+                        "import_tools" -> {
+                            SheetTitle("Import tools", "Bring historical meal rows into Health Connect when you need the bigger hammer.")
+                            OptionsItem("Preview historical meal CSV") {
+                                historicalMealImporter.launch(arrayOf("text/*", "text/comma-separated-values"))
+                            }
+                            uiState.historicalMealImportPreview?.let { preview ->
+                                SheetNote(
+                                    listOfNotNull(
+                                        "${preview.validRows} foods",
+                                        "${preview.mealCount} meals",
+                                        "${preview.skippedRows} skipped",
+                                        preview.startDate?.let { start -> preview.endDate?.let { end -> "$start to $end" } },
+                                    ).joinToString(" | "),
+                                )
+                                if (preview.issues.isNotEmpty()) {
+                                    SheetNote(
+                                        preview.issues.take(3).joinToString("\n") { "Row ${it.rowNumber}: ${it.message}" },
+                                        isError = true,
+                                    )
+                                }
+                                OptionsItem(
+                                    text = if (uiState.historicalMealImportInProgress) "Writing historical meals..." else "Write historical meals to Health Connect",
+                                ) {
+                                    handleHCInteraction { viewModel.writeHistoricalMealImport() }
+                                }
+                            }
+                        }
+                        "maintenance" -> {
+                            SheetTitle("Troubleshooting tools", "Database and archive utilities live here so they stay out of the daily workflow.")
+                            OptionsSectionHeader("Database tools")
+                            OptionsItem(stringResource(R.string.dropdown_import_database) + " (*.csv)") {
+                                viewModel.setAlertDialogDatabaseImport(true)
+                            }
+                            OptionsItem(stringResource(R.string.dropdown_backup_database) + " (*.csv)") {
+                                databaseExporter.launch("database_backup.csv")
+                            }
+                            OptionsItem(stringResource(R.string.dropdown_reset_database)) {
+                                viewModel.setAlertDialogDatabaseReset(true)
+                            }
+                            OptionsSectionHeader("Archive tools")
+                            OptionsItem(stringResource(R.string.dropdown_import_archive) + " (*.csv)") {
+                                viewModel.setAlertDialogArchiveImport(true)
+                            }
+                            OptionsItem(stringResource(R.string.dropdown_backup_archive) + " (*.csv)") {
+                                archiveExporter.launch("archive_backup.csv")
+                            }
+                            OptionsItem(stringResource(R.string.dropdown_clear_archive)) {
+                                viewModel.setAlertDialogArchiveReset(true)
+                            }
+                        }
+                        "support" -> {
+                            SheetTitle("Support", "Project links and original app resources.")
+                            OptionsItem(stringResource(R.string.dropdown_github)) {
+                                uriHandler.openUri("https://github.com/Makstuff/MinimalistCalorieCounter")
+                            }
+                            OptionsItem(stringResource(R.string.privacy_policy)) {
+                                uriHandler.openUri("https://github.com/Makstuff/MinimalistCalorieCounter/blob/master/PRIVACY_POLICY.md")
+                            }
+                            OptionsItem(stringResource(R.string.report_problem)) {
+                                val intent = Intent(Intent.ACTION_SENDTO).apply {
+                                    val uriString = "mailto:message.makstuff@outlook.com?subject=Minimalist Calorie Counter"
+                                    data = uriString.replace(" ", "%20").toUri()
+                                }
+                                try {
+                                    context.startActivity(intent)
+                                } catch (_: Exception) {
+                                    Toast.makeText(context, "No email app found", Toast.LENGTH_SHORT).show()
+                                }
+                            }
+                            OptionsItem(stringResource(R.string.dropdown_rate)) {
+                                val appId = "com.makstuff.minimalistcaloriecounter"
+                                val intent = Intent(Intent.ACTION_VIEW).apply {
+                                    data = "market://details?id=$appId".toUri()
+                                }
+                                try {
+                                    context.startActivity(intent)
+                                } catch (_: Exception) {
+                                    uriHandler.openUri("https://play.google.com/store/apps/details?id=$appId")
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(horizontal = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             item {
                 Text(
-                    text = "App controls",
+                    text = "Settings",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onBackground,
@@ -432,110 +567,12 @@ fun App(
                 )
             }
             item {
-                val currentLocale = AppCompatDelegate.getApplicationLocales().toLanguageTags()
-                val currentLanguageLabel = when {
-                    currentLocale.contains("en") -> stringResource(R.string.always_english)
-                    currentLocale.contains("de") -> stringResource(R.string.always_german)
-                    currentLocale.contains("fr") -> stringResource(R.string.always_french)
-                    currentLocale.contains("it") -> stringResource(R.string.always_italian)
-                    currentLocale.contains("es") -> stringResource(R.string.always_spanish)
-                    else -> stringResource(R.string.system_default)
-                }
-
-                OptionsItem(
-                    text = stringResource(R.string.choose_language),
-                    trailingContent = {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Box {
-                                DropdownMenu(
-                                    expanded = languageMenuExpanded,
-                                    onDismissRequest = { languageMenuExpanded = false },
-                                    items = listOf(
-                                        DropdownMenuItemData(stringResource(R.string.always_english)) {
-                                            AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags("en"))
-                                            viewModel.setDialogLanguageInfo(bool = true)
-                                        },
-                                        DropdownMenuItemData(stringResource(R.string.always_german)) {
-                                            AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags("de"))
-                                            viewModel.setDialogLanguageInfo(bool = true)
-                                        },
-                                        DropdownMenuItemData(stringResource(R.string.always_french)) {
-                                            AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags("fr"))
-                                            viewModel.setDialogLanguageInfo(bool = true)
-                                        },
-                                        DropdownMenuItemData(stringResource(R.string.always_italian)) {
-                                            AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags("it"))
-                                            viewModel.setDialogLanguageInfo(bool = true)
-                                        },
-                                        DropdownMenuItemData(stringResource(R.string.always_spanish)) {
-                                            AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags("es"))
-                                            viewModel.setDialogLanguageInfo(bool = true)
-                                        },
-                                        DropdownMenuItemData(stringResource(R.string.system_default)) {
-                                            AppCompatDelegate.setApplicationLocales(LocaleListCompat.getEmptyLocaleList())
-                                            viewModel.setDialogLanguageInfo(bool = true)
-                                        },
-                                    ),
-                                )
-                            }
-                            Text(
-                                text = currentLanguageLabel,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.secondary,
-                            )
-                        }
-                    },
-                    onClick = { languageMenuExpanded = true },
-                )
-            }
-
-            item {
-                val currentThemeLabel = when (uiState.themeUserSetting) {
-                    AppTheme.MODE_AUTO -> stringArrayResource(R.array.dark_mode_options)[0]
-                    AppTheme.MODE_DAY -> stringArrayResource(R.array.dark_mode_options)[1]
-                    AppTheme.MODE_NIGHT -> stringArrayResource(R.array.dark_mode_options)[2]
-                }
-                OptionsItem(
-                    text = stringResource(R.string.dark_mode),
-                    trailingContent = {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Box {
-                                DropdownMenu(
-                                    expanded = themeMenuExpanded,
-                                    onDismissRequest = { themeMenuExpanded = false },
-                                    items = listOf(
-                                        DropdownMenuItemData(stringArrayResource(R.array.dark_mode_options)[0]) {
-                                            viewModel.setTheme(AppTheme.MODE_AUTO, context)
-                                        },
-                                        DropdownMenuItemData(stringArrayResource(R.array.dark_mode_options)[1]) {
-                                            viewModel.setTheme(AppTheme.MODE_DAY, context)
-                                        },
-                                        DropdownMenuItemData(stringArrayResource(R.array.dark_mode_options)[2]) {
-                                            viewModel.setTheme(AppTheme.MODE_NIGHT, context)
-                                        },
-                                    ),
-                                )
-                            }
-                            Text(
-                                text = currentThemeLabel,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.secondary,
-                            )
-                        }
-                    },
-                    onClick = { themeMenuExpanded = true },
-                )
-            }
-
-            item {
-                OptionsSectionHeader(
-                    text = stringResource(R.string.health_connect),
-                    isExpanded = healthConnectExpanded,
-                    onToggle = { healthConnectExpanded = !healthConnectExpanded },
-                )
-            }
-            if (healthConnectExpanded) {
-                item {
+                SettingsHubCard(
+                    title = stringResource(R.string.health_connect),
+                    subtitle = "Daily writes, historical imports, and cleanup.",
+                    meta = healthStatus,
+                    emphasized = true,
+                ) {
                     OptionsItem(
                         text = stringResource(R.string.dropdown_sync_health_connect),
                         trailingContent = {
@@ -547,8 +584,6 @@ fun App(
                         },
                         onClick = { handleHCInteraction { viewModel.toggleHealthConnectSyncEnabled(context) } },
                     )
-                }
-                item {
                     OptionsItem(
                         text = stringResource(R.string.health_connect_notifications),
                         trailingContent = {
@@ -560,181 +595,108 @@ fun App(
                         },
                         onClick = { handleHCInteraction { viewModel.toggleHealthConnectToastsEnabled(context) } },
                     )
-                }
-                item {
-                    OptionsItem(
-                        text = stringResource(R.string.dropdown_export_archive_health_connect),
-                        onClick = { handleHCInteraction { viewModel.setAlertDialogHealthConnectSync(true) } },
-                    )
-                }
-                item {
-                    OptionsItem(
-                        text = "Preview historical meal CSV",
-                        onClick = { historicalMealImporter.launch(arrayOf("text/*", "text/comma-separated-values")) },
-                    )
-                }
-                uiState.historicalMealImportPreview?.let { preview ->
-                    item {
-                        Text(
-                            text = listOfNotNull(
-                                "Historical CSV: ${preview.validRows} foods",
-                                "${preview.mealCount} meals",
-                                "${preview.skippedRows} skipped",
-                                preview.startDate?.let { start -> preview.endDate?.let { end -> "$start to $end" } },
-                            ).joinToString(" | "),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
-                        )
-                    }
-                    if (preview.issues.isNotEmpty()) {
-                        item {
-                            Text(
-                                text = preview.issues.take(3).joinToString("\n") { "Row ${it.rowNumber}: ${it.message}" },
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.error,
-                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
-                            )
-                        }
-                    }
-                    item {
-                        OptionsItem(
-                            text = if (uiState.historicalMealImportInProgress) "Writing historical meals..." else "Write historical meals to Health Connect",
-                            onClick = { handleHCInteraction { viewModel.writeHistoricalMealImport() } },
-                        )
+                    OptionsItem("Manage Health Connect data") {
+                        activeSettingsSheet = "health_data"
                     }
                 }
-                item {
-                    OptionsSectionHeader(text = "Cleanup tools")
+            }
+            item {
+                SettingsHubCard(
+                    title = "Import tools",
+                    subtitle = "Bulk historical meals and Health Connect writes.",
+                    meta = uiState.historicalMealImportPreview?.let { "${it.validRows} foods ready" } ?: "No CSV loaded",
+                ) {
+                    OptionsItem("Open import tools") {
+                        activeSettingsSheet = "import_tools"
+                    }
                 }
-                item {
+            }
+            item {
+                SettingsHubCard(
+                    title = "App preferences",
+                    subtitle = "Keep the everyday app comfortable.",
+                    meta = currentThemeLabel,
+                ) {
                     OptionsItem(
-                        text = "Start date",
-                        trailingText = cleanupStartDate.format(DateTimeFormatter.ISO_LOCAL_DATE),
-                        onClick = { cleanupStartPicker.show() },
-                    )
-                }
-                item {
-                    OptionsItem(
-                        text = "End date",
-                        trailingText = cleanupEndDate.format(DateTimeFormatter.ISO_LOCAL_DATE),
-                        onClick = { cleanupEndPicker.show() },
-                    )
-                }
-                item {
-                    OptionsItem(
-                        text = if (uiState.historicalMealImportInProgress) {
-                            "Removal in progress..."
-                        } else {
-                            "Remove Health Connect meals and nutrition"
+                        text = stringResource(R.string.dark_mode),
+                        trailingContent = {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Box {
+                                    DropdownMenu(
+                                        expanded = themeMenuExpanded,
+                                        onDismissRequest = { themeMenuExpanded = false },
+                                        items = listOf(
+                                            DropdownMenuItemData(stringArrayResource(R.array.dark_mode_options)[0]) {
+                                                viewModel.setTheme(AppTheme.MODE_AUTO, context)
+                                            },
+                                            DropdownMenuItemData(stringArrayResource(R.array.dark_mode_options)[1]) {
+                                                viewModel.setTheme(AppTheme.MODE_DAY, context)
+                                            },
+                                            DropdownMenuItemData(stringArrayResource(R.array.dark_mode_options)[2]) {
+                                                viewModel.setTheme(AppTheme.MODE_NIGHT, context)
+                                            },
+                                        ),
+                                    )
+                                }
+                                Text(currentThemeLabel, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.secondary)
+                            }
                         },
-                        onClick = { historicalCleanupConfirmVisible = true },
+                        onClick = { themeMenuExpanded = true },
+                    )
+                    OptionsItem(
+                        text = stringResource(R.string.choose_language),
+                        trailingContent = {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Box {
+                                    DropdownMenu(
+                                        expanded = languageMenuExpanded,
+                                        onDismissRequest = { languageMenuExpanded = false },
+                                        items = listOf(
+                                            DropdownMenuItemData(stringResource(R.string.always_english)) {
+                                                AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags("en"))
+                                                viewModel.setDialogLanguageInfo(bool = true)
+                                            },
+                                            DropdownMenuItemData(stringResource(R.string.always_german)) {
+                                                AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags("de"))
+                                                viewModel.setDialogLanguageInfo(bool = true)
+                                            },
+                                            DropdownMenuItemData(stringResource(R.string.always_french)) {
+                                                AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags("fr"))
+                                                viewModel.setDialogLanguageInfo(bool = true)
+                                            },
+                                            DropdownMenuItemData(stringResource(R.string.always_italian)) {
+                                                AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags("it"))
+                                                viewModel.setDialogLanguageInfo(bool = true)
+                                            },
+                                            DropdownMenuItemData(stringResource(R.string.always_spanish)) {
+                                                AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags("es"))
+                                                viewModel.setDialogLanguageInfo(bool = true)
+                                            },
+                                            DropdownMenuItemData(stringResource(R.string.system_default)) {
+                                                AppCompatDelegate.setApplicationLocales(LocaleListCompat.getEmptyLocaleList())
+                                                viewModel.setDialogLanguageInfo(bool = true)
+                                            },
+                                        ),
+                                    )
+                                }
+                                Text(currentLanguageLabel, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.secondary)
+                            }
+                        },
+                        onClick = { languageMenuExpanded = true },
                     )
                 }
-                uiState.historicalMealImportMessage?.let { message ->
-                    item {
-                        Text(
-                            text = message,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
-                        )
-                    }
-                }
             }
-
             item {
-                OptionsSectionHeader(
-                    text = "Archive tools",
-                    isExpanded = archiveExpanded,
-                    onToggle = { archiveExpanded = !archiveExpanded },
-                )
-            }
-            if (archiveExpanded) {
-                item {
-                    OptionsItem(stringResource(R.string.dropdown_import_archive) + " (*.csv)") {
-                        viewModel.setAlertDialogArchiveImport(true)
+                SettingsHubCard(
+                    title = "Troubleshooting",
+                    subtitle = "Database, archive, and project links.",
+                    meta = "Advanced",
+                ) {
+                    OptionsItem("Database and archive tools") {
+                        activeSettingsSheet = "maintenance"
                     }
-                }
-                item {
-                    OptionsItem(stringResource(R.string.dropdown_backup_archive) + " (*.csv)") {
-                        archiveExporter.launch("archive_backup.csv")
-                    }
-                }
-                item {
-                    OptionsItem(stringResource(R.string.dropdown_clear_archive)) {
-                        viewModel.setAlertDialogArchiveReset(true)
-                    }
-                }
-            }
-
-            item {
-                OptionsSectionHeader(
-                    text = "Database tools",
-                    isExpanded = databaseExpanded,
-                    onToggle = { databaseExpanded = !databaseExpanded },
-                )
-            }
-            if (databaseExpanded) {
-                item {
-                    OptionsItem(stringResource(R.string.dropdown_import_database) + " (*.csv)") {
-                        viewModel.setAlertDialogDatabaseImport(true)
-                    }
-                }
-                item {
-                    OptionsItem(stringResource(R.string.dropdown_backup_database) + " (*.csv)") {
-                        databaseExporter.launch("database_backup.csv")
-                    }
-                }
-                item {
-                    OptionsItem(stringResource(R.string.dropdown_reset_database)) {
-                        viewModel.setAlertDialogDatabaseReset(true)
-                    }
-                }
-            }
-
-            item {
-                OptionsSectionHeader(
-                    text = stringResource(R.string.support),
-                    isExpanded = supportExpanded,
-                    onToggle = { supportExpanded = !supportExpanded },
-                )
-            }
-            if (supportExpanded) {
-                item {
-                    OptionsItem(stringResource(R.string.dropdown_github)) {
-                        uriHandler.openUri("https://github.com/Makstuff/MinimalistCalorieCounter")
-                    }
-                }
-                item {
-                    OptionsItem(stringResource(R.string.privacy_policy)) {
-                        uriHandler.openUri("https://github.com/Makstuff/MinimalistCalorieCounter/blob/master/PRIVACY_POLICY.md")
-                    }
-                }
-                item {
-                    OptionsItem(stringResource(R.string.report_problem)) {
-                        val intent = Intent(Intent.ACTION_SENDTO).apply {
-                            val uriString = "mailto:message.makstuff@outlook.com?subject=Minimalist Calorie Counter"
-                            data = uriString.replace(" ", "%20").toUri()
-                        }
-                        try {
-                            context.startActivity(intent)
-                        } catch (_: Exception) {
-                            Toast.makeText(context, "No email app found", Toast.LENGTH_SHORT).show()
-                        }
-                    }
-                }
-                item {
-                    OptionsItem(stringResource(R.string.dropdown_rate)) {
-                        val appId = "com.makstuff.minimalistcaloriecounter"
-                        val intent = Intent(Intent.ACTION_VIEW).apply {
-                            data = "market://details?id=$appId".toUri()
-                        }
-                        try {
-                            context.startActivity(intent)
-                        } catch (_: Exception) {
-                            uriHandler.openUri("https://play.google.com/store/apps/details?id=$appId")
-                        }
+                    OptionsItem(stringResource(R.string.support)) {
+                        activeSettingsSheet = "support"
                     }
                 }
             }
@@ -2172,6 +2134,104 @@ fun App(
             text = { Text(stringResource(R.string.health_connect_sync_error, uiState.healthConnectSyncMessage ?: "")) }
         )
     }
+}
+
+@Composable
+fun SettingsHubCard(
+    title: String,
+    subtitle: String,
+    meta: String,
+    emphasized: Boolean = false,
+    content: @Composable () -> Unit,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .background(
+                if (emphasized) {
+                    MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.54f)
+                } else {
+                    MaterialTheme.colorScheme.surfaceContainerHigh
+                }
+            )
+            .border(
+                width = 1.dp,
+                color = if (emphasized) {
+                    MaterialTheme.colorScheme.primary.copy(alpha = 0.24f)
+                } else {
+                    MaterialTheme.colorScheme.outline.copy(alpha = 0.14f)
+                },
+                shape = RoundedCornerShape(16.dp),
+            )
+            .padding(10.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.Top,
+        ) {
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(2.dp),
+            ) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = if (emphasized) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
+                )
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            Text(
+                text = meta,
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.secondary,
+                modifier = Modifier.padding(start = 10.dp, top = 2.dp),
+            )
+        }
+        content()
+    }
+}
+
+@Composable
+fun SheetTitle(title: String, subtitle: String) {
+    Column(
+        modifier = Modifier.padding(bottom = 4.dp),
+        verticalArrangement = Arrangement.spacedBy(3.dp),
+    ) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+        Text(
+            text = subtitle,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+@Composable
+fun SheetNote(text: String, isError: Boolean = false) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.bodySmall,
+        color = if (isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(10.dp))
+            .background(MaterialTheme.colorScheme.surfaceContainerHighest)
+            .padding(horizontal = 12.dp, vertical = 9.dp),
+    )
 }
 
 @Composable
