@@ -20,6 +20,8 @@ import com.makstuff.minimalistcaloriecounter.classes.QuickImportDatabaseEntryDra
 import com.makstuff.minimalistcaloriecounter.classes.QuickImportParser
 import com.makstuff.minimalistcaloriecounter.classes.QuickImportPlanner
 import com.makstuff.minimalistcaloriecounter.classes.QuickImportResult
+import com.makstuff.minimalistcaloriecounter.health.HealthConnectDeleteResult
+import com.makstuff.minimalistcaloriecounter.health.HealthConnectNutritionReadResult
 import com.makstuff.minimalistcaloriecounter.health.HealthConnectManager
 import com.makstuff.minimalistcaloriecounter.essentials.NUTRIENT_PROPERTIES
 import com.makstuff.minimalistcaloriecounter.essentials.NavButton
@@ -130,6 +132,109 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     fun dismissHealthConnectSyncError() {
         _uiState.update { it.copy(healthConnectSyncProgress = null, healthConnectSyncMessage = null) }
+    }
+
+    fun updateHealthConnectViewerDate(date: LocalDate) {
+        _uiState.update { currentState ->
+            currentState.copy(
+                healthConnectViewerDate = date,
+                healthConnectViewerMessage = null,
+            )
+        }
+        readHealthConnectNutritionMeals()
+    }
+
+    fun readHealthConnectNutritionMeals() {
+        _uiState.update { currentState ->
+            currentState.copy(
+                healthConnectViewerLoading = true,
+                healthConnectViewerMessage = null,
+            )
+        }
+        viewModelScope.launch {
+            when (val result = healthConnectManager.readNutritionMeals(uiState.value.healthConnectViewerDate)) {
+                is HealthConnectNutritionReadResult.Success -> {
+                    _uiState.update {
+                        it.copy(
+                            healthConnectViewerLoading = false,
+                            healthConnectViewerMeals = result.meals,
+                            healthConnectViewerMessage = if (result.meals.isEmpty()) {
+                                "No Health Connect nutrition records found for this app on this date."
+                            } else {
+                                null
+                            },
+                        )
+                    }
+                }
+                HealthConnectNutritionReadResult.HealthConnectUnavailable -> {
+                    _uiState.update {
+                        it.copy(
+                            healthConnectViewerLoading = false,
+                            healthConnectViewerMeals = emptyList(),
+                            healthConnectViewerMessage = getApplication<Application>().getString(R.string.toast_hc_not_available),
+                        )
+                    }
+                }
+                HealthConnectNutritionReadResult.PermissionsMissing -> {
+                    _uiState.update {
+                        it.copy(
+                            healthConnectViewerLoading = false,
+                            healthConnectViewerMeals = emptyList(),
+                            healthConnectViewerMessage = getApplication<Application>().getString(R.string.health_connect_permissions_missing),
+                        )
+                    }
+                }
+                is HealthConnectNutritionReadResult.Failed -> {
+                    _uiState.update {
+                        it.copy(
+                            healthConnectViewerLoading = false,
+                            healthConnectViewerMeals = emptyList(),
+                            healthConnectViewerMessage = result.message,
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    fun deleteHealthConnectNutritionMeal(recordId: String) {
+        _uiState.update { currentState ->
+            currentState.copy(
+                healthConnectViewerLoading = true,
+                healthConnectViewerMessage = null,
+            )
+        }
+        viewModelScope.launch {
+            when (val result = healthConnectManager.deleteNutritionMeal(recordId)) {
+                HealthConnectDeleteResult.Success -> {
+                    readHealthConnectNutritionMeals()
+                }
+                HealthConnectDeleteResult.HealthConnectUnavailable -> {
+                    _uiState.update {
+                        it.copy(
+                            healthConnectViewerLoading = false,
+                            healthConnectViewerMessage = getApplication<Application>().getString(R.string.toast_hc_not_available),
+                        )
+                    }
+                }
+                HealthConnectDeleteResult.PermissionsMissing -> {
+                    _uiState.update {
+                        it.copy(
+                            healthConnectViewerLoading = false,
+                            healthConnectViewerMessage = getApplication<Application>().getString(R.string.health_connect_permissions_missing),
+                        )
+                    }
+                }
+                is HealthConnectDeleteResult.Failed -> {
+                    _uiState.update {
+                        it.copy(
+                            healthConnectViewerLoading = false,
+                            healthConnectViewerMessage = result.message,
+                        )
+                    }
+                }
+            }
+        }
     }
 
 
@@ -479,6 +584,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             currentState.copy(
                 inputQuickImportText = "",
                 inputQuickImportDateTime = LocalDateTime.now(),
+                quickImportSnackOverride = false,
                 quickImportMeal = null,
                 quickImportError = null,
                 quickImportResult = null,
@@ -492,7 +598,30 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     fun refreshQuickImportDateTime() {
         _uiState.update { currentState ->
-            currentState.copy(inputQuickImportDateTime = LocalDateTime.now())
+            currentState.copy(
+                inputQuickImportDateTime = LocalDateTime.now(),
+                quickImportSnackOverride = false,
+                quickImportResult = null,
+            )
+        }
+    }
+
+    fun updateQuickImportDateTime(dateTime: LocalDateTime) {
+        _uiState.update { currentState ->
+            currentState.copy(
+                inputQuickImportDateTime = dateTime,
+                quickImportSnackOverride = false,
+                quickImportResult = null,
+            )
+        }
+    }
+
+    fun toggleQuickImportSnackOverride() {
+        _uiState.update { currentState ->
+            currentState.copy(
+                quickImportSnackOverride = !currentState.quickImportSnackOverride,
+                quickImportResult = null,
+            )
         }
     }
 
@@ -540,6 +669,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                 meal = meal,
                 options = options,
                 dateTime = state.inputQuickImportDateTime,
+                mealType = state.quickImportMealType,
                 existingDatabaseNames = state.database.map { it.name }.toSet(),
             )
         } catch (e: IllegalArgumentException) {
@@ -579,7 +709,11 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                     dayFoodsAdded = databaseEntries.size
                 }
 
-                val healthResult = plan.healthPayload?.let { healthConnectManager.insertQuickMealNutrition(it) }
+                val healthResult = if (options.writeHealthConnect) {
+                    healthConnectManager.insertQuickMealNutrition(plan.healthPayloads)
+                } else {
+                    null
+                }
                 _uiState.update {
                     it.copy(
                         quickImportInProgress = false,

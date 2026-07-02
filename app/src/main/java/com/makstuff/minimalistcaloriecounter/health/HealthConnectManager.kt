@@ -1,9 +1,12 @@
 package com.makstuff.minimalistcaloriecounter.health
 
 import android.content.Context
+import android.util.Log
 import android.widget.Toast
 import androidx.health.connect.client.HealthConnectClient
 import androidx.health.connect.client.permission.HealthPermission
+import androidx.health.connect.client.records.metadata.DataOrigin
+import androidx.health.connect.client.request.ReadRecordsRequest
 import androidx.health.connect.client.records.NutritionRecord
 import androidx.health.connect.client.records.WeightRecord
 import androidx.health.connect.client.time.TimeRangeFilter
@@ -17,6 +20,7 @@ import com.makstuff.minimalistcaloriecounter.classes.QuickImportHealthWriteResul
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.ZoneId
 import kotlin.time.Duration.Companion.milliseconds
 
@@ -43,14 +47,42 @@ class HealthConnectManager(private val context: Context) {
     }
 
     val permissions = setOf(
+        HealthPermission.getReadPermission(NutritionRecord::class),
         HealthPermission.getWritePermission(NutritionRecord::class),
         HealthPermission.getWritePermission(WeightRecord::class),
+    )
+
+    private val writePermissions = setOf(
+        HealthPermission.getWritePermission(NutritionRecord::class),
+        HealthPermission.getWritePermission(WeightRecord::class),
+    )
+
+    private val readNutritionPermissions = setOf(
+        HealthPermission.getReadPermission(NutritionRecord::class),
     )
 
     suspend fun hasAllPermissions(): Boolean {
         val client = getClient() ?: return false
         return try {
             client.permissionController.getGrantedPermissions().containsAll(permissions)
+        } catch (_: Throwable) {
+            false
+        }
+    }
+
+    private suspend fun hasWritePermissions(): Boolean {
+        val client = getClient() ?: return false
+        return try {
+            client.permissionController.getGrantedPermissions().containsAll(writePermissions)
+        } catch (_: Throwable) {
+            false
+        }
+    }
+
+    private suspend fun hasReadNutritionPermissions(): Boolean {
+        val client = getClient() ?: return false
+        return try {
+            client.permissionController.getGrantedPermissions().containsAll(readNutritionPermissions)
         } catch (_: Throwable) {
             false
         }
@@ -65,36 +97,70 @@ class HealthConnectManager(private val context: Context) {
         }
     }
 
-    suspend fun insertQuickMealNutrition(payload: QuickImportHealthPayload): QuickImportHealthWriteResult {
+    suspend fun readNutritionMeals(date: LocalDate): HealthConnectNutritionReadResult {
+        if (!isSdkAvailable()) return HealthConnectNutritionReadResult.HealthConnectUnavailable
+        val client = getClient() ?: return HealthConnectNutritionReadResult.HealthConnectUnavailable
+
+        return try {
+            if (!hasReadNutritionPermissions()) return HealthConnectNutritionReadResult.PermissionsMissing
+
+            val startOfDay = date.atStartOfDay(ZoneId.systemDefault()).toInstant()
+            val endOfDay = date.plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant()
+            val response = client.readRecords(
+                ReadRecordsRequest(
+                    recordType = NutritionRecord::class,
+                    timeRangeFilter = TimeRangeFilter.between(startOfDay, endOfDay),
+                    dataOriginFilter = setOf(DataOrigin(context.packageName)),
+                    ascendingOrder = true,
+                )
+            )
+
+            HealthConnectNutritionReadResult.Success(
+                response.records.map { it.toHealthConnectNutritionMeal() }
+            )
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
+        } catch (e: Throwable) {
+            HealthConnectNutritionReadResult.Failed(e.message ?: "Unknown Health Connect read error")
+        }
+    }
+
+    suspend fun insertQuickMealNutrition(payloads: List<QuickImportHealthPayload>): QuickImportHealthWriteResult {
+        if (payloads.isEmpty()) return QuickImportHealthWriteResult.Success
         if (!isSdkAvailable()) return QuickImportHealthWriteResult.HealthConnectUnavailable
         val client = getClient() ?: return QuickImportHealthWriteResult.HealthConnectUnavailable
 
         return try {
-            if (!hasAllPermissions()) return QuickImportHealthWriteResult.PermissionsMissing
+            if (!hasWritePermissions()) return QuickImportHealthWriteResult.PermissionsMissing
 
-            val startTime = payload.dateTime.atZone(ZoneId.systemDefault()).toInstant()
-            val endTime = payload.dateTime.plusMinutes(1).atZone(ZoneId.systemDefault()).toInstant()
-
-            client.insertRecords(
-                listOf(
-                    NutritionRecord(
+            payloads.forEach { payload ->
+                Log.i(
+                    "MCCHealthConnect",
+                    "Writing quick food nutrition: name=${payload.name}, energy=${payload.energy} kcal, energyFromFat=${payload.energyFromFat} kcal, carbs=${payload.totalCarbohydrate} g, protein=${payload.protein} g, fat=${payload.totalFat} g"
+                )
+            }
+            client.insertRecords(payloads.map { payload ->
+                val startTime = payload.dateTime.atZone(ZoneId.systemDefault()).toInstant()
+                val endTime = payload.dateTime.plusMinutes(1).atZone(ZoneId.systemDefault()).toInstant()
+                NutritionRecord(
                         startTime = startTime,
                         startZoneOffset = ZoneId.systemDefault().rules.getOffset(startTime),
                         endTime = endTime,
                         endZoneOffset = ZoneId.systemDefault().rules.getOffset(endTime),
                         energy = Energy.kilocalories(payload.energy),
+                        energyFromFat = Energy.kilocalories(payload.energyFromFat),
                         totalCarbohydrate = Mass.grams(payload.totalCarbohydrate),
                         sugar = Mass.grams(payload.sugar),
                         protein = Mass.grams(payload.protein),
                         totalFat = Mass.grams(payload.totalFat),
                         saturatedFat = Mass.grams(payload.saturatedFat),
                         dietaryFiber = Mass.grams(payload.dietaryFiber),
-                        mealType = 0,
+                        mealType = payload.mealType,
                         name = payload.name,
                         metadata = androidx.health.connect.client.records.metadata.Metadata.manualEntry(),
-                    )
                 )
-            )
+            })
+            Log.i("MCCHealthConnect", "Quick food nutrition write succeeded: ${payloads.size} records")
             QuickImportHealthWriteResult.Success
         } catch (e: kotlinx.coroutines.CancellationException) {
             throw e
@@ -103,10 +169,47 @@ class HealthConnectManager(private val context: Context) {
         }
     }
 
+    suspend fun deleteNutritionMeal(recordId: String): HealthConnectDeleteResult {
+        if (!isSdkAvailable()) return HealthConnectDeleteResult.HealthConnectUnavailable
+        val client = getClient() ?: return HealthConnectDeleteResult.HealthConnectUnavailable
+
+        return try {
+            if (!hasWritePermissions()) return HealthConnectDeleteResult.PermissionsMissing
+            client.deleteRecords(
+                NutritionRecord::class,
+                recordIdsList = listOf(recordId),
+                clientRecordIdsList = emptyList(),
+            )
+            HealthConnectDeleteResult.Success
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
+        } catch (e: Throwable) {
+            HealthConnectDeleteResult.Failed(e.message ?: "Unknown Health Connect delete error")
+        }
+    }
+
+    private fun NutritionRecord.toHealthConnectNutritionMeal(): HealthConnectNutritionMeal {
+        return HealthConnectNutritionMeal(
+            recordId = metadata.id,
+            startTime = LocalDateTime.ofInstant(startTime, ZoneId.systemDefault()),
+            endTime = LocalDateTime.ofInstant(endTime, ZoneId.systemDefault()),
+            name = name ?: "Nutrition record",
+            energy = energy?.inKilocalories ?: 0.0,
+            energyFromFat = energyFromFat?.inKilocalories,
+            totalCarbohydrate = totalCarbohydrate?.inGrams ?: 0.0,
+            sugar = sugar?.inGrams ?: 0.0,
+            protein = protein?.inGrams ?: 0.0,
+            totalFat = totalFat?.inGrams ?: 0.0,
+            saturatedFat = saturatedFat?.inGrams ?: 0.0,
+            dietaryFiber = dietaryFiber?.inGrams ?: 0.0,
+            mealType = mealType,
+        )
+    }
+
     suspend fun syncSingleEntry(date: LocalDate, weight: Double, nutrients: Nutrients) {
         val client = getClient() ?: return
         try {
-            if (!hasAllPermissions()) return
+            if (!hasWritePermissions()) return
 
             val startOfDay = date.atStartOfDay(ZoneId.systemDefault()).toInstant()
             val endOfDay = date.atTime(23, 59, 59).atZone(ZoneId.systemDefault()).toInstant()
@@ -161,7 +264,7 @@ class HealthConnectManager(private val context: Context) {
     suspend fun deleteSingleEntry(date: LocalDate) {
         val client = getClient() ?: return
         try {
-            if (!hasAllPermissions()) return
+            if (!hasWritePermissions()) return
             val startOfDay = date.atStartOfDay(ZoneId.systemDefault()).toInstant()
             val endOfDay = date.atTime(23, 59, 59).atZone(ZoneId.systemDefault()).toInstant()
             val timeRange = TimeRangeFilter.between(startOfDay, endOfDay)
@@ -184,7 +287,7 @@ class HealthConnectManager(private val context: Context) {
         if (archive.entries.isEmpty()) return
 
         try {
-            if (!hasAllPermissions()) {
+            if (!hasWritePermissions()) {
                 withContext(Dispatchers.Main) {
                     Toast.makeText(context, context.getString(R.string.health_connect_permissions_missing), Toast.LENGTH_SHORT).show()
                 }

@@ -1,5 +1,6 @@
 package com.makstuff.minimalistcaloriecounter.classes
 
+import androidx.health.connect.client.records.MealType
 import java.time.LocalDateTime
 
 data class QuickImportNutrients(
@@ -76,7 +77,9 @@ data class QuickImportMeal(
 
 data class QuickImportHealthPayload(
     val dateTime: LocalDateTime,
+    val mealType: Int,
     val energy: Double,
+    val energyFromFat: Double,
     val totalCarbohydrate: Double,
     val sugar: Double,
     val protein: Double,
@@ -85,6 +88,24 @@ data class QuickImportHealthPayload(
     val dietaryFiber: Double,
     val name: String,
 )
+
+enum class QuickImportMealType(val label: String, val healthConnectValue: Int) {
+    Breakfast("Breakfast", MealType.MEAL_TYPE_BREAKFAST),
+    Lunch("Lunch", MealType.MEAL_TYPE_LUNCH),
+    Dinner("Dinner", MealType.MEAL_TYPE_DINNER),
+    Snack("Snack", MealType.MEAL_TYPE_SNACK);
+
+    companion object {
+        fun inferFrom(dateTime: LocalDateTime): QuickImportMealType {
+            return when (dateTime.hour) {
+                in 1..10 -> Breakfast
+                in 11..14 -> Lunch
+                in 15..22 -> Dinner
+                else -> Snack
+            }
+        }
+    }
+}
 
 data class QuickImportDatabaseEntryDraft(
     val name: String,
@@ -100,7 +121,7 @@ data class QuickImportCommitOptions(
 
 data class QuickImportCommitPlan(
     val foodDrafts: List<QuickImportDatabaseEntryDraft>,
-    val healthPayload: QuickImportHealthPayload?,
+    val healthPayloads: List<QuickImportHealthPayload>,
 )
 
 sealed class QuickImportHealthWriteResult {
@@ -226,21 +247,36 @@ object QuickImportNutritionReader {
 }
 
 object QuickImportMapper {
-    fun toHealthPayload(
+    fun toHealthPayloads(
         meal: QuickImportMeal,
         dateTime: LocalDateTime,
-        name: String = "Quick Import",
+        mealType: QuickImportMealType,
+    ): List<QuickImportHealthPayload> {
+        return meal.foods.mapIndexed { index, food ->
+            toHealthPayload(food, dateTime.plusSeconds(index.toLong()), mealType)
+        }
+    }
+
+    fun toHealthPayload(
+        food: QuickImportFood,
+        dateTime: LocalDateTime,
+        mealType: QuickImportMealType,
     ): QuickImportHealthPayload {
+        val displayName = listOf(food.amountText, food.name)
+            .filter { it.isNotBlank() }
+            .joinToString(" ")
         return QuickImportHealthPayload(
             dateTime = dateTime,
-            energy = meal.totals.energy,
-            totalCarbohydrate = meal.totals.carbohydrate,
-            sugar = meal.totals.sugar,
-            protein = meal.totals.protein,
-            totalFat = meal.totals.fat,
-            saturatedFat = meal.totals.saturatedFat,
-            dietaryFiber = meal.totals.fiber,
-            name = name,
+            mealType = mealType.healthConnectValue,
+            energy = food.nutrients.energy,
+            energyFromFat = food.nutrients.fat * 9.0,
+            totalCarbohydrate = food.nutrients.carbohydrate,
+            sugar = food.nutrients.sugar,
+            protein = food.nutrients.protein,
+            totalFat = food.nutrients.fat,
+            saturatedFat = food.nutrients.saturatedFat,
+            dietaryFiber = food.nutrients.fiber,
+            name = displayName.ifBlank { food.name },
         )
     }
 }
@@ -252,6 +288,7 @@ object QuickImportPlanner {
         meal: QuickImportMeal,
         options: QuickImportCommitOptions,
         dateTime: LocalDateTime,
+        mealType: QuickImportMealType = QuickImportMealType.inferFrom(dateTime),
         existingDatabaseNames: Set<String> = emptySet(),
     ): QuickImportCommitPlan {
         require(options.addFoodsToDatabase || options.addFoodsToDay || options.writeHealthConnect) {
@@ -267,10 +304,10 @@ object QuickImportPlanner {
 
         return QuickImportCommitPlan(
             foodDrafts = foodDrafts,
-            healthPayload = if (options.writeHealthConnect) {
-                QuickImportMapper.toHealthPayload(meal, dateTime)
+            healthPayloads = if (options.writeHealthConnect) {
+                QuickImportMapper.toHealthPayloads(meal, dateTime, mealType)
             } else {
-                null
+                emptyList()
             },
         )
     }

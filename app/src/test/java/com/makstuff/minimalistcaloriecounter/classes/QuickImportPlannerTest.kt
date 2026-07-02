@@ -3,7 +3,6 @@ package com.makstuff.minimalistcaloriecounter.classes
 import java.time.LocalDateTime
 import kotlin.math.abs
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNull
 import org.junit.Assert.assertThrows
 import org.junit.Test
 
@@ -23,13 +22,14 @@ class QuickImportPlannerTest {
                 writeHealthConnect = false,
             ),
             dateTime = LocalDateTime.of(2026, 7, 2, 18, 0),
+            mealType = QuickImportMealType.Dinner,
         )
 
         assertEquals(1, plan.foodDrafts.size)
         assertEquals("Rice", plan.foodDrafts[0].name)
         assertClose(100.0, plan.foodDrafts[0].grams)
         assertClose(27.0, plan.foodDrafts[0].nutrientsPer100g.appCarbohydrate)
-        assertNull(plan.healthPayload)
+        assertEquals(0, plan.healthPayloads.size)
     }
 
     @Test
@@ -54,7 +54,7 @@ class QuickImportPlannerTest {
     }
 
     @Test
-    fun healthOnlyImportDoesNotRequireFoodWeights() {
+    fun healthOnlyImportCreatesFoodPayloadsAndDoesNotRequireFoodWeights() {
         val meal = QuickImportParser.parse(
             "restaurant meal; Calories 500, Fat 20g, Sat Fat 5g, Trans Fat 0g, Cholesterol 0mg, Sodium 1mg, Carbs 40g, Fiber 6g, Sugar 9g, Added Sugar 0g, Protein 30g. " +
                 "Meal totals; Calories 500, Fat 20g, Sat Fat 5g, Trans Fat 0g, Cholesterol 0mg, Sodium 1mg, Carbs 40g, Fiber 6g, Sugar 9g, Added Sugar 0g, Protein 30g."
@@ -71,7 +71,38 @@ class QuickImportPlannerTest {
         )
 
         assertEquals(0, plan.foodDrafts.size)
-        assertClose(40.0, plan.healthPayload!!.totalCarbohydrate)
+        assertEquals(1, plan.healthPayloads.size)
+        assertEquals("restaurant meal", plan.healthPayloads[0].name)
+        assertEquals(QuickImportMealType.Dinner.healthConnectValue, plan.healthPayloads[0].mealType)
+        assertClose(40.0, plan.healthPayloads[0].totalCarbohydrate)
+    }
+
+    @Test
+    fun healthPayloadsExcludeMealTotalsToAvoidDoubleCounting() {
+        val meal = QuickImportParser.parse(
+            "100g rice; Calories 130, Fat 0.3g, Sat Fat 0.1g, Trans Fat 0g, Cholesterol 0mg, Sodium 1mg, Carbs 28g, Fiber 1g, Sugar 0.1g, Added Sugar 0g, Protein 2.7g. " +
+                "100g beans; Calories 120, Fat 0.5g, Sat Fat 0.1g, Trans Fat 0g, Cholesterol 0mg, Sodium 1mg, Carbs 22g, Fiber 7g, Sugar 1g, Added Sugar 0g, Protein 8g. " +
+                "Meal totals; Calories 250, Fat 0.8g, Sat Fat 0.2g, Trans Fat 0g, Cholesterol 0mg, Sodium 2mg, Carbs 50g, Fiber 8g, Sugar 1.1g, Added Sugar 0g, Protein 10.7g."
+        )
+
+        val plan = QuickImportPlanner.build(
+            meal = meal,
+            options = QuickImportCommitOptions(
+                addFoodsToDatabase = false,
+                addFoodsToDay = false,
+                writeHealthConnect = true,
+            ),
+            dateTime = LocalDateTime.of(2026, 7, 2, 18, 0),
+            mealType = QuickImportMealType.Snack,
+        )
+
+        assertEquals(2, plan.healthPayloads.size)
+        assertClose(250.0, plan.healthPayloads.sumOf { it.energy })
+        assertEquals(listOf("100 g rice", "100 g beans"), plan.healthPayloads.map { it.name })
+        assertEquals(
+            listOf(QuickImportMealType.Snack.healthConnectValue, QuickImportMealType.Snack.healthConnectValue),
+            plan.healthPayloads.map { it.mealType },
+        )
     }
 
     @Test

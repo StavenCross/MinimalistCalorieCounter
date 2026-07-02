@@ -10,7 +10,9 @@ import com.makstuff.minimalistcaloriecounter.classes.Combo
 import com.makstuff.minimalistcaloriecounter.classes.DatabaseEntry
 import com.makstuff.minimalistcaloriecounter.classes.GridButtonData
 import com.makstuff.minimalistcaloriecounter.classes.QuickImportMeal
+import com.makstuff.minimalistcaloriecounter.classes.QuickImportMealType
 import com.makstuff.minimalistcaloriecounter.classes.QuickImportResult
+import com.makstuff.minimalistcaloriecounter.health.HealthConnectNutritionMeal
 import com.makstuff.minimalistcaloriecounter.essentials.NAV_DAY
 import com.makstuff.minimalistcaloriecounter.essentials.NavButton
 import com.makstuff.minimalistcaloriecounter.ui.theme.AppTheme
@@ -94,6 +96,7 @@ data class AppUiState(
 
     val inputQuickImportText: String = "",
     val inputQuickImportDateTime: LocalDateTime = LocalDateTime.now(),
+    val quickImportSnackOverride: Boolean = false,
     val quickImportMeal: QuickImportMeal? = null,
     val quickImportError: String? = null,
     val quickImportResult: QuickImportResult? = null,
@@ -116,6 +119,10 @@ data class AppUiState(
     val healthConnectSyncCurrentCount: Int = 0,
     val healthConnectSyncTotalCount: Int = 0,
     val healthConnectSyncMessage: String? = null,
+    val healthConnectViewerDate: LocalDate = LocalDateTime.now().minusHours(12).toLocalDate(),
+    val healthConnectViewerMeals: List<HealthConnectNutritionMeal> = emptyList(),
+    val healthConnectViewerLoading: Boolean = false,
+    val healthConnectViewerMessage: String? = null,
     val loading: Boolean = true,
 
     val alertDialogArchiveReset: Boolean = false,
@@ -135,4 +142,11 @@ data class AppUiState(
     val indexArchiveDelete: Int = -1,
     val alertDialogDatabaseDelete: Boolean = false,
     val indexDatabaseDelete: Int = -1,
-)
+) {
+    val quickImportMealType: QuickImportMealType
+        get() = if (quickImportSnackOverride) {
+            QuickImportMealType.Snack
+        } else {
+            QuickImportMealType.inferFrom(inputQuickImportDateTime)
+        }
+}

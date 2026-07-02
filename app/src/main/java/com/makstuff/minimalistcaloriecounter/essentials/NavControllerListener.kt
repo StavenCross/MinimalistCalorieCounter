@@ -30,7 +30,7 @@ fun NavControllerListener(
                 setNav(context.getString(R.string.title_edit_food_in_day), NAV_DAY)
 
             "quick_import" ->
-                setNav(context.getString(R.string.quick_import), NAV_DAY)
+                setNav("Quick add", NAV_DAY)
 
             "day_add_food" ->
                 setNav(context.getString(R.string.title_pick_food), NAV_DAY)
@@ -43,6 +43,9 @@ fun NavControllerListener(
 
             "archive_home" ->
                 setNav(context.getString(R.string.archive), NAV_ARCHIVE)
+
+            "health_connect_nutrition" ->
+                setNav("Meals", NAV_ARCHIVE)
 
             "archive_create_entry_manually" ->
                 setNav(context.getString(R.string.title_create_new_archive_entry), NAV_ARCHIVE)

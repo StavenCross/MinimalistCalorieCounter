@@ -50,6 +50,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.runtime.remember
@@ -71,6 +72,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.window.DialogProperties
 import androidx.core.net.toUri
 import androidx.core.os.LocaleListCompat
@@ -105,6 +107,7 @@ import com.makstuff.minimalistcaloriecounter.ui.reused.TileArchive
 import com.makstuff.minimalistcaloriecounter.ui.reused.TileIngredient
 import com.makstuff.minimalistcaloriecounter.ui.reused.TileLegendArchive
 import com.makstuff.minimalistcaloriecounter.ui.screens.ScreenDatabaseEntry
+import com.makstuff.minimalistcaloriecounter.ui.screens.ScreenHealthConnectNutrition
 import com.makstuff.minimalistcaloriecounter.ui.screens.ScreenEnterWeightOfFood
 import com.makstuff.minimalistcaloriecounter.ui.screens.ScreenInputOrEditArchive
 import com.makstuff.minimalistcaloriecounter.ui.screens.ScreenQuickImport
@@ -138,6 +141,7 @@ fun App(
     val healthConnectManager = remember { HealthConnectManager(context) }
     val currentBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = currentBackStackEntry?.destination?.route
+    var mainMenuExpanded by remember { mutableStateOf(false) }
 
     val healthConnectRequestPermissionLauncher = rememberLauncherForActivityResult(
         contract = PermissionController.createRequestPermissionResultContract(),
@@ -306,19 +310,42 @@ fun App(
         topBar = {
             TopAppBar(
                 title = { Text(text = uiState.topBarTitle) },
+                navigationIcon = {
+                    Box {
+                        IconButton(onClick = { mainMenuExpanded = true }) {
+                            Icon(
+                                imageVector = Icons.Default.Menu,
+                                contentDescription = "Open navigation menu",
+                            )
+                        }
+                        DropdownMenu(
+                            expanded = mainMenuExpanded,
+                            onDismissRequest = { mainMenuExpanded = false },
+                            offset = DpOffset(8.dp, 0.dp),
+                            items = listOf(
+                                DropdownMenuItemData(stringResource(R.string.database_navbar)) {
+                                    navTo("database_home")
+                                },
+                                DropdownMenuItemData(stringResource(R.string.food)) {
+                                    viewModel.resetDatabaseEntryCreateAllInput()
+                                    navTo("create_home")
+                                },
+                                DropdownMenuItemData("Recipe") {
+                                    viewModel.currentComboReset(context)
+                                    navTo("combine_home")
+                                },
+                                DropdownMenuItemData("Archive tools") {
+                                    navTo("archive_home")
+                                },
+                            ),
+                        )
+                    }
+                },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surfaceContainer,
                     actionIconContentColor = MaterialTheme.colorScheme.onSurface,
                 ),
                 actions = {
-                    if (currentRoute == "day_home" || currentRoute == "day_content") {
-                        IconButton(onClick = { navTo("quick_import") }) {
-                            Icon(
-                                imageVector = Icons.Default.Add,
-                                contentDescription = "Quick Import",
-                            )
-                        }
-                    }
                     IconButton(onClick = { viewModel.updateOptionsSheetVisible(true) }) {
                         Icon(
                             painterResource(id = R.drawable.options),
@@ -1059,31 +1086,11 @@ fun App(
             NavigationBar(
                 items = listOf(
                     NavigationBarItemData(
-                        stringResource(R.string.database_navbar), R.drawable.list, uiState.navigationBarHighlight == NAV_DATABASE
-                    ) { navTo("database_home") },
+                        "Meals", R.drawable.archive, uiState.navigationBarHighlight == NAV_ARCHIVE
+                    ) { navTo("health_connect_nutrition") },
                     NavigationBarItemData(
-                        stringResource(R.string.archive), R.drawable.archive, uiState.navigationBarHighlight == NAV_ARCHIVE
-                    ) { navTo("archive_home") },
-                    NavigationBarItemData(
-                        stringResource(R.string.day), R.drawable.today, uiState.navigationBarHighlight == NAV_DAY
-                    ) {
-                        if (navController.currentBackStackEntry?.destination?.route == "day_home") {
-                            navTo("day_content")
-                        } else {
-                            navTo("day_home")
-                        }
-                    },
-                    NavigationBarItemData(
-                        stringResource(R.string.food), R.drawable.food, uiState.navigationBarHighlight == NAV_CREATE
-                    ) { 
-                        viewModel.resetDatabaseEntryCreateAllInput()
-                        navTo("create_home") 
-                    },
-                    NavigationBarItemData(
-                        stringResource(R.string.combine), R.drawable.dish, uiState.navigationBarHighlight == NAV_COMBINE
-                    ) {
-                        viewModel.currentComboReset(context)
-                        navTo("combine_home") },
+                        "Quick add", R.drawable.plus, uiState.navigationBarHighlight == NAV_DAY
+                    ) { navTo("quick_import") },
                 ).map {
                     {
                         NavigationBarItem(
@@ -1104,7 +1111,7 @@ fun App(
                 .consumeWindowInsets(innerPadding)
                 .padding(4.dp),
             navController = navController,
-            startDestination = "day_home",
+            startDestination = "quick_import",
         ) {
             composable("day_content") {
                 ScreenWithHoverCard(
@@ -1232,6 +1239,15 @@ fun App(
                         context=context
                     )
                 }
+
+            composable("health_connect_nutrition") {
+                ScreenHealthConnectNutrition(
+                    uiState = uiState,
+                    onDateChange = { viewModel.updateHealthConnectViewerDate(it) },
+                    onRefresh = { viewModel.readHealthConnectNutritionMeals() },
+                    onDeleteMeal = { viewModel.deleteHealthConnectNutritionMeal(it) },
+                )
+            }
             
 
 
@@ -1543,6 +1559,8 @@ fun App(
                     onToggleAddDay = { viewModel.toggleQuickImportAddFoodsToDay() },
                     onToggleHealthConnect = { viewModel.toggleQuickImportWriteHealthConnect() },
                     onRefreshDateTime = { viewModel.refreshQuickImportDateTime() },
+                    onDateTimeChange = { viewModel.updateQuickImportDateTime(it) },
+                    onToggleSnackOverride = { viewModel.toggleQuickImportSnackOverride() },
                     onImport = { viewModel.quickImportCommit(context) },
                     onClear = { viewModel.resetQuickImport() },
                     onBack = { navTo("day_home") },

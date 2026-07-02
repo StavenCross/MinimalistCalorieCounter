@@ -134,6 +134,7 @@
     <string name="dialog_archive_delete">Êtes-vous sûr de vouloir supprimer cette entrée d\'archive ?</string>
     <string name="dialog_database_delete">Êtes-vous sûr de vouloir supprimer cette entrée de la base de données ?</string>
     <string name="health_connect">Health Connect</string>
+    <string name="health_connect_nutrition">Nutrition Health Connect</string>
     <string name="health_connect_permissions_missing">Autorisations Health Connect manquantes.</string>
     <string name="dropdown_sync_health_connect">Health Connect Auto-Synchronisation</string>
     <string name="dropdown_export_archive_health_connect">Synchronisation manuelle complète de Health Connect</string>
