@@ -56,7 +56,12 @@ internal class AppViewModelPersistenceActions(
     }
 
     fun updateGoalsFromCsv(context: Context) {
-        env.csvStore.readGoals(context)?.let { goals ->
+        env.scope.launch {
+            val goals = runCatching { env.roomStore.readGoals() }.getOrNull()
+                ?: env.csvStore.readGoals(context)?.also { csvGoals ->
+                    env.launchRoomWrite { writeGoals(csvGoals) }
+                }
+                ?: return@launch
             env.state.update { currentState ->
                 currentState.copy(goals = goals)
             }
@@ -64,13 +69,26 @@ internal class AppViewModelPersistenceActions(
     }
 
     fun updateQuickImportOutboxFromCsv(context: Context) {
-        env.state.update { currentState ->
-            currentState.copy(quickImportOutbox = env.csvStore.readQuickImportOutbox(context))
+        env.scope.launch {
+            val roomItems = runCatching { env.roomStore.readQuickImportOutbox() }.getOrDefault(emptyList())
+            val items = if (roomItems.isNotEmpty()) {
+                roomItems
+            } else {
+                env.csvStore.readQuickImportOutbox(context).also { csvItems ->
+                    env.launchRoomWrite { seedQuickImportOutbox(csvItems) }
+                }
+            }
+            env.state.update { currentState ->
+                currentState.copy(quickImportOutbox = items)
+            }
         }
     }
 
     fun writeGoals(context: Context) {
         env.csvStore.writeGoals(context, env.uiState.goals)
+        env.launchRoomWrite {
+            writeGoals(env.uiState.goals)
+        }
     }
 
     fun updateOptionsFromFile(context: Context) {

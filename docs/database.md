@@ -18,7 +18,14 @@ Version 1 includes tables for:
 - local meal backup records
 - import/export job history
 
-The first Phase 6 slice adds the schema, DAOs, domain mappers, CSV seed planner, schema export, backup rules, and unit coverage. Runtime reads/writes still use the existing CSV store until migration wiring is completed.
+The first Phase 6 slice added the schema, DAOs, domain mappers, CSV seed planner, schema export, backup rules, and unit coverage.
+
+The second Phase 6 slice wires runtime storage for:
+
+- Goals
+- Add Meal Health Connect outbox
+
+On startup, each surface reads Room first. If Room is empty or unavailable during the migration window, the app falls back to the existing CSV file and seeds Room from that CSV data. Writes are mirrored to CSV during the transition so rollback and manual troubleshooting remain possible.
 
 ## Backup
 
@@ -48,6 +55,8 @@ Bundled defaults live under `app/src/main/res/raw`.
 ## CSV Migration Seeds
 
 `CsvRoomSeedPlanner` converts existing Goals and Add Meal outbox CSV rows into Room seed objects before any database write occurs. Corrupt outbox CSV input is rejected before Room insertion so migration wiring can fail without partially mutating the database.
+
+Runtime CSV fallback currently applies to Goals and Add Meal outbox data. Food database, day data, archive data, app preferences, local meal backup records, and import/export job history still need full Room runtime wiring.
 
 ## Food Database
 
