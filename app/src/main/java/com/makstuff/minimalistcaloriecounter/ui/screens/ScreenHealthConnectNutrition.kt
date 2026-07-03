@@ -29,6 +29,7 @@ import androidx.compose.material.icons.filled.BakeryDining
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.EggAlt
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
@@ -103,6 +104,7 @@ fun ScreenHealthConnectNutrition(
     onDeleteMeal: (String) -> Unit,
     onDeleteMealGroup: (List<String>) -> Unit,
     onRepeatMealGroup: (List<HealthConnectNutritionMeal>) -> Unit,
+    onExportDaySummary: (LocalDate, String) -> Unit,
 ) {
     LaunchedEffect(Unit) {
         onRefresh()
@@ -205,6 +207,7 @@ fun ScreenHealthConnectNutrition(
                         clipboard.setText(AnnotatedString(daySummaryText))
                         daySummaryCopied = true
                     },
+                    onExportSummary = { onExportDaySummary(selectedDate, daySummaryText) },
                 )
             }
 
@@ -384,6 +387,7 @@ private fun DaySummaryCard(
     message: String?,
     copied: Boolean,
     onCopySummary: () -> Unit,
+    onExportSummary: () -> Unit,
 ) {
     val summary = nutritionDaySummary(meals, targets)
     val totals = summary.totals
@@ -456,18 +460,36 @@ private fun DaySummaryCard(
                 items = macroSummaryItems(totals)
             )
             GoalProgressRow(summary.progress)
-            TextButton(
-                onClick = onCopySummary,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .testTag("meals_day_copy_summary"),
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                Icon(
-                    imageVector = if (copied) Icons.Default.Check else Icons.Default.ContentCopy,
-                    contentDescription = null,
-                    modifier = Modifier.size(18.dp),
-                )
-                Text(if (copied) "Day copied" else "Copy day summary")
+                TextButton(
+                    onClick = onCopySummary,
+                    modifier = Modifier
+                        .weight(1f)
+                        .testTag("meals_day_copy_summary"),
+                ) {
+                    Icon(
+                        imageVector = if (copied) Icons.Default.Check else Icons.Default.ContentCopy,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp),
+                    )
+                    Text(if (copied) "Day copied" else "Copy")
+                }
+                TextButton(
+                    onClick = onExportSummary,
+                    modifier = Modifier
+                        .weight(1f)
+                        .testTag("meals_day_export_summary"),
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Download,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp),
+                    )
+                    Text("Export")
+                }
             }
         }
     }

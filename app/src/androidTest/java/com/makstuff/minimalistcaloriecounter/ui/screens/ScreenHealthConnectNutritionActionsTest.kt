@@ -15,6 +15,7 @@ import com.makstuff.minimalistcaloriecounter.classes.Combo
 import com.makstuff.minimalistcaloriecounter.health.HealthConnectNutritionMeal
 import com.makstuff.minimalistcaloriecounter.ui.theme.AppTheme
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -42,6 +43,7 @@ class ScreenHealthConnectNutritionActionsTest {
                     onDeleteMeal = {},
                     onDeleteMealGroup = {},
                     onRepeatMealGroup = {},
+                    onExportDaySummary = { _, _ -> },
                 )
             }
         }
@@ -66,6 +68,7 @@ class ScreenHealthConnectNutritionActionsTest {
                     onDeleteMeal = {},
                     onDeleteMealGroup = {},
                     onRepeatMealGroup = {},
+                    onExportDaySummary = { _, _ -> },
                 )
             }
         }
@@ -96,6 +99,7 @@ class ScreenHealthConnectNutritionActionsTest {
                     onDeleteMeal = {},
                     onDeleteMealGroup = { deletedRecordIds = it },
                     onRepeatMealGroup = {},
+                    onExportDaySummary = { _, _ -> },
                 )
             }
         }
@@ -126,6 +130,7 @@ class ScreenHealthConnectNutritionActionsTest {
                     onDeleteMeal = {},
                     onDeleteMealGroup = {},
                     onRepeatMealGroup = { repeatedFoods = it },
+                    onExportDaySummary = { _, _ -> },
                 )
             }
         }
@@ -133,6 +138,38 @@ class ScreenHealthConnectNutritionActionsTest {
         composeRule.onNodeWithText("Lunch").performClick()
         composeRule.onNodeWithTag("meals_repeat_meal_group").assertIsDisplayed().performClick()
         assertEquals(listOf("record-0", "record-1"), repeatedFoods.map { it.recordId })
+    }
+
+    @Test
+    fun daySummaryExportEmitsSelectedDateAndSummary() {
+        var exportedDate: LocalDate? = null
+        var exportedSummary = ""
+
+        composeRule.setContent {
+            AppTheme(dynamicColor = false) {
+                ScreenHealthConnectNutrition(
+                    uiState = baseState().copy(
+                        healthConnectViewerDate = LocalDate.of(2026, 7, 2),
+                        healthConnectViewerLoading = false,
+                        healthConnectViewerMessage = null,
+                        healthConnectViewerMeals = listOf(sampleMeal()),
+                    ),
+                    onDateChange = {},
+                    onRefresh = {},
+                    onDeleteMeal = {},
+                    onDeleteMealGroup = {},
+                    onRepeatMealGroup = {},
+                    onExportDaySummary = { date, summary ->
+                        exportedDate = date
+                        exportedSummary = summary
+                    },
+                )
+            }
+        }
+
+        composeRule.onNodeWithTag("meals_day_export_summary").assertIsDisplayed().performClick()
+        assertEquals(LocalDate.of(2026, 7, 2), exportedDate)
+        assertTrue(exportedSummary.contains("Meals for 2026-07-02"))
     }
 
     private fun baseState(): AppUiState {

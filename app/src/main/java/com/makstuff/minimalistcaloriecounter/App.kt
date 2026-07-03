@@ -127,6 +127,7 @@ import com.makstuff.minimalistcaloriecounter.ui.theme.AppTheme
 import com.makstuff.minimalistcaloriecounter.health.HealthConnectManager
 import com.makstuff.minimalistcaloriecounter.health.HealthConnectExportMode
 import com.makstuff.minimalistcaloriecounter.health.HealthConnectCleanupMode
+import com.makstuff.minimalistcaloriecounter.health.DayCheckInExporter
 import androidx.health.connect.client.HealthConnectClient
 import androidx.health.connect.client.PermissionController
 import kotlin.time.Duration.Companion.milliseconds
@@ -1199,6 +1200,11 @@ fun App(
                             launchSingleTop = true
                             restoreState = true
                         }
+                    },
+                    onExportDaySummary = { date, summary ->
+                        runCatching { DayCheckInExporter(context).export(date, summary) }
+                            .onSuccess { Toast.makeText(context, "Exported check-in to $it", Toast.LENGTH_LONG).show() }
+                            .onFailure { Toast.makeText(context, "Check-in export failed: ${it.message}", Toast.LENGTH_LONG).show() }
                     },
                 )
             }
