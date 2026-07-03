@@ -65,6 +65,10 @@ internal class AppViewModelHealthConnectMealActions(
     }
 
     fun deleteMeal(recordId: String) {
+        deleteMeals(listOf(recordId))
+    }
+
+    fun deleteMeals(recordIds: List<String>) {
         env.state.update { currentState ->
             currentState.copy(
                 healthConnectViewerLoading = true,
@@ -72,7 +76,7 @@ internal class AppViewModelHealthConnectMealActions(
             )
         }
         env.scope.launch {
-            when (val result = env.healthConnectManager.deleteNutritionMeal(recordId)) {
+            when (val result = env.healthConnectManager.deleteNutritionMeals(recordIds)) {
                 HealthConnectDeleteResult.Success -> viewModel.readHealthConnectNutritionMeals()
                 HealthConnectDeleteResult.HealthConnectUnavailable -> {
                     env.state.update {

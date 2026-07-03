@@ -107,6 +107,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     fun deleteHealthConnectNutritionMeal(recordId: String) = healthConnectMealActions.deleteMeal(recordId)
 
+    fun deleteHealthConnectNutritionMeals(recordIds: List<String>) = healthConnectMealActions.deleteMeals(recordIds)
+
     fun previewHistoricalMealImport(rows: List<List<String>>) = healthConnectMealActions.previewHistoricalImport(rows)
 
     fun writeHistoricalMealImport() = healthConnectMealActions.writeHistoricalImport()

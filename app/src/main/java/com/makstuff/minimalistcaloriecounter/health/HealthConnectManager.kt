@@ -181,12 +181,14 @@ class HealthConnectManager(private val context: Context) {
         return HealthConnectNutritionService(context, client).insertQuickMealNutrition(payloads)
     }
 
-    suspend fun deleteNutritionMeal(recordId: String): HealthConnectDeleteResult {
+    suspend fun deleteNutritionMeal(recordId: String): HealthConnectDeleteResult = deleteNutritionMeals(listOf(recordId))
+
+    suspend fun deleteNutritionMeals(recordIds: List<String>): HealthConnectDeleteResult {
+        if (recordIds.isEmpty()) return HealthConnectDeleteResult.Success
         if (!isSdkAvailable()) return HealthConnectDeleteResult.HealthConnectUnavailable
         val client = getClient() ?: return HealthConnectDeleteResult.HealthConnectUnavailable
-
         if (!hasWritePermissions()) return HealthConnectDeleteResult.PermissionsMissing
-        return HealthConnectNutritionService(context, client).deleteNutritionMeal(recordId)
+        return HealthConnectNutritionService(context, client).deleteNutritionMeals(recordIds)
     }
 
     suspend fun writeHistoricalMealFoods(
@@ -264,7 +266,6 @@ class HealthConnectManager(private val context: Context) {
     ) {
         val client = getClient() ?: return
         if (archive.entries.isEmpty()) return
-
         try {
             if (!hasWritePermissions()) {
                 withContext(Dispatchers.Main) {

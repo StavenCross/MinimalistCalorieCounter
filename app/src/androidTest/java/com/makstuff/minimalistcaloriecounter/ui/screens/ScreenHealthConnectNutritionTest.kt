@@ -52,6 +52,7 @@ class ScreenHealthConnectNutritionTest {
                     onDateChange = { requestedDates += it },
                     onRefresh = { refreshCount++ },
                     onDeleteMeal = {},
+                    onDeleteMealGroup = {},
                 )
             }
         }
@@ -80,6 +81,7 @@ class ScreenHealthConnectNutritionTest {
                     onDateChange = {},
                     onRefresh = {},
                     onDeleteMeal = {},
+                    onDeleteMealGroup = {},
                 )
             }
         }
@@ -102,6 +104,7 @@ class ScreenHealthConnectNutritionTest {
                     onDateChange = {},
                     onRefresh = {},
                     onDeleteMeal = {},
+                    onDeleteMealGroup = {},
                 )
             }
         }
@@ -124,6 +127,7 @@ class ScreenHealthConnectNutritionTest {
                     onDateChange = {},
                     onRefresh = {},
                     onDeleteMeal = {},
+                    onDeleteMealGroup = {},
                 )
             }
         }
@@ -149,6 +153,7 @@ class ScreenHealthConnectNutritionTest {
                     onDateChange = {},
                     onRefresh = {},
                     onDeleteMeal = {},
+                    onDeleteMealGroup = {},
                 )
             }
         }
@@ -178,6 +183,7 @@ class ScreenHealthConnectNutritionTest {
                     onDateChange = {},
                     onRefresh = {},
                     onDeleteMeal = {},
+                    onDeleteMealGroup = {},
                 )
             }
         }
@@ -203,6 +209,7 @@ class ScreenHealthConnectNutritionTest {
                     onDateChange = {},
                     onRefresh = {},
                     onDeleteMeal = {},
+                    onDeleteMealGroup = {},
                 )
             }
         }
@@ -225,6 +232,7 @@ class ScreenHealthConnectNutritionTest {
                     onDateChange = {},
                     onRefresh = {},
                     onDeleteMeal = {},
+                    onDeleteMealGroup = {},
                 )
             }
         }
@@ -232,6 +240,35 @@ class ScreenHealthConnectNutritionTest {
         composeRule.onNodeWithText("Lunch").performClick()
         composeRule.onNodeWithTag("meals_meal_copy_summary").assertIsDisplayed().performClick()
         composeRule.onNodeWithContentDescription("Meal summary copied").assertIsDisplayed()
+    }
+
+    @Test
+    fun mealDetailDeleteEmitsGroupRecordIds() {
+        var deletedRecordIds = emptyList<String>()
+
+        composeRule.setContent {
+            AppTheme(dynamicColor = false) {
+                ScreenHealthConnectNutrition(
+                    uiState = baseState().copy(
+                        healthConnectViewerDate = LocalDate.of(2026, 7, 2),
+                        healthConnectViewerLoading = false,
+                        healthConnectViewerMessage = null,
+                        healthConnectViewerMeals = listOf(
+                            sampleMeal(name = "food 1", minuteOffset = 0),
+                            sampleMeal(name = "food 2", minuteOffset = 1),
+                        ),
+                    ),
+                    onDateChange = {},
+                    onRefresh = {},
+                    onDeleteMeal = {},
+                    onDeleteMealGroup = { deletedRecordIds = it },
+                )
+            }
+        }
+
+        composeRule.onNodeWithText("Lunch").performClick()
+        composeRule.onNodeWithTag("meals_delete_meal_group").assertIsDisplayed().performClick()
+        assertEquals(listOf("record-0", "record-1"), deletedRecordIds)
     }
 
     @Test
@@ -248,6 +285,7 @@ class ScreenHealthConnectNutritionTest {
                     onDateChange = {},
                     onRefresh = {},
                     onDeleteMeal = {},
+                    onDeleteMealGroup = {},
                 )
             }
         }
