@@ -89,6 +89,13 @@ All non-UI files touched in this cleanup are now under the 300-line cap:
 - Added richer Goals recommendation history metadata and a compact history card so applied targets show their BMR/TDEE and measurement context.
 - Added explicit Goals Sunday recalculation status with a testable schedule helper and a visible recalculation card.
 - Added Goals trend/adherence cards backed by recommendation-history body metrics and the currently loaded Health Connect meals day.
+- Added the Phase 6 Room persistence foundation:
+  - Room/KSP dependencies and schema export.
+  - `persistence/room/AppDatabase.kt`
+  - Room entities and DAOs for preferences, goals, Add Meal outbox, local meal backups, and import/export jobs.
+  - Room seed mappers for Goals and Add Meal outbox data.
+  - CSV seed planner tests that reject corrupt outbox input before database writes.
+  - Android backup/device-transfer rules for `mcc.db`, `mcc.db-shm`, and `mcc.db-wal`.
 
 ## Recommended Extraction Order
 
@@ -107,6 +114,7 @@ All non-UI files touched in this cleanup are now under the 300-line cap:
 - Goals splits: `./gradlew testDebugUnitTest --tests '*GoalCalculatorTest' --console=plain`
 - MCP splits: `cd tools/mcc-mcp && npm test`
 - Full Android unit pass: `./gradlew testDebugUnitTest --console=plain`
+- Room foundation pass: `./gradlew testDebugUnitTest --tests '*persistence.room*' --console=plain`
 - Connected UI pass after screen or automation changes: focused `ScreenQuickImportTest`, `ScreenHealthConnectNutritionTest`, and `ScreenGoalsTest` instrumentation runs on the Fold emulator.
 
 ## Refactor Risks
