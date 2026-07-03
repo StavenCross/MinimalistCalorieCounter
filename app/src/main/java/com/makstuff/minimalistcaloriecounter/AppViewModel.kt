@@ -69,6 +69,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     fun updateActiveSettingsSheet(sheet: SettingsSheet?) = uiActions.updateActiveSettingsSheet(sheet)
 
+    fun openSettingsSheet(sheet: SettingsSheet?) = uiActions.openSettingsSheet(sheet)
+
     fun updateQuickImportSettingsVisible(visible: Boolean) = uiActions.updateQuickImportSettingsVisible(visible)
 
     fun updateGoalsSettingsVisible(visible: Boolean) = goalsActions.updateSettingsVisible(visible)

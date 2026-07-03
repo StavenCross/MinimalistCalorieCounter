@@ -64,49 +64,52 @@ class HealthConnectManager(private val context: Context) {
 
     val exportPermissions = exportReadPermissions
 
-    suspend fun hasAllPermissions(): Boolean {
+    private fun permissionSetFor(scope: HealthConnectPermissionScope): Set<String> {
+        return when (scope) {
+            HealthConnectPermissionScope.AllAppFeatures -> permissions
+            HealthConnectPermissionScope.WriteArchiveEntries -> writePermissions
+            HealthConnectPermissionScope.ReadNutrition -> readNutritionPermissions
+            HealthConnectPermissionScope.ReadGoalProfile -> readGoalProfilePermissions
+            HealthConnectPermissionScope.ExportReadableData -> exportReadPermissions
+            HealthConnectPermissionScope.MutateNutritionRecords -> writePermissions + readNutritionPermissions
+        }
+    }
+
+    private suspend fun hasPermissions(scope: HealthConnectPermissionScope): Boolean {
         val client = getClient() ?: return false
         return try {
-            client.permissionController.getGrantedPermissions().containsAll(permissions)
+            client.permissionController.getGrantedPermissions().containsAll(permissionSetFor(scope))
         } catch (_: Throwable) {
             false
         }
+    }
+
+    suspend fun hasAllPermissions(): Boolean {
+        return hasPermissions(HealthConnectPermissionScope.AllAppFeatures)
+    }
+
+    suspend fun hasArchiveSyncPermissions(): Boolean {
+        return hasPermissions(HealthConnectPermissionScope.WriteArchiveEntries)
     }
 
     private suspend fun hasWritePermissions(): Boolean {
-        val client = getClient() ?: return false
-        return try {
-            client.permissionController.getGrantedPermissions().containsAll(writePermissions)
-        } catch (_: Throwable) {
-            false
-        }
+        return hasPermissions(HealthConnectPermissionScope.WriteArchiveEntries)
     }
 
     private suspend fun hasReadNutritionPermissions(): Boolean {
-        val client = getClient() ?: return false
-        return try {
-            client.permissionController.getGrantedPermissions().containsAll(readNutritionPermissions)
-        } catch (_: Throwable) {
-            false
-        }
+        return hasPermissions(HealthConnectPermissionScope.ReadNutrition)
     }
 
     private suspend fun hasReadGoalProfilePermissions(): Boolean {
-        val client = getClient() ?: return false
-        return try {
-            client.permissionController.getGrantedPermissions().containsAll(readGoalProfilePermissions)
-        } catch (_: Throwable) {
-            false
-        }
+        return hasPermissions(HealthConnectPermissionScope.ReadGoalProfile)
     }
 
     suspend fun hasExportReadPermissions(): Boolean {
-        val client = getClient() ?: return false
-        return try {
-            client.permissionController.getGrantedPermissions().containsAll(exportReadPermissions)
-        } catch (_: Throwable) {
-            false
-        }
+        return hasPermissions(HealthConnectPermissionScope.ExportReadableData)
+    }
+
+    private suspend fun hasNutritionMutationPermissions(): Boolean {
+        return hasPermissions(HealthConnectPermissionScope.MutateNutritionRecords)
     }
 
     suspend fun exportHealthConnectCsv(
@@ -183,7 +186,7 @@ class HealthConnectManager(private val context: Context) {
         if (!isSdkAvailable()) return HistoricalMealHealthConnectResult.HealthConnectUnavailable
         val client = getClient() ?: return HistoricalMealHealthConnectResult.HealthConnectUnavailable
 
-        if (!hasWritePermissions() || !hasReadNutritionPermissions()) {
+        if (!hasNutritionMutationPermissions()) {
             return HistoricalMealHealthConnectResult.PermissionsMissing
         }
         return HealthConnectNutritionService(context, client).writeHistoricalMealFoods(foods, onProgress)
@@ -194,7 +197,7 @@ class HealthConnectManager(private val context: Context) {
         if (!isSdkAvailable()) return HistoricalMealHealthConnectResult.HealthConnectUnavailable
         val client = getClient() ?: return HistoricalMealHealthConnectResult.HealthConnectUnavailable
 
-        if (!hasWritePermissions() || !hasReadNutritionPermissions()) {
+        if (!hasNutritionMutationPermissions()) {
             return HistoricalMealHealthConnectResult.PermissionsMissing
         }
         return HealthConnectNutritionService(context, client).cleanupHistoricalMealRecords(dates)
@@ -208,7 +211,7 @@ class HealthConnectManager(private val context: Context) {
         if (!isSdkAvailable()) return HistoricalMealHealthConnectResult.HealthConnectUnavailable
         val client = getClient() ?: return HistoricalMealHealthConnectResult.HealthConnectUnavailable
 
-        if (!hasWritePermissions() || !hasReadNutritionPermissions()) {
+        if (!hasNutritionMutationPermissions()) {
             return HistoricalMealHealthConnectResult.PermissionsMissing
         }
         return HealthConnectNutritionService(context, client).deleteNutritionRecordsInRange(startDate, endDate, onProgress)

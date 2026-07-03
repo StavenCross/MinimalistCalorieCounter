@@ -8,14 +8,14 @@ Generated output, Gradle build folders, `node_modules`, and IDE metadata are exc
 
 | File | Approx. lines | Type | Cleanup priority |
 | --- | ---: | --- | --- |
-| `app/src/main/java/com/makstuff/minimalistcaloriecounter/App.kt` | 2021 | App shell / route wiring / UI | High |
-| `app/src/main/java/com/makstuff/minimalistcaloriecounter/ui/screens/ScreenQuickImport.kt` | 1566 | Compose screen and components | Medium, UI-file exception applies |
-| `app/src/main/java/com/makstuff/minimalistcaloriecounter/ui/screens/ScreenHealthConnectNutrition.kt` | 991 | Compose screen and components | Medium, UI-file exception applies |
-| `app/src/main/java/com/makstuff/minimalistcaloriecounter/ui/screens/ScreenGoals.kt` | 859 | Compose screen and components | Medium, UI-file exception applies |
+| `app/src/main/java/com/makstuff/minimalistcaloriecounter/App.kt` | 2022 | App shell / route wiring / UI | High |
+| `app/src/main/java/com/makstuff/minimalistcaloriecounter/ui/screens/ScreenQuickImport.kt` | 1544 | Compose screen and components | Medium, UI-file exception applies |
+| `app/src/main/java/com/makstuff/minimalistcaloriecounter/ui/screens/ScreenHealthConnectNutrition.kt` | 977 | Compose screen and components | Medium, UI-file exception applies |
+| `app/src/main/java/com/makstuff/minimalistcaloriecounter/ui/screens/ScreenGoals.kt` | 843 | Compose screen and components | Medium, UI-file exception applies |
 
 All non-UI files touched in this cleanup are now under the 300-line cap:
 
-- `HealthConnectManager.kt`: 268 lines after extracting export, nutrition, archive sync, mapper, and goal-profile reader services.
+- `HealthConnectManager.kt`: 271 lines after extracting export, nutrition, archive sync, mapper, goal-profile reader, and permission-scope policy helpers.
 - `AutomationBootstrap.kt`: 298 lines after extracting HTTP helpers, JSON serializers, and route aliases.
 - `tools/mcc-mcp/src/server.ts`: 23 lines after splitting tool registration groups.
 - `AppViewModel.kt`: 282 lines after extracting feature action classes for Health Connect, Goals, Add Meal, persistence, database, archive/day, and UI chrome.
@@ -55,14 +55,30 @@ All non-UI files touched in this cleanup are now under the 300-line cap:
 - Consolidated Quick Import and historical import Health Connect payload mapping:
   - `QuickImportMapper.toHealthPayload(...)`
   - one mapping for total carbs, fiber, energy-from-fat, macro fields, names, and optional client record ids.
+- Consolidated screen panel styling:
+  - `ui/reused/SurfacePanel.kt`
+  - reused by Add Meal, Meals, and Goals instead of three private duplicate implementations.
+- Consolidated Health Connect quota retry behavior:
+  - `health/HealthConnectRetry.kt`
+  - archive sync and historical meal import now use the same retry/backoff helper.
+- Added Health Connect permission scopes:
+  - `health/HealthConnectPermissionScope.kt`
+  - `HealthConnectManager` now gates each operation by required capability instead of duplicating raw permission-set checks.
+  - archive sync is gated by write permissions only, while historical import/delete still require write plus nutrition read.
+- Centralized top-level app navigation:
+  - `ui/navigation/AppNavigation.kt`
+  - top-level routes use `launchSingleTop`, `restoreState`, and a stable route set from `AppRoutes`.
+- Added a single settings-sheet automation intent:
+  - `AppViewModelUiActions.openSettingsSheet(...)`
+  - `/settings/open` now navigates to Settings and opens the requested drawer as one command.
 
 ## Recommended Extraction Order
 
 1. Keep public route strings and debug bridge aliases stable before route refactors.
-2. Extract route constants and destination metadata from `App.kt`, `NavControllerListener.kt`, and debug automation.
+2. Finish destination metadata extraction from `App.kt`, `NavControllerListener.kt`, and debug automation. Route constants, automation aliases, and top-level route membership are centralized; titles, icons, and drawer/bottom-bar metadata are the remaining split.
 3. Extract `App.kt` leaf UI pieces: scaffold chrome, drawer, settings page, dialogs, and route host.
 4. Keep `AppViewModel` as a facade while moving persistence and feature coordinators behind smaller classes.
-5. Split `HealthConnectManager.kt` by service area: permissions/status, export, goal profile reads, nutrition meals, historical import/delete, and legacy archive sync.
+5. Continue splitting `HealthConnectManager.kt` by service area only when it would keep the facade under 300 lines or make permissions easier to test. The current permission-scope boundary is the preferred entry point for new Health Connect gates.
 6. Split debug automation into HTTP server plumbing, endpoint handlers, request appliers, and JSON serializers.
 7. Split large Compose screens only where components can move without obscuring the workflow.
 8. Continue consolidating UI primitives: stat grids, meal summary rows, progress arcs, selectable rows, and standard bottom sheets.

@@ -65,7 +65,7 @@ internal class AppViewModelPersistenceActions(
         }
 
         env.scope.launch {
-            val granted = env.healthConnectManager.hasAllPermissions()
+            val granted = env.healthConnectManager.hasArchiveSyncPermissions()
             env.state.update { currentState ->
                 currentState.copy(
                     healthConnectSyncEnabled = (options.healthConnectSyncEnabled ?: currentState.healthConnectSyncEnabled) && granted,

@@ -92,7 +92,7 @@ internal class HealthConnectNutritionService(
             var written = 0
             val chunks = candidates.chunked(25)
             chunks.forEachIndexed { index, chunk ->
-                retryQuotaSensitive {
+                retryHealthConnectQuotaSensitive {
                     client.insertRecords(chunk.map { it.toHealthPayload().toNutritionRecord() })
                 }
                 written += chunk.size
@@ -198,23 +198,4 @@ internal class HealthConnectNutritionService(
         ).records
     }
 
-    private suspend fun retryQuotaSensitive(block: suspend () -> Unit) {
-        var success = false
-        var attempts = 0
-        while (!success && attempts < 5) {
-            try {
-                kotlinx.coroutines.yield()
-                block()
-                success = true
-            } catch (e: Throwable) {
-                attempts++
-                val isQuotaError = e.message?.contains("quota exceeded", ignoreCase = true) == true
-                if (isQuotaError && attempts < 5) {
-                    kotlinx.coroutines.delay((3000L * attempts).milliseconds)
-                } else {
-                    throw e
-                }
-            }
-        }
-    }
 }

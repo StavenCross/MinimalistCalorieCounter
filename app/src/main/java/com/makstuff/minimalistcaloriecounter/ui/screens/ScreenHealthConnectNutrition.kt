@@ -77,6 +77,7 @@ import com.makstuff.minimalistcaloriecounter.ui.model.mealGroups
 import com.makstuff.minimalistcaloriecounter.ui.model.nutritionDaySummary
 import com.makstuff.minimalistcaloriecounter.ui.model.supportsMacroHint
 import com.makstuff.minimalistcaloriecounter.ui.reused.MacroHintBox
+import com.makstuff.minimalistcaloriecounter.ui.reused.SurfacePanel
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -213,6 +214,8 @@ private fun MealsDateHeader(
         backgroundColor = MaterialTheme.colorScheme.surfaceContainerHigh,
         borderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.14f),
         contentPadding = 10,
+        verticalSpacing = 8,
+        tonalElevation = 2,
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -506,6 +509,8 @@ private fun MealCard(
         borderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.16f),
         backgroundColor = MaterialTheme.colorScheme.surfaceContainerHigh,
         contentPadding = 12,
+        verticalSpacing = 8,
+        tonalElevation = 2,
     ) {
         MealSummaryRow(group, calories, carbs, protein, fat, fiber)
 
@@ -937,7 +942,12 @@ private fun StatPillContent(
 
 @Composable
 private fun StatusCard(text: String) {
-    SurfacePanel(contentPadding = 12) {
+    SurfacePanel(
+        backgroundColor = MaterialTheme.colorScheme.surfaceContainer,
+        contentPadding = 12,
+        verticalSpacing = 8,
+        tonalElevation = 2,
+    ) {
         Text(
             text = text,
             style = MaterialTheme.typography.bodyMedium,
@@ -955,30 +965,6 @@ private fun SectionTitle(text: String) {
         color = MaterialTheme.colorScheme.onBackground,
         modifier = Modifier.padding(start = 2.dp, top = 2.dp, end = 2.dp),
     )
-}
-
-@Composable
-private fun SurfacePanel(
-    modifier: Modifier = Modifier,
-    borderColor: Color = MaterialTheme.colorScheme.outline.copy(alpha = 0.24f),
-    backgroundColor: Color = MaterialTheme.colorScheme.surfaceContainer,
-    contentPadding: Int = 8,
-    content: @Composable () -> Unit,
-) {
-    Surface(
-        modifier = modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.medium,
-        color = backgroundColor,
-        border = BorderStroke(1.dp, borderColor),
-        tonalElevation = 2.dp,
-    ) {
-        Column(
-            modifier = Modifier.padding(contentPadding.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            content()
-        }
-    }
 }
 
 private fun groupColor(group: NutritionMealGroup): Color = Color(group.colorArgb)

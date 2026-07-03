@@ -108,6 +108,7 @@ import com.makstuff.minimalistcaloriecounter.ui.model.quickNutrientDetailItems
 import com.makstuff.minimalistcaloriecounter.ui.model.supportsMacroHint
 import com.makstuff.minimalistcaloriecounter.ui.reused.MacroHintBox
 import com.makstuff.minimalistcaloriecounter.ui.reused.SheetTitle
+import com.makstuff.minimalistcaloriecounter.ui.reused.SurfacePanel
 import kotlinx.coroutines.delay
 import java.time.LocalDateTime
 import java.time.Instant
@@ -1538,29 +1539,6 @@ private fun QuickNutrientDetailPillContent(
             fontWeight = FontWeight.SemiBold,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
-        )
-    }
-}
-
-@Composable
-private fun SurfacePanel(
-    modifier: Modifier = Modifier,
-    borderColor: Color = MaterialTheme.colorScheme.outline.copy(alpha = 0.24f),
-    backgroundColor: Color = MaterialTheme.colorScheme.surfaceContainerHigh,
-    contentPadding: Int = 8,
-    content: @Composable ColumnScope.() -> Unit,
-) {
-    Surface(
-        modifier = modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.medium,
-        color = backgroundColor,
-        border = BorderStroke(1.dp, borderColor),
-        tonalElevation = 0.dp,
-    ) {
-        Column(
-            modifier = Modifier.padding(contentPadding.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp),
-            content = content,
         )
     }
 }

@@ -26,6 +26,16 @@ object AppRoutes {
 
     fun databaseEditEntry(index: Int): String = "database_edit_entry/$index"
 
+    val topLevelRoutes = setOf(
+        QUICK_IMPORT,
+        HEALTH_CONNECT_NUTRITION,
+        GOALS_HOME,
+        SETTINGS_HOME,
+        DATABASE_HOME,
+    )
+
+    fun isTopLevelRoute(route: String): Boolean = route in topLevelRoutes
+
     fun automationRouteFor(screen: String): String {
         return when (screen.lowercase().replace("-", "_")) {
             "quick_add", QUICK_IMPORT -> QUICK_IMPORT

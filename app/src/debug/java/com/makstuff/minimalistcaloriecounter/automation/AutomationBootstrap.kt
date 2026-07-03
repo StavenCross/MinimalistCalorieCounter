@@ -11,6 +11,7 @@ import com.makstuff.minimalistcaloriecounter.classes.GoalMacro
 import com.makstuff.minimalistcaloriecounter.classes.GoalSex
 import com.makstuff.minimalistcaloriecounter.classes.QuickImportMealType
 import com.makstuff.minimalistcaloriecounter.classes.WeeklyWeightLossTarget
+import com.makstuff.minimalistcaloriecounter.ui.navigation.AppRoutes
 import com.makstuff.minimalistcaloriecounter.ui.settings.SettingsSheet
 import org.json.JSONArray
 import org.json.JSONObject
@@ -98,8 +99,8 @@ object AutomationBootstrap {
                 })
                 "POST" to "/settings/open" -> ok(runOnMain {
                     val sheet = SettingsSheet.fromKey(body.optString("sheet").ifBlank { null })
-                    viewModel.updateActiveSettingsSheet(sheet)
-                    JSONObject().put("sheet", sheet?.key)
+                    viewModel.openSettingsSheet(sheet)
+                    JSONObject().put("route", AppRoutes.SETTINGS_HOME).put("sheet", sheet?.key)
                 })
                 "POST" to "/quick-import/preview" -> ok(runOnMain {
                     applyQuickImportBody(body)

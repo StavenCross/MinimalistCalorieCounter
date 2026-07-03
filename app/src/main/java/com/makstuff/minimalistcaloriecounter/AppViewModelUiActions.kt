@@ -2,6 +2,7 @@ package com.makstuff.minimalistcaloriecounter
 
 import android.content.Context
 import com.makstuff.minimalistcaloriecounter.essentials.NavButton
+import com.makstuff.minimalistcaloriecounter.ui.navigation.AppRoutes
 import com.makstuff.minimalistcaloriecounter.ui.settings.SettingsSheet
 import com.makstuff.minimalistcaloriecounter.ui.theme.AppTheme
 import kotlinx.coroutines.flow.update
@@ -29,6 +30,15 @@ internal class AppViewModelUiActions(
     fun updateActiveSettingsSheet(sheet: SettingsSheet?) {
         env.state.update { currentState ->
             currentState.copy(activeSettingsSheet = sheet)
+        }
+    }
+
+    fun openSettingsSheet(sheet: SettingsSheet?) {
+        env.state.update { currentState ->
+            currentState.copy(
+                automationRouteRequest = AppRoutes.SETTINGS_HOME,
+                activeSettingsSheet = sheet,
+            )
         }
     }
 

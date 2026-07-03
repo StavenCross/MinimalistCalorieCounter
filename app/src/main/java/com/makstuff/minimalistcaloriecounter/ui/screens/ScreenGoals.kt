@@ -82,6 +82,7 @@ import com.makstuff.minimalistcaloriecounter.classes.WeeklyWeightLossTarget
 import com.makstuff.minimalistcaloriecounter.essentials.toFormattedString
 import com.makstuff.minimalistcaloriecounter.ui.reused.MacroHintBox
 import com.makstuff.minimalistcaloriecounter.ui.reused.SheetTitle
+import com.makstuff.minimalistcaloriecounter.ui.reused.SurfacePanel
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -184,6 +185,7 @@ private fun GoalHeroCard(
         backgroundColor = MaterialTheme.colorScheme.surfaceContainerHigh,
         borderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.18f),
         contentPadding = 14,
+        verticalSpacing = 10,
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -239,6 +241,7 @@ private fun RecommendationCard(
         backgroundColor = MaterialTheme.colorScheme.surfaceContainerHigh,
         borderColor = AccentGoals.copy(alpha = 0.42f),
         contentPadding = 14,
+        verticalSpacing = 10,
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -320,6 +323,7 @@ private fun TargetTile(icon: ImageVector, color: Color, label: String, value: Do
             backgroundColor = MaterialTheme.colorScheme.surfaceContainerHigh,
             borderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.16f),
             contentPadding = 10,
+            verticalSpacing = 10,
         ) {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                 AccentIcon(icon, color, 32)
@@ -345,6 +349,7 @@ private fun ProfileSnapshotCard(uiState: AppUiState) {
         backgroundColor = MaterialTheme.colorScheme.surfaceContainerHigh,
         borderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.16f),
         contentPadding = 14,
+        verticalSpacing = 10,
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -467,6 +472,7 @@ private fun MissingFieldsPanel(missingFields: List<String>) {
         backgroundColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.40f),
         borderColor = MaterialTheme.colorScheme.error.copy(alpha = 0.42f),
         contentPadding = 10,
+        verticalSpacing = 10,
     ) {
         Text(
             text = "Missing ${missingFields.joinToString(", ")}",
@@ -801,6 +807,7 @@ private fun SettingsGroup(
         backgroundColor = MaterialTheme.colorScheme.surfaceContainerHigh,
         borderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.16f),
         contentPadding = 12,
+        verticalSpacing = 10,
     ) {
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
             AccentIcon(icon, color, 34)
@@ -830,29 +837,6 @@ private fun fieldColors() = OutlinedTextFieldDefaults.colors(
     focusedBorderColor = AccentGoals,
     unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.24f),
 )
-
-@Composable
-private fun SurfacePanel(
-    modifier: Modifier = Modifier,
-    borderColor: Color = MaterialTheme.colorScheme.outline.copy(alpha = 0.24f),
-    backgroundColor: Color = MaterialTheme.colorScheme.surfaceContainerHigh,
-    contentPadding: Int = 8,
-    content: @Composable ColumnScope.() -> Unit,
-) {
-    Surface(
-        modifier = modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.medium,
-        color = backgroundColor,
-        border = BorderStroke(1.dp, borderColor),
-        tonalElevation = 0.dp,
-    ) {
-        Column(
-            modifier = Modifier.padding(contentPadding.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
-            content = content,
-        )
-    }
-}
 
 private fun Double?.formatTarget(suffix: String): String {
     return if (this == null) "Unset" else "${this.toFormattedString(true)} $suffix"

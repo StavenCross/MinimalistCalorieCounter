@@ -66,7 +66,7 @@ internal class AppViewModelHealthConnectActions(
     fun syncArchive() {
         syncJob?.cancel()
         syncJob = env.scope.launch {
-            if (env.healthConnectManager.hasAllPermissions()) {
+            if (env.healthConnectManager.hasArchiveSyncPermissions()) {
                 env.healthConnectManager.syncArchive(
                     archive = env.uiState.archive,
                     onProgress = { progress, current, total ->

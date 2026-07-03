@@ -99,6 +99,7 @@ import com.makstuff.minimalistcaloriecounter.essentials.NavButton
 import com.makstuff.minimalistcaloriecounter.essentials.toBodyWeight
 import com.makstuff.minimalistcaloriecounter.essentials.toFormattedString
 import com.makstuff.minimalistcaloriecounter.ui.navigation.AppRoutes
+import com.makstuff.minimalistcaloriecounter.ui.navigation.navigateApp
 import com.makstuff.minimalistcaloriecounter.ui.reused.ButtonGrid
 import com.makstuff.minimalistcaloriecounter.ui.reused.ButtonText
 import com.makstuff.minimalistcaloriecounter.ui.reused.DropdownMenu
@@ -176,7 +177,7 @@ fun App(
 
     fun navTo(route: String) {
         keyboardController?.hide()
-        navController.navigate(route)
+        navController.navigateApp(route)
     }
 
     LaunchedEffect(uiState.automationRouteRequest) {
