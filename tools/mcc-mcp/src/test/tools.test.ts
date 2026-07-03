@@ -5,6 +5,7 @@ import {
   ConnectInput,
   createToolContext,
   exportHealthRange,
+  openSettingsPanel,
   setGoalsMacro,
   setGoalsProfile,
   toggleGoalsMeasurementLock,
@@ -104,5 +105,27 @@ test("health export posts date range to the bridge", async () => {
       path: "/health-connect/export-range",
       body: { startDate: "2026-07-01", endDate: "2026-07-02" },
     },
+  ]);
+});
+
+test("settings panel tool posts sheet key to the bridge", async () => {
+  const calls: Array<{ path: string; body: Record<string, unknown> }> = [];
+  const ctx = {
+    ...createToolContext(async () => ({ stdout: "", stderr: "" })),
+    bridgeFor: () => ({
+      post: async (path: string, body: Record<string, unknown>) => {
+        calls.push({ path, body });
+        return { ok: true };
+      },
+      get: async () => ({ ok: true }),
+    }),
+  };
+
+  await openSettingsPanel(ctx, "theme", 18765);
+  await openSettingsPanel(ctx, "language", 18765);
+
+  assert.deepEqual(calls, [
+    { path: "/settings/open", body: { sheet: "theme" } },
+    { path: "/settings/open", body: { sheet: "language" } },
   ]);
 });

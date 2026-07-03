@@ -8,7 +8,7 @@ Run:
 ./gradlew testDebugUnitTest --console=plain
 ```
 
-Coverage includes Quick Add parsing, Quick Add planning, historical import parsing, and Health Connect historical mapping behavior.
+Coverage includes Add Meal parsing, Add Meal planning, historical import parsing, and Health Connect historical mapping behavior.
 
 ## Android Instrumentation Tests
 

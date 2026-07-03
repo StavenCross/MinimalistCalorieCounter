@@ -1,6 +1,7 @@
 package com.makstuff.minimalistcaloriecounter
 
 import android.content.Context
+import java.io.InputStream
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -11,6 +12,14 @@ internal class AppViewModelPersistenceActions(
     fun updateDatabaseFromCsv(context: Context) {
         env.uiState.database.clear()
         env.uiState.database.addAll(env.csvStore.readDatabase(context))
+        viewModel.databaseSortByName()
+        viewModel.databaseQuickselectUpdate()
+        viewModel.databaseLetterReset()
+    }
+
+    fun importDatabaseCsv(context: Context, inputStream: InputStream) {
+        env.uiState.database.clear()
+        env.uiState.database.addAll(env.csvStore.importDatabase(context, inputStream))
         viewModel.databaseSortByName()
         viewModel.databaseQuickselectUpdate()
         viewModel.databaseLetterReset()
@@ -95,6 +104,12 @@ internal class AppViewModelPersistenceActions(
     fun updateArchiveFromCsv(context: Context) {
         env.state.update { currentState ->
             currentState.copy(archive = env.csvStore.readArchive(context))
+        }
+    }
+
+    fun importArchiveCsv(context: Context, inputStream: InputStream) {
+        env.state.update { currentState ->
+            currentState.copy(archive = env.csvStore.importArchive(context, inputStream))
         }
     }
 }

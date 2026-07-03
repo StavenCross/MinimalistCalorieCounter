@@ -13,17 +13,24 @@ import com.makstuff.minimalistcaloriecounter.classes.GoalsCsv
 import com.makstuff.minimalistcaloriecounter.essentials.NUTRIENT_PROPERTIES
 import com.makstuff.minimalistcaloriecounter.ui.theme.AppTheme
 import java.io.File
+import java.io.InputStream
 
 class AppCsvStore {
     fun readDatabase(context: Context): List<DatabaseEntry> {
         return try {
-            val rows = csvReader().readAll(file(context, "database.csv").inputStream())
-            check(rows.isNotEmpty()) { context.getString(R.string.database) + ": " + context.getString(R.string.csv_wrong_number_fields) }
-            check(rows[0].size == 11) { context.getString(R.string.database) + ": " + context.getString(R.string.csv_wrong_number_fields) }
-            rows.drop(1).map { csvLine -> DatabaseEntry.fromCSV(csvLine, context) }
+            parseDatabaseRows(csvReader().readAll(file(context, "database.csv").inputStream()), context)
         } catch (_: CSVFieldNumDifferentException) {
             throw IllegalStateException(context.getString(R.string.database) + ": " + context.getString(R.string.csv_wrong_number_fields))
         }
+    }
+
+    fun importDatabase(context: Context, inputStream: InputStream): List<DatabaseEntry> {
+        val rows = csvReader().readAll(inputStream)
+        var database = emptyList<DatabaseEntry>()
+        replaceCsvIfValid(file(context, "database.csv"), rows) {
+            database = parseDatabaseRows(rows, context)
+        }
+        return database
     }
 
     fun writeDatabase(context: Context, database: List<DatabaseEntry>) {
@@ -35,13 +42,19 @@ class AppCsvStore {
 
     fun readArchive(context: Context): Archive {
         return try {
-            val rows = csvReader().readAll(file(context, "archive.csv").inputStream())
-            check(rows.isNotEmpty()) { context.getString(R.string.archive) + ": " + context.getString(R.string.csv_wrong_number_fields) }
-            check(rows[0].size == 10) { context.getString(R.string.archive) + ": " + context.getString(R.string.csv_wrong_number_fields) }
-            Archive.fromCSV(rows, context)
+            parseArchiveRows(csvReader().readAll(file(context, "archive.csv").inputStream()), context)
         } catch (_: CSVFieldNumDifferentException) {
             throw IllegalStateException(context.getString(R.string.archive) + ": " + context.getString(R.string.csv_wrong_number_fields))
         }
+    }
+
+    fun importArchive(context: Context, inputStream: InputStream): Archive {
+        val rows = csvReader().readAll(inputStream)
+        var archive = Archive(context = context)
+        replaceCsvIfValid(file(context, "archive.csv"), rows) {
+            archive = parseArchiveRows(rows, context)
+        }
+        return archive
     }
 
     fun writeArchive(context: Context, archive: Archive) {
@@ -68,10 +81,7 @@ class AppCsvStore {
         return try {
             val goalsFile = file(context, "goals.csv")
             if (!goalsFile.exists()) return null
-            val rows = goalsFile.readLines()
-                .filter { it.isNotBlank() }
-                .map { line -> line.split(",") }
-            GoalsCsv.fromRows(rows)
+            GoalsCsv.fromRows(readGoalsRows(goalsFile))
         } catch (_: CSVFieldNumDifferentException) {
             throw IllegalStateException("Goals: " + context.getString(R.string.csv_wrong_number_fields))
         }
@@ -131,6 +141,36 @@ class AppCsvStore {
     private fun file(context: Context, filename: String): File {
         val folder = context.getExternalFilesDir(null) ?: context.filesDir
         return File(folder, filename)
+    }
+
+    internal fun readGoalsRows(goalsFile: File): List<List<String>> {
+        return goalsFile.readLines()
+            .filter { it.isNotBlank() }
+            .map { line -> csvReader().readAll(line).single() }
+    }
+
+    private fun parseDatabaseRows(rows: List<List<String>>, context: Context): List<DatabaseEntry> {
+        check(rows.isNotEmpty()) { context.getString(R.string.database) + ": " + context.getString(R.string.csv_wrong_number_fields) }
+        check(rows[0].size == 11) { context.getString(R.string.database) + ": " + context.getString(R.string.csv_wrong_number_fields) }
+        return rows.drop(1).map { csvLine -> DatabaseEntry.fromCSV(csvLine, context) }
+    }
+
+    private fun parseArchiveRows(rows: List<List<String>>, context: Context): Archive {
+        check(rows.isNotEmpty()) { context.getString(R.string.archive) + ": " + context.getString(R.string.csv_wrong_number_fields) }
+        check(rows[0].size == 10) { context.getString(R.string.archive) + ": " + context.getString(R.string.csv_wrong_number_fields) }
+        return Archive.fromCSV(rows, context)
+    }
+
+    internal fun replaceCsvIfValid(target: File, rows: List<List<String>>, validate: () -> Unit) {
+        validate()
+        val temp = File(target.parentFile ?: target.absoluteFile.parentFile, "${target.name}.tmp")
+        csvWriter().open(temp) {
+            rows.forEach { writeRow(it) }
+        }
+        if (!temp.renameTo(target)) {
+            temp.copyTo(target, overwrite = true)
+            temp.delete()
+        }
     }
 
     private fun List<String>.toTheme(): AppTheme {

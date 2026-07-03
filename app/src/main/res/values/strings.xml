@@ -42,9 +42,9 @@
     <string name="date_pattern_short">dd MMM</string>
     <string name="day">Day</string>
     <string name="dialog_archive_clear">You are about to delete all your Archive Entries. This is permanent and cannot be undone.</string>
-    <string name="dialog_archive_import">Importing an Archive file overrides the old file in any case, even if the new file might not be valid.</string>
+    <string name="dialog_archive_import">Importing an Archive file replaces the current Archive only after the selected file passes validation.</string>
     <string name="confirmation">Confirmation</string>
-    <string name="dialog_database_import">Importing a Database file overrides the old file in any case, even if the new file might not be valid.</string>
+    <string name="dialog_database_import">Importing a Database file replaces the current Database only after the selected file passes validation.</string>
     <string name="dialog_health_connect_sync">This will sync your full Archive to Health Connect. If this app has previously created Health Connect Entries for days that are part of the current in-app Archive, these Health Connect Entries will be overwritten. Health Connect Entries for days that are NOT part of the current in-app Archive will not be affected.\n\nNote that for Archives containing multiple years, this process can take 10 minutes and more. To ensure a complete sync, you should not use your phone for other things during this time.</string>
     <string name="dialog_database_reset">You are about to reset your Database to factory state. All the Database Entries you have added will be permanently lost.</string>
 

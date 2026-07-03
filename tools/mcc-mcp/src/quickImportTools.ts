@@ -13,8 +13,8 @@ export function registerQuickImportTools(server: McpServer, ctx: ToolContext) {
   server.registerTool(
     "mcc_quick_import_preview",
     {
-      title: "Preview Quick Add import",
-      description: "Parse a ChatGPT nutrition blurb through the app's real Quick Add parser without writing.",
+      title: "Preview Add Meal import",
+      description: "Parse a ChatGPT nutrition blurb through the app's real Add Meal parser without writing.",
       inputSchema: QuickImportInput,
       annotations: { readOnlyHint: false, idempotentHint: true, openWorldHint: false },
     },
@@ -24,8 +24,8 @@ export function registerQuickImportTools(server: McpServer, ctx: ToolContext) {
   server.registerTool(
     "mcc_quick_import_commit",
     {
-      title: "Commit Quick Add import",
-      description: "Commit a Quick Add import through the app's real write path. Can write local DB/day rows and Health Connect.",
+      title: "Commit Add Meal import",
+      description: "Commit an Add Meal import through the app's real write path. Can write local DB/day rows and Health Connect.",
       inputSchema: QuickImportInput,
       annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
     },

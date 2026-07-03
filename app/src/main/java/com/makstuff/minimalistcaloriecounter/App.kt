@@ -275,12 +275,9 @@ fun App(
         contract = ActivityResultContracts.OpenDocument(),
         onResult = { uri ->
             try {
-                val folder = context.getExternalFilesDir(null) ?: context.filesDir
-                uri?.let { context.contentResolver.openInputStream(it) }?.copyTo(
-                    File(folder, "database.csv")
-                        .outputStream()
-                )
-                viewModel.databaseUpdateFromCSV(context)
+                uri?.let { context.contentResolver.openInputStream(it) }?.use { inputStream ->
+                    viewModel.databaseImportCSV(context, inputStream)
+                }
                 Toast.makeText(
                     context, context.getString(R.string.database) + ": " + context.getString(R.string.import_successful), Toast.LENGTH_LONG
                 ).show()
@@ -306,12 +303,9 @@ fun App(
         contract = ActivityResultContracts.OpenDocument(),
         onResult = { uri ->
             try {
-                val folder = context.getExternalFilesDir(null) ?: context.filesDir
-                uri?.let { context.contentResolver.openInputStream(it) }?.copyTo(
-                    File(folder, "archive.csv")
-                        .outputStream()
-                )
-                viewModel.archiveUpdateFromCSV(context)
+                uri?.let { context.contentResolver.openInputStream(it) }?.use { inputStream ->
+                    viewModel.archiveImportCSV(context, inputStream)
+                }
                 Toast.makeText(
                     context, context.getString(R.string.archive) + ": " + context.getString(R.string.import_successful), Toast.LENGTH_LONG
                 ).show()
@@ -1811,14 +1805,14 @@ fun App(
                     )
                     Spacer(modifier = Modifier.height(24.dp))
                     LinearProgressIndicator(
-                        progress = { uiState.healthConnectSyncProgress ?: 0f },
+                        progress = { uiState.healthConnectSyncProgress },
                         modifier = Modifier.fillMaxWidth(),
                         strokeCap = androidx.compose.ui.graphics.StrokeCap.Round
                     )
                 }
             },
             confirmButton = {
-                if ((uiState.healthConnectSyncProgress ?: 0f) >= 1f) {
+                if (uiState.healthConnectSyncProgress >= 1f) {
                     ButtonText(
                         text = stringResource(R.string.button_finish),
                         onClick = { viewModel.finishHealthConnectSync() }
@@ -1847,7 +1841,7 @@ fun App(
                 )
             },
             title = { Text(stringResource(R.string.confirmation)) },
-            text = { Text(stringResource(R.string.health_connect_sync_error, uiState.healthConnectSyncMessage ?: "")) }
+            text = { Text(stringResource(R.string.health_connect_sync_error, uiState.healthConnectSyncMessage)) }
         )
     }
 }
