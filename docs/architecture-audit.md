@@ -11,7 +11,7 @@ Generated output, Gradle build folders, `node_modules`, and IDE metadata are exc
 | `app/src/main/java/com/makstuff/minimalistcaloriecounter/App.kt` | 2022 | App shell / route wiring / UI | High |
 | `app/src/main/java/com/makstuff/minimalistcaloriecounter/ui/screens/ScreenQuickImport.kt` | 1544 | Compose screen and components | Medium, UI-file exception applies |
 | `app/src/main/java/com/makstuff/minimalistcaloriecounter/ui/screens/ScreenHealthConnectNutrition.kt` | 977 | Compose screen and components | Medium, UI-file exception applies |
-| `app/src/main/java/com/makstuff/minimalistcaloriecounter/ui/screens/ScreenGoals.kt` | 917 | Compose screen and components | Medium, UI-file exception applies |
+| `app/src/main/java/com/makstuff/minimalistcaloriecounter/ui/screens/ScreenGoals.kt` | 1029 | Compose screen and components | Medium, UI-file exception applies |
 
 All non-UI files touched in this cleanup are now under the 300-line cap:
 
@@ -88,6 +88,7 @@ All non-UI files touched in this cleanup are now under the 300-line cap:
 - Added day check-in text export to Downloads and extracted a shared Downloads text writer for Health Connect CSV and check-in exports.
 - Added richer Goals recommendation history metadata and a compact history card so applied targets show their BMR/TDEE and measurement context.
 - Added explicit Goals Sunday recalculation status with a testable schedule helper and a visible recalculation card.
+- Added Goals trend/adherence cards backed by recommendation-history body metrics and the currently loaded Health Connect meals day.
 
 ## Recommended Extraction Order
 

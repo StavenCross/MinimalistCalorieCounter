@@ -83,6 +83,10 @@ import com.makstuff.minimalistcaloriecounter.classes.GoalValueSource
 import com.makstuff.minimalistcaloriecounter.classes.MacroTargets
 import com.makstuff.minimalistcaloriecounter.classes.WeeklyWeightLossTarget
 import com.makstuff.minimalistcaloriecounter.essentials.toFormattedString
+import com.makstuff.minimalistcaloriecounter.ui.model.GoalTrendCard
+import com.makstuff.minimalistcaloriecounter.ui.model.goalAdherenceCards
+import com.makstuff.minimalistcaloriecounter.ui.model.goalBodyTrendCards
+import com.makstuff.minimalistcaloriecounter.ui.model.sumNutrition
 import com.makstuff.minimalistcaloriecounter.ui.reused.MacroHintBox
 import com.makstuff.minimalistcaloriecounter.ui.reused.SheetTitle
 import com.makstuff.minimalistcaloriecounter.ui.reused.SurfacePanel
@@ -119,6 +123,8 @@ fun ScreenGoals(
     val goals = uiState.goals
     val activeTargets = goals.activeTargetsFor(LocalDate.now())
     val recalculationStatus = GoalRecalculationSchedule.status(goals)
+    val bodyTrendCards = goalBodyTrendCards(goals)
+    val adherenceCards = goalAdherenceCards(uiState.healthConnectViewerMeals.sumNutrition(), activeTargets)
 
     if (goals.settingsVisible) {
         GoalsSettingsSheet(
@@ -185,6 +191,14 @@ fun ScreenGoals(
 
         item {
             ProfileSnapshotCard(uiState = uiState)
+        }
+
+        item {
+            GoalTrendCards(
+                bodyCards = bodyTrendCards,
+                adherenceCards = adherenceCards,
+                adherenceDate = uiState.healthConnectViewerDate,
+            )
         }
 
         item { Spacer(Modifier.height(8.dp)) }
@@ -515,6 +529,57 @@ private fun MetricLine(label: String, measurement: GoalMeasurement, suffix: Stri
             style = MaterialTheme.typography.bodyMedium,
             fontWeight = FontWeight.SemiBold,
         )
+    }
+}
+
+@Composable
+private fun GoalTrendCards(
+    bodyCards: List<GoalTrendCard>,
+    adherenceCards: List<GoalTrendCard>,
+    adherenceDate: LocalDate,
+) {
+    SurfacePanel(
+        backgroundColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+        borderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.16f),
+        contentPadding = 14,
+        verticalSpacing = 10,
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            AccentIcon(Icons.Default.MonitorHeart, AccentProfile, 42)
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text("Trends and adherence", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Text(
+                    text = "Adherence from loaded meals on $adherenceDate",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+        if (bodyCards.isEmpty()) {
+            Text("Body trends need at least one saved measurement.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        } else {
+            bodyCards.forEach { GoalTrendRow(it) }
+        }
+        adherenceCards.take(3).forEach { GoalTrendRow(it) }
+    }
+}
+
+@Composable
+private fun GoalTrendRow(card: GoalTrendCard) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text(card.label, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold)
+            Text(card.detail, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        Text(card.value, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
     }
 }
 
