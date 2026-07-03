@@ -46,7 +46,7 @@ class HealthConnectNutritionMapperTest {
     }
 
     @Test
-    fun existingHistoricalMealFingerprintUsesNutritionRecordContents() {
+    fun nutritionSignatureFingerprintUsesNutritionRecordContents() {
         val payload = QuickImportHealthPayload(
             dateTime = LocalDateTime.of(2026, 7, 3, 9, 0),
             mealType = MealType.MEAL_TYPE_BREAKFAST,
@@ -61,8 +61,8 @@ class HealthConnectNutritionMapperTest {
             name = "100 g oats",
         )
 
-        val first = payload.toNutritionRecord(zone).existingHistoricalMealFingerprint(zone)
-        val second = payload.copy(protein = 6.0).toNutritionRecord(zone).existingHistoricalMealFingerprint(zone)
+        val first = payload.toNutritionRecord(zone).toNutritionSignature(zone).fingerprint
+        val second = payload.copy(protein = 6.0).toNutritionRecord(zone).toNutritionSignature(zone).fingerprint
 
         assert(first.isNotBlank())
         assert(first != second)

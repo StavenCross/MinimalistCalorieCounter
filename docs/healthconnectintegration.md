@@ -16,13 +16,15 @@ Core meal logging requests:
 
 The export workflow also requests broad Health Connect read permissions for supported record types, plus historical-data access, so it can produce a review CSV for external analysis.
 
-Read Nutrition is needed so the app can display Meals and avoid historical-import duplicates. Weight, height, body-fat, and lean-mass reads support Goals. Health Connect permissions remain user controlled and cannot be silently granted by automation.
+Read Nutrition is needed so the app can display Meals and avoid duplicate historical-import or Add Meal writes. Weight, height, body-fat, and lean-mass reads support Goals. Health Connect permissions remain user controlled and cannot be silently granted by automation.
 
 ## Add Meal Writes
 
 Add Meal writes one Health Connect `NutritionRecord` per parsed food.
 
-Add Meal also records each Health Connect write intent in `quick_import_outbox.csv`. The outbox tracks deterministic client record ids, intended meal timestamp, meal type, stored Health Connect payloads, attempt count, last error, and whether the write is pending, retrying, synced, or failed. This keeps local backup state visible when local database/day writes succeed but Health Connect is unavailable or missing permissions. Retry uses the stored payloads and the same deterministic client record ids.
+Add Meal also records each Health Connect write intent in `quick_import_outbox.csv`. The outbox tracks deterministic client record ids, intended meal timestamp, meal type, stored Health Connect payloads, attempt count, last error, and whether the write is pending, retrying, synced, or failed. This keeps local backup state visible when local database/day writes succeed but Health Connect is unavailable or missing permissions.
+
+Before writing, Add Meal reads app-owned Nutrition records for the affected date and skips payloads that already exist by deterministic client record id or matching nutrition fingerprint. Retry uses the stored payloads and the same deterministic client record ids, so an already-written retry reconciles to synced without duplicating Health Connect records.
 
 Each food record includes:
 

@@ -166,7 +166,7 @@ class HealthConnectManager(private val context: Context) {
         if (!isSdkAvailable()) return QuickImportHealthWriteResult.HealthConnectUnavailable
         val client = getClient() ?: return QuickImportHealthWriteResult.HealthConnectUnavailable
 
-        if (!hasWritePermissions()) return QuickImportHealthWriteResult.PermissionsMissing
+        if (!hasNutritionMutationPermissions()) return QuickImportHealthWriteResult.PermissionsMissing
         return HealthConnectNutritionService(context, client).insertQuickMealNutrition(payloads)
     }
 

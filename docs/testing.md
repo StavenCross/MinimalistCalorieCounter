@@ -8,7 +8,7 @@ Run:
 ./gradlew testDebugUnitTest --console=plain
 ```
 
-Coverage includes Add Meal parsing, Add Meal planning, Add Meal outbox state/CSV/retry payload behavior, historical import parsing, and Health Connect historical mapping behavior.
+Coverage includes Add Meal parsing, Add Meal planning, Add Meal outbox state/CSV/retry payload behavior, historical import parsing, Health Connect nutrition mapping, and duplicate reconciliation helpers.
 
 ## Android Instrumentation Tests
 

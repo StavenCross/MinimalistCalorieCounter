@@ -1,14 +1,10 @@
 package com.makstuff.minimalistcaloriecounter.health
 
-import androidx.health.connect.client.records.MealType
 import androidx.health.connect.client.records.NutritionRecord
 import androidx.health.connect.client.records.metadata.Metadata
 import androidx.health.connect.client.units.Energy
 import androidx.health.connect.client.units.Mass
-import com.makstuff.minimalistcaloriecounter.classes.HistoricalMealImporter
 import com.makstuff.minimalistcaloriecounter.classes.QuickImportHealthPayload
-import com.makstuff.minimalistcaloriecounter.classes.QuickImportMealType
-import com.makstuff.minimalistcaloriecounter.classes.QuickImportNutrients
 import java.time.LocalDateTime
 import java.time.ZoneId
 
@@ -50,30 +46,5 @@ internal fun NutritionRecord.toHealthConnectNutritionMeal(zoneId: ZoneId = ZoneI
         saturatedFat = saturatedFat?.inGrams ?: 0.0,
         dietaryFiber = dietaryFiber?.inGrams ?: 0.0,
         mealType = mealType,
-    )
-}
-
-internal fun NutritionRecord.existingHistoricalMealFingerprint(zoneId: ZoneId = ZoneId.systemDefault()): String {
-    val dateTime = LocalDateTime.ofInstant(startTime, zoneId)
-    val mealType = when (mealType) {
-        MealType.MEAL_TYPE_BREAKFAST -> QuickImportMealType.Breakfast
-        MealType.MEAL_TYPE_LUNCH -> QuickImportMealType.Lunch
-        MealType.MEAL_TYPE_DINNER -> QuickImportMealType.Dinner
-        MealType.MEAL_TYPE_SNACK -> QuickImportMealType.Snack
-        else -> QuickImportMealType.inferFrom(dateTime)
-    }
-    return HistoricalMealImporter.fingerprint(
-        dateTime = dateTime,
-        mealType = mealType,
-        name = name ?: "",
-        nutrients = QuickImportNutrients(
-            energy = energy?.inKilocalories ?: 0.0,
-            carbohydrate = totalCarbohydrate?.inGrams ?: 0.0,
-            sugar = sugar?.inGrams ?: 0.0,
-            protein = protein?.inGrams ?: 0.0,
-            fat = totalFat?.inGrams ?: 0.0,
-            saturatedFat = saturatedFat?.inGrams ?: 0.0,
-            fiber = dietaryFiber?.inGrams ?: 0.0,
-        ),
     )
 }
