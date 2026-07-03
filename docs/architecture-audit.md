@@ -84,6 +84,7 @@ All non-UI files touched in this cleanup are now under the 300-line cap:
 - Added Meals review day/meal summary generation as testable UI model helpers; the screen owns only clipboard copy state.
 - Added Meals review collapse helpers so long meals start compact and expand inline without moving that logic into the screen.
 - Added meal-level Health Connect deletes by forwarding the selected meal group's app-owned record ids through the existing delete path.
+- Added meal repeat preparation through Add Meal so repeat writes reuse the existing parser, outbox, and Health Connect commit flow.
 
 ## Recommended Extraction Order
 

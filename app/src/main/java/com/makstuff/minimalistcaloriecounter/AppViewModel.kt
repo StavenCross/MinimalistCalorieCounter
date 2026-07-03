@@ -14,6 +14,7 @@ import com.makstuff.minimalistcaloriecounter.classes.GoalSex
 import com.makstuff.minimalistcaloriecounter.classes.Nutrients
 import com.makstuff.minimalistcaloriecounter.classes.QuickImportMealType
 import com.makstuff.minimalistcaloriecounter.classes.WeeklyWeightLossTarget
+import com.makstuff.minimalistcaloriecounter.health.HealthConnectNutritionMeal
 import com.makstuff.minimalistcaloriecounter.health.HealthConnectManager
 import com.makstuff.minimalistcaloriecounter.health.HealthConnectExportMode
 import com.makstuff.minimalistcaloriecounter.health.HealthConnectCleanupMode
@@ -43,6 +44,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     private val goalsActions = AppViewModelGoalsActions(environment)
     private val quickImportActions = AppViewModelQuickImportActions(environment, this)
     private val quickImportRetryActions = AppViewModelQuickImportRetryActions(environment, this)
+    private val quickImportRepeatActions = AppViewModelQuickImportRepeatActions(environment)
     private val persistenceActions = AppViewModelPersistenceActions(environment, this)
     private val healthConnectActions = AppViewModelHealthConnectActions(environment, this)
     private val healthConnectMealActions = AppViewModelHealthConnectMealActions(environment, this)
@@ -203,6 +205,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     fun updateQuickImportSnackOverride(enabled: Boolean) = quickImportActions.updateSnackOverride(enabled)
 
     fun updateQuickImportMealTypeOverride(mealType: QuickImportMealType) = quickImportActions.updateMealTypeOverride(mealType)
+
+    fun prepareQuickImportRepeat(foods: List<HealthConnectNutritionMeal>) = quickImportRepeatActions.prepare(foods)
 
     fun toggleQuickImportAddFoodsToDatabase() = quickImportActions.toggleAddFoodsToDatabase()
 
