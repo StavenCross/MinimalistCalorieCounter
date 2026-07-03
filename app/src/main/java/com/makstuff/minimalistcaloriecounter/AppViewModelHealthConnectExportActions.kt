@@ -1,5 +1,4 @@
 package com.makstuff.minimalistcaloriecounter
-
 import com.makstuff.minimalistcaloriecounter.health.HealthConnectExportResult
 import com.makstuff.minimalistcaloriecounter.health.HealthConnectExportMode
 import com.makstuff.minimalistcaloriecounter.health.HealthConnectCleanupMode
@@ -8,11 +7,7 @@ import com.makstuff.minimalistcaloriecounter.health.HistoricalMealHealthConnectR
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.LocalDate
-
-internal class AppViewModelHealthConnectExportActions(
-    private val env: AppViewModelEnvironment,
-    private val viewModel: AppViewModel,
-) {
+internal class AppViewModelHealthConnectExportActions(private val env: AppViewModelEnvironment, private val viewModel: AppViewModel) {
     fun updateCleanupStartDate(date: LocalDate) {
         env.state.update {
             it.copy(
@@ -79,6 +74,7 @@ internal class AppViewModelHealthConnectExportActions(
     fun exportRange() {
         val state = env.uiState
         if (state.healthConnectExportInProgress) return
+        val startedAt = java.time.LocalDateTime.now()
         env.state.update {
             it.copy(
                 healthConnectExportInProgress = true,
@@ -90,7 +86,7 @@ internal class AppViewModelHealthConnectExportActions(
             )
         }
         env.scope.launch {
-            when (val result = env.healthConnectManager.exportHealthConnectCsv(
+            val result = env.healthConnectManager.exportHealthConnectCsv(
                 startDate = state.healthConnectExportStartDate,
                 endDate = state.healthConnectExportEndDate,
                 mode = state.healthConnectExportMode,
@@ -105,7 +101,9 @@ internal class AppViewModelHealthConnectExportActions(
                         )
                     }
                 },
-            )) {
+            )
+            env.recordHealthConnectExportJob(state.healthConnectExportStartDate, state.healthConnectExportEndDate, state.healthConnectExportMode, state.healthConnectExportRedacted, result, startedAt)
+            when (result) {
                 is HealthConnectExportResult.Success -> {
                     env.state.update {
                         it.copy(
@@ -160,6 +158,7 @@ internal class AppViewModelHealthConnectExportActions(
             env.state.update { it.copy(historicalMealImportMessage = "No matching Health Connect meal/nutrition records to remove.") }
             return
         }
+        val startedAt = java.time.LocalDateTime.now()
         env.state.update {
             it.copy(
                 historicalMealImportInProgress = true,
@@ -170,7 +169,7 @@ internal class AppViewModelHealthConnectExportActions(
             )
         }
         env.scope.launch {
-            when (val result = env.healthConnectManager.deleteNutritionRecordsInRange(
+            val result = env.healthConnectManager.deleteNutritionRecordsInRange(
                 startDate = state.healthConnectNutritionCleanupStartDate,
                 endDate = state.healthConnectNutritionCleanupEndDate,
                 mode = state.healthConnectNutritionCleanupMode,
@@ -183,7 +182,9 @@ internal class AppViewModelHealthConnectExportActions(
                         )
                     }
                 },
-            )) {
+            )
+            env.recordHealthConnectDeleteJob(state.healthConnectNutritionCleanupStartDate, state.healthConnectNutritionCleanupEndDate, state.healthConnectNutritionCleanupMode, result, startedAt)
+            when (result) {
                 is HistoricalMealHealthConnectResult.Success -> {
                     env.state.update {
                         it.copy(

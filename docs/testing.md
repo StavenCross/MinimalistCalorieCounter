@@ -8,7 +8,7 @@ Run:
 ./gradlew testDebugUnitTest --console=plain
 ```
 
-Coverage includes Add Meal parsing, Add Meal planning, Add Meal outbox state/CSV/retry payload behavior, Add Meal repeat preparation, Add Meal local backup mapping, historical import parsing, Health Connect nutrition mapping, duplicate reconciliation helpers, Health Connect export mode/redaction behavior, day check-in export naming, cleanup mode classification, Goals recommendation history metadata, Goals Sunday recalculation scheduling, Goals trend/adherence summaries, Add Meal check-in summary formatting, Meals review summary formatting, Meals collapse/expand visibility rules, and Room foundation seed/mapping behavior.
+Coverage includes Add Meal parsing, Add Meal planning, Add Meal outbox state/CSV/retry payload behavior, Add Meal repeat preparation, Add Meal local backup mapping, historical import parsing, Health Connect nutrition mapping, duplicate reconciliation helpers, Health Connect export mode/redaction behavior, Health Connect export/delete job mapping, day check-in export naming, cleanup mode classification, Goals recommendation history metadata, Goals Sunday recalculation scheduling, Goals trend/adherence summaries, Add Meal check-in summary formatting, Meals review summary formatting, Meals collapse/expand visibility rules, and Room foundation seed/mapping behavior.
 
 Room-focused tests can be run with:
 
