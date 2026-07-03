@@ -101,6 +101,7 @@ fun ScreenHealthConnectNutrition(
     onDateChange: (LocalDate) -> Unit,
     onRefresh: () -> Unit,
     onDeleteMeal: (String) -> Unit,
+    onDeleteMealGroup: (List<String>) -> Unit,
 ) {
     LaunchedEffect(Unit) {
         onRefresh()
@@ -144,6 +145,10 @@ fun ScreenHealthConnectNutrition(
             onCopy = {
                 clipboard.setText(AnnotatedString(mealGroupSummaryText(group)))
                 mealSummaryCopied = true
+            },
+            onDelete = {
+                selectedMealGroup = null
+                onDeleteMealGroup(group.foods.map { it.recordId })
             },
             onFoodClick = {
                 selectedMealGroup = null
@@ -827,6 +832,7 @@ private fun MealDetailDialog(
     copied: Boolean,
     onDismiss: () -> Unit,
     onCopy: () -> Unit,
+    onDelete: () -> Unit,
     onFoodClick: (HealthConnectNutritionMeal) -> Unit,
 ) {
     val calories = group.foods.sumOf { it.energy }
@@ -900,11 +906,33 @@ private fun MealDetailDialog(
                     }
                 }
             }
-            Button(
-                onClick = onDismiss,
+            Row(
                 modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                Text("Close")
+                TextButton(
+                    onClick = onDelete,
+                    modifier = Modifier
+                        .weight(1f)
+                        .testTag("meals_delete_meal_group"),
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Delete,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.size(18.dp),
+                    )
+                    Text(
+                        text = "Delete meal",
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                }
+                Button(
+                    onClick = onDismiss,
+                    modifier = Modifier.weight(1f),
+                ) {
+                    Text("Close")
+                }
             }
         }
     }

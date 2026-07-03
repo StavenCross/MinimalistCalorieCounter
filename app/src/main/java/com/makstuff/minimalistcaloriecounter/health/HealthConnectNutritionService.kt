@@ -50,10 +50,15 @@ internal class HealthConnectNutritionService(
     }
 
     suspend fun deleteNutritionMeal(recordId: String): HealthConnectDeleteResult {
+        return deleteNutritionMeals(listOf(recordId))
+    }
+
+    suspend fun deleteNutritionMeals(recordIds: List<String>): HealthConnectDeleteResult {
+        if (recordIds.isEmpty()) return HealthConnectDeleteResult.Success
         return try {
             client.deleteRecords(
                 NutritionRecord::class,
-                recordIdsList = listOf(recordId),
+                recordIdsList = recordIds,
                 clientRecordIdsList = emptyList(),
             )
             HealthConnectDeleteResult.Success

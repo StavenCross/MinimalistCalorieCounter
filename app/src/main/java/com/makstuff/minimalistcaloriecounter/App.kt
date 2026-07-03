@@ -1192,6 +1192,7 @@ fun App(
                     onDateChange = { viewModel.updateHealthConnectViewerDate(it) },
                     onRefresh = { viewModel.readHealthConnectNutritionMeals() },
                     onDeleteMeal = { viewModel.deleteHealthConnectNutritionMeal(it) },
+                    onDeleteMealGroup = { viewModel.deleteHealthConnectNutritionMeals(it) },
                 )
             }
 

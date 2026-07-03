@@ -15,7 +15,7 @@ Generated output, Gradle build folders, `node_modules`, and IDE metadata are exc
 
 All non-UI files touched in this cleanup are now under the 300-line cap:
 
-- `HealthConnectManager.kt`: 271 lines after extracting export, nutrition, archive sync, mapper, goal-profile reader, and permission-scope policy helpers.
+- `HealthConnectManager.kt`: 300 lines after extracting export, nutrition, archive sync, mapper, goal-profile reader, and permission-scope policy helpers.
 - `AutomationBootstrap.kt`: 298 lines after extracting HTTP helpers, JSON serializers, and route aliases.
 - `tools/mcc-mcp/src/server.ts`: 23 lines after splitting tool registration groups.
 - `AppViewModel.kt`: 282 lines after extracting feature action classes for Health Connect, Goals, Add Meal, persistence, database, archive/day, and UI chrome.
@@ -83,6 +83,7 @@ All non-UI files touched in this cleanup are now under the 300-line cap:
 - Added Add Meal today check-in summary generation as a testable UI model helper; the screen only handles clipboard copy state.
 - Added Meals review day/meal summary generation as testable UI model helpers; the screen owns only clipboard copy state.
 - Added Meals review collapse helpers so long meals start compact and expand inline without moving that logic into the screen.
+- Added meal-level Health Connect deletes by forwarding the selected meal group's app-owned record ids through the existing delete path.
 
 ## Recommended Extraction Order
 
