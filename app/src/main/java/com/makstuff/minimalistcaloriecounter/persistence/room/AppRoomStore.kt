@@ -67,6 +67,14 @@ class AppRoomStore(context: Context) {
         dao.upsert(AppPreferenceEntity(KEY_HEALTH_TOASTS, toastsEnabled.toString(), updatedAt))
     }
 
+    suspend fun writeLocalMealBackups(meals: List<LocalMealBackupEntity>) {
+        database.localMealBackupDao().upsert(meals)
+    }
+
+    suspend fun localMealBackupsForDate(date: java.time.LocalDate): List<LocalMealBackupEntity> {
+        return database.localMealBackupDao().mealsForDate(date)
+    }
+
     fun close() {
         database.close()
     }

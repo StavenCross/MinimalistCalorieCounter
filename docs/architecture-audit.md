@@ -101,6 +101,7 @@ All non-UI files touched in this cleanup are now under the 300-line cap:
   - Add Meal outbox reads Room first, falls back to CSV, and seeds Room during migration.
   - App preferences read Room first, fall back to CSV, and seed Room during migration.
   - Goals, Add Meal outbox, and app preference writes are mirrored to CSV while Room migration continues.
+  - Add Meal writes local meal backup rows to Room for every committed meal food.
   - Added a real instrumentation round-trip test for `AppRoomStore`.
 
 ## Recommended Extraction Order

@@ -7,9 +7,13 @@ import com.makstuff.minimalistcaloriecounter.classes.DatabaseEntry
 import com.makstuff.minimalistcaloriecounter.classes.Nutrients
 import com.makstuff.minimalistcaloriecounter.classes.QuickImportDatabaseEntryDraft
 import com.makstuff.minimalistcaloriecounter.classes.QuickImportHealthWriteResult
+import com.makstuff.minimalistcaloriecounter.classes.QuickImportMeal
+import com.makstuff.minimalistcaloriecounter.classes.QuickImportMealType
 import com.makstuff.minimalistcaloriecounter.classes.QuickImportOutbox
 import com.makstuff.minimalistcaloriecounter.classes.QuickImportOutboxItem
+import com.makstuff.minimalistcaloriecounter.persistence.room.LocalMealBackupMapper
 import kotlinx.coroutines.flow.update
+import java.time.LocalDateTime
 
 internal fun QuickImportDatabaseEntryDraft.toDatabaseEntry(context: Context): DatabaseEntry {
     return DatabaseEntry(
@@ -46,5 +50,24 @@ internal fun AppViewModelEnvironment.writeQuickImportOutboxItem(context: Context
     }
     state.update { currentState ->
         currentState.copy(quickImportOutbox = items)
+    }
+}
+
+internal suspend fun AppViewModelEnvironment.writeLocalMealBackup(
+    meal: QuickImportMeal,
+    dateTime: LocalDateTime,
+    mealType: QuickImportMealType,
+    clientRecordIds: List<String?> = emptyList(),
+) {
+    runCatching {
+        roomStore.writeLocalMealBackups(
+            LocalMealBackupMapper.toEntities(
+                meal = meal,
+                dateTime = dateTime,
+                mealType = mealType,
+                clientRecordIds = clientRecordIds,
+                createdAt = LocalDateTime.now(),
+            )
+        )
     }
 }
