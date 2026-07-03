@@ -34,7 +34,13 @@ internal class HealthConnectNutritionService(
 
     suspend fun insertQuickMealNutrition(payloads: List<QuickImportHealthPayload>): QuickImportHealthWriteResult {
         return try {
-            client.insertRecords(payloads.map { it.toNutritionRecord() })
+            val existingSignatures = payloads.map { it.dateTime.toLocalDate() }
+                .distinct()
+                .flatMap { date -> readNutritionRecords(date).map { it.toNutritionSignature() } }
+            val candidates = pendingNutritionPayloads(payloads, existingSignatures)
+            if (candidates.isNotEmpty()) {
+                client.insertRecords(candidates.map { it.toNutritionRecord() })
+            }
             QuickImportHealthWriteResult.Success
         } catch (e: kotlinx.coroutines.CancellationException) {
             throw e
@@ -67,8 +73,9 @@ internal class HealthConnectNutritionService(
             val existingClientRecordIds = mutableSetOf<String>()
             foods.map { it.dateTime.toLocalDate() }.distinct().forEach { date ->
                 readNutritionRecords(date).forEach { record ->
-                    record.metadata.clientRecordId?.let(existingClientRecordIds::add)
-                    existingFingerprints += record.existingHistoricalMealFingerprint()
+                    val signature = record.toNutritionSignature()
+                    signature.clientRecordId?.let(existingClientRecordIds::add)
+                    existingFingerprints += signature.fingerprint
                 }
             }
 
