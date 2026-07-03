@@ -24,6 +24,8 @@ Run on an emulator:
 ./gradlew connectedDebugAndroidTest --console=plain
 ```
 
+Room runtime round-trip coverage is in `AppRoomStoreTest`. If connected Compose tests are unstable, `assembleDebugAndroidTest` still verifies this test compiles into the instrumentation APK.
+
 ## Fold Emulator Smoke
 
 Existing scripts:

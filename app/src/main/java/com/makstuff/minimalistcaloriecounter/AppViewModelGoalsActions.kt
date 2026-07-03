@@ -200,5 +200,8 @@ internal class AppViewModelGoalsActions(private val env: AppViewModelEnvironment
 
     private fun writeGoals() {
         env.csvStore.writeGoals(env.context, env.uiState.goals)
+        env.launchRoomWrite {
+            writeGoals(env.uiState.goals)
+        }
     }
 }

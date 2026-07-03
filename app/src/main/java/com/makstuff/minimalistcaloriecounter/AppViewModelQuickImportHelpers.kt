@@ -41,6 +41,9 @@ internal fun AppViewModelEnvironment.writeQuickImportOutboxItem(context: Context
     if (item == null) return
     val items = QuickImportOutbox.upsert(uiState.quickImportOutbox, item)
     csvStore.writeQuickImportOutbox(context, items)
+    launchRoomWrite {
+        writeQuickImportOutboxItem(item)
+    }
     state.update { currentState ->
         currentState.copy(quickImportOutbox = items)
     }
