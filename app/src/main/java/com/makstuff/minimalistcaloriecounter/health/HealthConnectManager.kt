@@ -64,6 +64,12 @@ class HealthConnectManager(private val context: Context) {
 
     val exportPermissions = exportReadPermissions
 
+    fun exportPermissionsFor(mode: HealthConnectExportMode): Set<String> {
+        return mode.recordTypes()
+            .map { HealthPermission.getReadPermission(it) }
+            .toSet() + HealthPermission.PERMISSION_READ_HEALTH_DATA_HISTORY
+    }
+
     private fun permissionSetFor(scope: HealthConnectPermissionScope): Set<String> {
         return when (scope) {
             HealthConnectPermissionScope.AllAppFeatures -> permissions
@@ -104,8 +110,13 @@ class HealthConnectManager(private val context: Context) {
         return hasPermissions(HealthConnectPermissionScope.ReadGoalProfile)
     }
 
-    suspend fun hasExportReadPermissions(): Boolean {
-        return hasPermissions(HealthConnectPermissionScope.ExportReadableData)
+    suspend fun hasExportReadPermissions(mode: HealthConnectExportMode = HealthConnectExportMode.Full): Boolean {
+        val client = getClient() ?: return false
+        return try {
+            client.permissionController.getGrantedPermissions().containsAll(exportPermissionsFor(mode))
+        } catch (_: Throwable) {
+            false
+        }
     }
 
     private suspend fun hasNutritionMutationPermissions(): Boolean {
@@ -115,14 +126,16 @@ class HealthConnectManager(private val context: Context) {
     suspend fun exportHealthConnectCsv(
         startDate: LocalDate,
         endDate: LocalDate,
+        mode: HealthConnectExportMode,
+        redacted: Boolean,
         onProgress: (Float?, Int, Int) -> Unit,
     ): HealthConnectExportResult {
         if (!isSdkAvailable()) return HealthConnectExportResult.HealthConnectUnavailable
         val client = getClient() ?: return HealthConnectExportResult.HealthConnectUnavailable
 
         return try {
-            if (!hasExportReadPermissions()) return HealthConnectExportResult.PermissionsMissing
-            HealthConnectExporter(context, client).exportCsv(startDate, endDate, onProgress)
+            if (!hasExportReadPermissions(mode)) return HealthConnectExportResult.PermissionsMissing
+            HealthConnectExporter(context, client).exportCsv(startDate, endDate, mode, redacted, onProgress)
         } catch (e: kotlinx.coroutines.CancellationException) {
             throw e
         } catch (e: Throwable) {

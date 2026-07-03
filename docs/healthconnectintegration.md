@@ -58,3 +58,13 @@ Historical import writes one Nutrition record per food row. Duplicate detection 
 ## Cleanup
 
 The Settings page can remove app-owned Health Connect Nutrition records by inclusive date range. Spreadsheet import does not auto-clear Health Connect data.
+
+## Export
+
+Settings can export Health Connect CSV files to Downloads. Export modes are:
+
+- Nutrition only
+- Nutrition and goals
+- Full Health Connect export
+
+Redacted export is enabled by default for ChatGPT check-ins. It omits Health Connect record ids, client record ids, client record version, data-origin package, recording method, last-modified time, and the raw record text while keeping dates, times, calories, macros, meal type, and available body metrics. Raw/full export remains available by turning redaction off and selecting the full mode.

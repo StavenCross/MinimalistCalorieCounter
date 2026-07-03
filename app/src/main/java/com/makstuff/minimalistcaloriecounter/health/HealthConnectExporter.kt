@@ -6,50 +6,7 @@ import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
 import androidx.health.connect.client.HealthConnectClient
-import androidx.health.connect.client.feature.ExperimentalMindfulnessSessionApi
-import androidx.health.connect.client.permission.HealthPermission
-import androidx.health.connect.client.records.ActiveCaloriesBurnedRecord
-import androidx.health.connect.client.records.BasalBodyTemperatureRecord
-import androidx.health.connect.client.records.BasalMetabolicRateRecord
-import androidx.health.connect.client.records.BloodGlucoseRecord
-import androidx.health.connect.client.records.BloodPressureRecord
-import androidx.health.connect.client.records.BodyFatRecord
-import androidx.health.connect.client.records.BodyTemperatureRecord
-import androidx.health.connect.client.records.BodyWaterMassRecord
-import androidx.health.connect.client.records.BoneMassRecord
-import androidx.health.connect.client.records.CervicalMucusRecord
-import androidx.health.connect.client.records.CyclingPedalingCadenceRecord
-import androidx.health.connect.client.records.DistanceRecord
-import androidx.health.connect.client.records.ElevationGainedRecord
-import androidx.health.connect.client.records.ExerciseSessionRecord
-import androidx.health.connect.client.records.FloorsClimbedRecord
-import androidx.health.connect.client.records.HeartRateRecord
-import androidx.health.connect.client.records.HeartRateVariabilityRmssdRecord
-import androidx.health.connect.client.records.HeightRecord
-import androidx.health.connect.client.records.HydrationRecord
-import androidx.health.connect.client.records.IntermenstrualBleedingRecord
-import androidx.health.connect.client.records.LeanBodyMassRecord
-import androidx.health.connect.client.records.MenstruationFlowRecord
-import androidx.health.connect.client.records.MenstruationPeriodRecord
-import androidx.health.connect.client.records.MindfulnessSessionRecord
-import androidx.health.connect.client.records.NutritionRecord
-import androidx.health.connect.client.records.OvulationTestRecord
-import androidx.health.connect.client.records.OxygenSaturationRecord
-import androidx.health.connect.client.records.PlannedExerciseSessionRecord
-import androidx.health.connect.client.records.PowerRecord
 import androidx.health.connect.client.records.Record
-import androidx.health.connect.client.records.RespiratoryRateRecord
-import androidx.health.connect.client.records.RestingHeartRateRecord
-import androidx.health.connect.client.records.SexualActivityRecord
-import androidx.health.connect.client.records.SkinTemperatureRecord
-import androidx.health.connect.client.records.SleepSessionRecord
-import androidx.health.connect.client.records.SpeedRecord
-import androidx.health.connect.client.records.StepsCadenceRecord
-import androidx.health.connect.client.records.StepsRecord
-import androidx.health.connect.client.records.TotalCaloriesBurnedRecord
-import androidx.health.connect.client.records.Vo2MaxRecord
-import androidx.health.connect.client.records.WeightRecord
-import androidx.health.connect.client.records.WheelchairPushesRecord
 import androidx.health.connect.client.request.ReadRecordsRequest
 import androidx.health.connect.client.time.TimeRangeFilter
 import kotlinx.coroutines.Dispatchers
@@ -65,6 +22,8 @@ internal class HealthConnectExporter(
     suspend fun exportCsv(
         startDate: LocalDate,
         endDate: LocalDate,
+        mode: HealthConnectExportMode,
+        redacted: Boolean,
         onProgress: (Float?, Int, Int) -> Unit,
     ): HealthConnectExportResult {
         return try {
@@ -74,16 +33,18 @@ internal class HealthConnectExporter(
             val end = lastDate.plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant()
             val range = TimeRangeFilter.between(start, end)
             val rows = mutableListOf<List<String>>()
+            val recordTypes = mode.recordTypes()
 
-            exportRecordTypes.forEachIndexed { index, type ->
+            recordTypes.forEachIndexed { index, type ->
                 rows += readExportRows(type, range)
                 withContext(Dispatchers.Main) {
-                    onProgress((index + 1).toFloat() / exportRecordTypes.size, index + 1, exportRecordTypes.size)
+                    onProgress((index + 1).toFloat() / recordTypes.size, index + 1, recordTypes.size)
                 }
             }
 
-            val filename = "health_connect_export_${firstDate}_${lastDate}.csv"
-            val displayPath = writeCsvToDownloads(filename, HealthConnectExportCsv.build(rows))
+            val redactionToken = if (redacted) "redacted" else "raw"
+            val filename = "health_connect_${mode.filenameToken}_${redactionToken}_${firstDate}_${lastDate}.csv"
+            val displayPath = writeCsvToDownloads(filename, HealthConnectExportCsv.build(rows, redacted))
             HealthConnectExportResult.Success(displayPath = displayPath, records = rows.size)
         } catch (e: kotlinx.coroutines.CancellationException) {
             throw e
@@ -138,158 +99,3 @@ internal class HealthConnectExporter(
         }
     }
 }
-
-internal object HealthConnectExportCsv {
-    fun build(rows: List<List<String>>): String {
-        val header = listOf(
-            "record_type",
-            "start_time",
-            "end_time",
-            "record_id",
-            "client_record_id",
-            "client_record_version",
-            "data_origin_package",
-            "recording_method",
-            "last_modified_time",
-            "name",
-            "meal_type",
-            "energy_kcal",
-            "carbs_g",
-            "protein_g",
-            "fat_g",
-            "fiber_g",
-            "weight_kg",
-            "height_cm",
-            "body_fat_percent",
-            "lean_mass_kg",
-            "raw_record",
-        )
-        return (listOf(header) + rows).joinToString("\n") { row ->
-            row.joinToString(",") { csvEscape(it) }
-        } + "\n"
-    }
-
-    private fun csvEscape(value: String): String {
-        val escaped = value.replace("\"", "\"\"")
-        return if (escaped.any { it == ',' || it == '"' || it == '\n' || it == '\r' }) {
-            "\"$escaped\""
-        } else {
-            escaped
-        }
-    }
-}
-
-private fun Record.toExportRow(recordType: String): List<String> {
-    val structured = structuredExportValues()
-    return listOf(
-        recordType,
-        structured["startTime"].orEmpty(),
-        structured["endTime"].orEmpty(),
-        metadata.id,
-        metadata.clientRecordId.orEmpty(),
-        metadata.clientRecordVersion.toString(),
-        metadata.dataOrigin.packageName,
-        metadata.recordingMethod.toString(),
-        metadata.lastModifiedTime.toString(),
-        structured["name"].orEmpty(),
-        structured["mealType"].orEmpty(),
-        structured["energyKcal"].orEmpty(),
-        structured["carbsG"].orEmpty(),
-        structured["proteinG"].orEmpty(),
-        structured["fatG"].orEmpty(),
-        structured["fiberG"].orEmpty(),
-        structured["weightKg"].orEmpty(),
-        structured["heightCm"].orEmpty(),
-        structured["bodyFatPercent"].orEmpty(),
-        structured["leanMassKg"].orEmpty(),
-        toString(),
-    )
-}
-
-private fun Record.structuredExportValues(): Map<String, String> {
-    val values = commonExportValues()
-    when (this) {
-        is NutritionRecord -> values += mapOf(
-            "name" to name.orEmpty(),
-            "mealType" to mealType.toString(),
-            "energyKcal" to (energy?.inKilocalories?.toString() ?: ""),
-            "carbsG" to (totalCarbohydrate?.inGrams?.toString() ?: ""),
-            "proteinG" to (protein?.inGrams?.toString() ?: ""),
-            "fatG" to (totalFat?.inGrams?.toString() ?: ""),
-            "fiberG" to (dietaryFiber?.inGrams?.toString() ?: ""),
-        )
-        is WeightRecord -> values["weightKg"] = weight.inKilograms.toString()
-        is HeightRecord -> values["heightCm"] = (height.inMeters * 100.0).toString()
-        is BodyFatRecord -> values["bodyFatPercent"] = percentage.value.toString()
-        is LeanBodyMassRecord -> values["leanMassKg"] = mass.inKilograms.toString()
-    }
-    return values
-}
-
-private fun Record.commonExportValues(): MutableMap<String, String> {
-    val time = callNoArgGetter("getTime")
-    val startTime = callNoArgGetter("getStartTime") ?: time
-    val endTime = callNoArgGetter("getEndTime") ?: time
-    return mutableMapOf<String, String>().apply {
-        startTime?.let { put("startTime", it) }
-        endTime?.let { put("endTime", it) }
-    }
-}
-
-private fun Record.callNoArgGetter(name: String): String? {
-    return runCatching {
-        javaClass.methods
-            .firstOrNull { method -> method.name == name && method.parameterCount == 0 }
-            ?.invoke(this)
-            ?.toString()
-    }.getOrNull()
-}
-
-@OptIn(ExperimentalMindfulnessSessionApi::class)
-private val exportRecordTypes: List<KClass<out Record>> = listOf(
-    ActiveCaloriesBurnedRecord::class,
-    BasalBodyTemperatureRecord::class,
-    BasalMetabolicRateRecord::class,
-    BloodGlucoseRecord::class,
-    BloodPressureRecord::class,
-    BodyFatRecord::class,
-    BodyTemperatureRecord::class,
-    BodyWaterMassRecord::class,
-    BoneMassRecord::class,
-    CervicalMucusRecord::class,
-    CyclingPedalingCadenceRecord::class,
-    DistanceRecord::class,
-    ElevationGainedRecord::class,
-    ExerciseSessionRecord::class,
-    FloorsClimbedRecord::class,
-    HeartRateRecord::class,
-    HeartRateVariabilityRmssdRecord::class,
-    HeightRecord::class,
-    HydrationRecord::class,
-    IntermenstrualBleedingRecord::class,
-    LeanBodyMassRecord::class,
-    MenstruationFlowRecord::class,
-    MenstruationPeriodRecord::class,
-    MindfulnessSessionRecord::class,
-    NutritionRecord::class,
-    OvulationTestRecord::class,
-    OxygenSaturationRecord::class,
-    PlannedExerciseSessionRecord::class,
-    PowerRecord::class,
-    RespiratoryRateRecord::class,
-    RestingHeartRateRecord::class,
-    SexualActivityRecord::class,
-    SkinTemperatureRecord::class,
-    SleepSessionRecord::class,
-    SpeedRecord::class,
-    StepsCadenceRecord::class,
-    StepsRecord::class,
-    TotalCaloriesBurnedRecord::class,
-    Vo2MaxRecord::class,
-    WeightRecord::class,
-    WheelchairPushesRecord::class,
-)
-
-internal val allReadPermissions: Set<String> = exportRecordTypes
-    .map { HealthPermission.getReadPermission(it) }
-    .toSet() + HealthPermission.PERMISSION_READ_HEALTH_DATA_HISTORY

@@ -15,6 +15,7 @@ import com.makstuff.minimalistcaloriecounter.classes.Nutrients
 import com.makstuff.minimalistcaloriecounter.classes.QuickImportMealType
 import com.makstuff.minimalistcaloriecounter.classes.WeeklyWeightLossTarget
 import com.makstuff.minimalistcaloriecounter.health.HealthConnectManager
+import com.makstuff.minimalistcaloriecounter.health.HealthConnectExportMode
 import com.makstuff.minimalistcaloriecounter.essentials.NavButton
 import com.makstuff.minimalistcaloriecounter.persistence.AppCsvStore
 import com.makstuff.minimalistcaloriecounter.ui.settings.SettingsSheet
@@ -118,6 +119,10 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     fun updateHealthConnectExportStartDate(date: LocalDate) = healthConnectExportActions.updateExportStartDate(date)
 
     fun updateHealthConnectExportEndDate(date: LocalDate) = healthConnectExportActions.updateExportEndDate(date)
+
+    fun updateHealthConnectExportMode(mode: HealthConnectExportMode) = healthConnectExportActions.updateExportMode(mode)
+
+    fun updateHealthConnectExportRedacted(redacted: Boolean) = healthConnectExportActions.updateExportRedacted(redacted)
 
     fun exportHealthConnectRange() = healthConnectExportActions.exportRange()
 
