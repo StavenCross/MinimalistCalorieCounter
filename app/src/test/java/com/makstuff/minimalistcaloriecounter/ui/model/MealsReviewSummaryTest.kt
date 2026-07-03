@@ -36,6 +36,22 @@ class MealsReviewSummaryTest {
         assertTrue(text.contains("- tuna sandwich: 520 kcal"))
     }
 
+    @Test
+    fun visibleMealFoodsCollapsesLongMeals() {
+        val group = mealGroups(
+            listOf(
+                meal("food 1", 100.0),
+                meal("food 2", 100.0),
+                meal("food 3", 100.0),
+                meal("food 4", 100.0),
+            )
+        ).single()
+
+        assertTrue(shouldCollapseMealGroup(group))
+        assertTrue(visibleMealFoods(group, expanded = false).map { it.name } == listOf("food 1", "food 2", "food 3"))
+        assertTrue(visibleMealFoods(group, expanded = true).map { it.name } == listOf("food 1", "food 2", "food 3", "food 4"))
+    }
+
     private fun meal(name: String, calories: Double): HealthConnectNutritionMeal {
         return HealthConnectNutritionMeal(
             recordId = name,

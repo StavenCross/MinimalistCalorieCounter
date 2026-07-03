@@ -32,6 +32,27 @@ data class NutritionMealGroup(
     val foods: List<HealthConnectNutritionMeal>,
 )
 
+fun mealGroupKey(group: NutritionMealGroup): String {
+    val firstStart = group.foods.minOfOrNull { it.startTime.toString() }.orEmpty()
+    return "${group.mealType}:$firstStart:${group.foods.size}"
+}
+
+fun shouldCollapseMealGroup(group: NutritionMealGroup, collapsedFoodLimit: Int = 3): Boolean {
+    return group.foods.size > collapsedFoodLimit
+}
+
+fun visibleMealFoods(
+    group: NutritionMealGroup,
+    expanded: Boolean,
+    collapsedFoodLimit: Int = 3,
+): List<HealthConnectNutritionMeal> {
+    return if (expanded || !shouldCollapseMealGroup(group, collapsedFoodLimit)) {
+        group.foods
+    } else {
+        group.foods.take(collapsedFoodLimit)
+    }
+}
+
 fun macroPercent(value: Double, target: Double?): Double? {
     if (target == null || target <= 0.0) return null
     return value / target * 100.0

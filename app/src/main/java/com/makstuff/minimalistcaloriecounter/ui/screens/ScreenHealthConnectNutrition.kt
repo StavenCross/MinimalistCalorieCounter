@@ -30,6 +30,8 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.EggAlt
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Grass
 import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material.icons.filled.OilBarrel
@@ -77,11 +79,14 @@ import com.makstuff.minimalistcaloriecounter.ui.model.healthGroupDetailItems
 import com.makstuff.minimalistcaloriecounter.ui.model.healthMealDetailItems
 import com.makstuff.minimalistcaloriecounter.ui.model.macroProgressArc
 import com.makstuff.minimalistcaloriecounter.ui.model.macroSummaryItems
+import com.makstuff.minimalistcaloriecounter.ui.model.mealGroupKey
 import com.makstuff.minimalistcaloriecounter.ui.model.mealGroupSummaryText
 import com.makstuff.minimalistcaloriecounter.ui.model.mealGroups
 import com.makstuff.minimalistcaloriecounter.ui.model.mealsDaySummaryText
 import com.makstuff.minimalistcaloriecounter.ui.model.nutritionDaySummary
+import com.makstuff.minimalistcaloriecounter.ui.model.shouldCollapseMealGroup
 import com.makstuff.minimalistcaloriecounter.ui.model.supportsMacroHint
+import com.makstuff.minimalistcaloriecounter.ui.model.visibleMealFoods
 import com.makstuff.minimalistcaloriecounter.ui.reused.MacroHintBox
 import com.makstuff.minimalistcaloriecounter.ui.reused.SurfacePanel
 import java.time.Instant
@@ -106,6 +111,7 @@ fun ScreenHealthConnectNutrition(
     var selectedFood by remember { mutableStateOf<HealthConnectNutritionMeal?>(null) }
     var selectedMealGroup by remember { mutableStateOf<NutritionMealGroup?>(null) }
     var datePickerVisible by remember { mutableStateOf(false) }
+    var expandedMealKeys by remember(selectedDate) { mutableStateOf(emptySet<String>()) }
     val clipboard = LocalClipboardManager.current
     var daySummaryCopied by remember { mutableStateOf(false) }
     var mealSummaryCopied by remember { mutableStateOf(false) }
@@ -214,9 +220,21 @@ fun ScreenHealthConnectNutrition(
                     SectionTitle("Meals")
                 }
                 groups.forEach { group ->
+                    val groupKey = mealGroupKey(group)
+                    val canExpand = shouldCollapseMealGroup(group)
+                    val expanded = !canExpand || groupKey in expandedMealKeys
                     item {
                         MealCard(
                             group = group,
+                            expanded = expanded,
+                            canToggleExpand = canExpand,
+                            onToggleExpanded = {
+                                expandedMealKeys = if (expanded) {
+                                    expandedMealKeys - groupKey
+                                } else {
+                                    expandedMealKeys + groupKey
+                                }
+                            },
                             onMealClick = { selectedMealGroup = group },
                             onFoodClick = { selectedFood = it },
                         )
@@ -538,6 +556,9 @@ private fun GoalArcTile(
 @Composable
 private fun MealCard(
     group: NutritionMealGroup,
+    expanded: Boolean,
+    canToggleExpand: Boolean,
+    onToggleExpanded: () -> Unit,
     onMealClick: () -> Unit,
     onFoodClick: (HealthConnectNutritionMeal) -> Unit,
 ) {
@@ -546,6 +567,8 @@ private fun MealCard(
     val carbs = group.foods.sumOf { it.totalCarbohydrate }
     val fat = group.foods.sumOf { it.totalFat }
     val fiber = group.foods.sumOf { it.dietaryFiber }
+    val visibleFoods = visibleMealFoods(group, expanded)
+    val hiddenFoodCount = group.foods.size - visibleFoods.size
 
     SurfacePanel(
         modifier = Modifier.clickable(onClick = onMealClick),
@@ -560,10 +583,32 @@ private fun MealCard(
         Column(
             verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
-            group.foods.forEach { food ->
+            visibleFoods.forEach { food ->
                 CompactFoodRow(
                     meal = food,
                     onClick = { onFoodClick(food) },
+                )
+            }
+        }
+        if (canToggleExpand) {
+            TextButton(
+                onClick = onToggleExpanded,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("meal_expand_toggle_${group.label.lowercase()}"),
+            ) {
+                Icon(
+                    imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                    contentDescription = if (expanded) "Collapse ${group.label}" else "Expand ${group.label}",
+                    modifier = Modifier.size(18.dp),
+                )
+                Text(
+                    text = if (expanded) {
+                        "Show fewer foods"
+                    } else {
+                        "$hiddenFoodCount more foods"
+                    },
+                    style = MaterialTheme.typography.labelLarge,
                 )
             }
         }

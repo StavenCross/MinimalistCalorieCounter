@@ -1,8 +1,10 @@
 package com.makstuff.minimalistcaloriecounter.ui.screens
 
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithTag
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -158,6 +160,36 @@ class ScreenHealthConnectNutritionTest {
     }
 
     @Test
+    fun longMealStartsCollapsedAndExpandsInline() {
+        composeRule.setContent {
+            AppTheme(dynamicColor = false) {
+                ScreenHealthConnectNutrition(
+                    uiState = baseState().copy(
+                        healthConnectViewerDate = LocalDate.of(2026, 7, 2),
+                        healthConnectViewerLoading = false,
+                        healthConnectViewerMessage = null,
+                        healthConnectViewerMeals = listOf(
+                            sampleMeal(name = "food 1", minuteOffset = 0),
+                            sampleMeal(name = "food 2", minuteOffset = 1),
+                            sampleMeal(name = "food 3", minuteOffset = 2),
+                            sampleMeal(name = "food 4", minuteOffset = 3),
+                        ),
+                    ),
+                    onDateChange = {},
+                    onRefresh = {},
+                    onDeleteMeal = {},
+                )
+            }
+        }
+
+        composeRule.onNodeWithText("food 1").assertIsDisplayed()
+        composeRule.onAllNodesWithText("food 4").assertCountEquals(0)
+        composeRule.onNodeWithTag("meal_expand_toggle_lunch").assertIsDisplayed().performClick()
+        composeRule.onNodeWithText("food 4").assertIsDisplayed()
+        composeRule.onNodeWithContentDescription("Collapse Lunch").assertIsDisplayed()
+    }
+
+    @Test
     fun daySummaryCopyButtonShowsCopiedState() {
         composeRule.setContent {
             AppTheme(dynamicColor = false) {
@@ -232,13 +264,16 @@ class ScreenHealthConnectNutritionTest {
         )
     }
 
-    private fun sampleMeal(): HealthConnectNutritionMeal {
+    private fun sampleMeal(
+        name: String = "100 g test oats",
+        minuteOffset: Int = 0,
+    ): HealthConnectNutritionMeal {
         return HealthConnectNutritionMeal(
-            recordId = "record-1",
-            clientRecordId = "client-1",
-            startTime = LocalDateTime.of(2026, 7, 2, 12, 0),
-            endTime = LocalDateTime.of(2026, 7, 2, 12, 1),
-            name = "100 g test oats",
+            recordId = "record-$minuteOffset",
+            clientRecordId = "client-$minuteOffset",
+            startTime = LocalDateTime.of(2026, 7, 2, 12, minuteOffset),
+            endTime = LocalDateTime.of(2026, 7, 2, 12, minuteOffset + 1),
+            name = name,
             energy = 389.0,
             energyFromFat = 62.1,
             totalCarbohydrate = 66.3,

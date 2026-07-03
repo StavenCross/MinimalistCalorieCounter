@@ -82,6 +82,7 @@ All non-UI files touched in this cleanup are now under the 300-line cap:
 - Added Health Connect cleanup preview and mode classification so Settings can preview destructive deletes before removing app-owned Nutrition records.
 - Added Add Meal today check-in summary generation as a testable UI model helper; the screen only handles clipboard copy state.
 - Added Meals review day/meal summary generation as testable UI model helpers; the screen owns only clipboard copy state.
+- Added Meals review collapse helpers so long meals start compact and expand inline without moving that logic into the screen.
 
 ## Recommended Extraction Order
 
