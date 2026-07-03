@@ -25,7 +25,7 @@ curl http://127.0.0.1:18765/health
 - `GET /health`
   - Confirms the debug bridge is running.
 - `GET /state`
-  - Returns UI state, Health Connect status, Add Meal parse state, selected Meals date, and loaded Health Connect meals.
+  - Returns UI state, Health Connect status, Add Meal parse state, Add Meal outbox state, selected Meals date, and loaded Health Connect meals.
 - `POST /navigate`
   - Body: `{ "screen": "quick_add" | "meals" | "settings" | "database" | "day" }`
 - `POST /settings/open`
@@ -34,6 +34,7 @@ curl http://127.0.0.1:18765/health
   - Parses Add Meal text without writing.
 - `POST /quick-import/commit`
   - Commits through the same ViewModel path as the Add Meal button.
+  - Health Connect write attempts are reflected in the Add Meal outbox section returned by `GET /state`.
 - `POST /meals/select-date`
   - Body: `{ "date": "YYYY-MM-DD" }`
 - `POST /health-connect/read-day`

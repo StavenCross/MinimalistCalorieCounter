@@ -5,6 +5,7 @@ import com.makstuff.minimalistcaloriecounter.classes.MacroTargets
 import com.makstuff.minimalistcaloriecounter.classes.QuickImportHealthWriteResult
 import com.makstuff.minimalistcaloriecounter.classes.QuickImportMeal
 import com.makstuff.minimalistcaloriecounter.classes.QuickImportNutrients
+import com.makstuff.minimalistcaloriecounter.classes.QuickImportOutboxItem
 import com.makstuff.minimalistcaloriecounter.classes.QuickImportResult
 import com.makstuff.minimalistcaloriecounter.health.HealthConnectNutritionMeal
 import org.json.JSONArray
@@ -81,6 +82,19 @@ internal fun QuickImportResult.toJson(): JSONObject = JSONObject()
     .put("databaseEntriesAdded", databaseEntriesAdded)
     .put("dayFoodsAdded", dayFoodsAdded)
     .put("healthWriteResult", healthWriteResult.toJson())
+
+internal fun QuickImportOutboxItem.toJson(): JSONObject = JSONObject()
+    .put("id", id)
+    .put("createdAt", createdAt.toString())
+    .put("intendedDateTime", intendedDateTime.toString())
+    .put("mealType", mealType.label)
+    .put("mealSummary", mealSummary)
+    .put("foodCount", foodCount)
+    .put("state", state.name)
+    .put("attemptCount", attemptCount)
+    .put("lastAttemptAt", lastAttemptAt?.toString())
+    .put("lastErrorMessage", lastErrorMessage)
+    .put("needsAttention", needsAttention)
 
 internal fun QuickImportHealthWriteResult?.toJson(): JSONObject? {
     return when (this) {

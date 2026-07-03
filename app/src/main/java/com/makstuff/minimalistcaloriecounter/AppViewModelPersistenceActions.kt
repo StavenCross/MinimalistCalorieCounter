@@ -63,6 +63,12 @@ internal class AppViewModelPersistenceActions(
         }
     }
 
+    fun updateQuickImportOutboxFromCsv(context: Context) {
+        env.state.update { currentState ->
+            currentState.copy(quickImportOutbox = env.csvStore.readQuickImportOutbox(context))
+        }
+    }
+
     fun writeGoals(context: Context) {
         env.csvStore.writeGoals(context, env.uiState.goals)
     }

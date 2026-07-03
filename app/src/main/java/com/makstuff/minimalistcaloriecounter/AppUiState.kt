@@ -12,6 +12,7 @@ import com.makstuff.minimalistcaloriecounter.classes.Goals
 import com.makstuff.minimalistcaloriecounter.classes.HistoricalMealImportPreview
 import com.makstuff.minimalistcaloriecounter.classes.QuickImportMeal
 import com.makstuff.minimalistcaloriecounter.classes.QuickImportMealType
+import com.makstuff.minimalistcaloriecounter.classes.QuickImportOutboxItem
 import com.makstuff.minimalistcaloriecounter.classes.QuickImportResult
 import com.makstuff.minimalistcaloriecounter.health.HealthConnectNutritionMeal
 import com.makstuff.minimalistcaloriecounter.essentials.NAV_DAY
@@ -104,6 +105,7 @@ data class AppUiState(
     val quickImportAddFoodsToDay: Boolean = true,
     val quickImportWriteHealthConnect: Boolean = true,
     val quickImportInProgress: Boolean = false,
+    val quickImportOutbox: List<QuickImportOutboxItem> = emptyList(),
     val goals: Goals = Goals(),
 
     val nameFoodDayAdd: String = "",

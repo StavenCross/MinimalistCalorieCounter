@@ -10,6 +10,8 @@ import com.makstuff.minimalistcaloriecounter.classes.Combo
 import com.makstuff.minimalistcaloriecounter.classes.DatabaseEntry
 import com.makstuff.minimalistcaloriecounter.classes.Goals
 import com.makstuff.minimalistcaloriecounter.classes.GoalsCsv
+import com.makstuff.minimalistcaloriecounter.classes.QuickImportOutboxCsv
+import com.makstuff.minimalistcaloriecounter.classes.QuickImportOutboxItem
 import com.makstuff.minimalistcaloriecounter.essentials.NUTRIENT_PROPERTIES
 import com.makstuff.minimalistcaloriecounter.ui.theme.AppTheme
 import java.io.File
@@ -90,6 +92,22 @@ class AppCsvStore {
     fun writeGoals(context: Context, goals: Goals) {
         csvWriter().open(file(context, "goals.csv")) {
             GoalsCsv.toRows(goals).forEach { writeRow(it) }
+        }
+    }
+
+    fun readQuickImportOutbox(context: Context): List<QuickImportOutboxItem> {
+        return try {
+            val outboxFile = file(context, "quick_import_outbox.csv")
+            if (!outboxFile.exists()) return emptyList()
+            QuickImportOutboxCsv.fromRows(csvReader().readAll(outboxFile.inputStream()))
+        } catch (_: CSVFieldNumDifferentException) {
+            throw IllegalStateException("Add Meal outbox: " + context.getString(R.string.csv_wrong_number_fields))
+        }
+    }
+
+    fun writeQuickImportOutbox(context: Context, items: List<QuickImportOutboxItem>) {
+        csvWriter().open(file(context, "quick_import_outbox.csv")) {
+            QuickImportOutboxCsv.toRows(items).forEach { writeRow(it) }
         }
     }
 

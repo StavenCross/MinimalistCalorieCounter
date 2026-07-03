@@ -7,6 +7,9 @@ import com.makstuff.minimalistcaloriecounter.classes.DatabaseEntry
 import com.makstuff.minimalistcaloriecounter.classes.Nutrients
 import com.makstuff.minimalistcaloriecounter.classes.QuickImportDatabaseEntryDraft
 import com.makstuff.minimalistcaloriecounter.classes.QuickImportHealthWriteResult
+import com.makstuff.minimalistcaloriecounter.classes.QuickImportOutbox
+import com.makstuff.minimalistcaloriecounter.classes.QuickImportOutboxItem
+import kotlinx.coroutines.flow.update
 
 internal fun QuickImportDatabaseEntryDraft.toDatabaseEntry(context: Context): DatabaseEntry {
     return DatabaseEntry(
@@ -32,4 +35,13 @@ internal fun quickImportResultText(
         is QuickImportHealthWriteResult.Failed -> "Health Connect failed: ${healthWriteResult.message}"
     }
     return "$localText $healthText"
+}
+
+internal fun AppViewModelEnvironment.writeQuickImportOutboxItem(context: Context, item: QuickImportOutboxItem?) {
+    if (item == null) return
+    val items = QuickImportOutbox.upsert(uiState.quickImportOutbox, item)
+    csvStore.writeQuickImportOutbox(context, items)
+    state.update { currentState ->
+        currentState.copy(quickImportOutbox = items)
+    }
 }

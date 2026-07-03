@@ -266,6 +266,13 @@ fun App(
                 context, "Goals CSV: " + e.message, Toast.LENGTH_LONG
             ).show()
         }
+        try {
+            viewModel.quickImportOutboxUpdateFromCSV(context)
+        } catch (e: IllegalStateException) {
+            Toast.makeText(
+                context, "Add Meal outbox CSV: " + e.message, Toast.LENGTH_LONG
+            ).show()
+        }
         delay(1000.milliseconds)//1000 seems enough to prevent glitches from dark mode override loading
         viewModel.setLoadingToFalse()
     }

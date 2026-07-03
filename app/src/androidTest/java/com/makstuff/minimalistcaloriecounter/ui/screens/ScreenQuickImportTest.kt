@@ -17,6 +17,8 @@ import com.makstuff.minimalistcaloriecounter.classes.Combo
 import com.makstuff.minimalistcaloriecounter.classes.Goals
 import com.makstuff.minimalistcaloriecounter.classes.MacroTargets
 import com.makstuff.minimalistcaloriecounter.classes.QuickImportMealType
+import com.makstuff.minimalistcaloriecounter.classes.QuickImportOutboxItem
+import com.makstuff.minimalistcaloriecounter.classes.QuickImportOutboxState
 import com.makstuff.minimalistcaloriecounter.classes.QuickImportParser
 import com.makstuff.minimalistcaloriecounter.ui.theme.AppTheme
 import org.junit.Rule
@@ -193,6 +195,47 @@ class ScreenQuickImportTest {
         composeRule.onNodeWithText("Meal added").assertIsDisplayed()
         composeRule.onNodeWithTag("quick_import_paste").assertIsDisplayed()
         composeRule.onNodeWithTag("quick_import_import_button").assertIsNotEnabled()
+    }
+
+    @Test
+    fun outboxAttentionShowsSyncStatusCard() {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+
+        composeRule.setContent {
+            AppTheme {
+                ScreenQuickImport(
+                    uiState = baseState(context).copy(
+                        quickImportOutbox = listOf(
+                            QuickImportOutboxItem(
+                                id = "abc123",
+                                createdAt = LocalDateTime.of(2026, 7, 3, 12, 1),
+                                intendedDateTime = LocalDateTime.of(2026, 7, 3, 12, 0),
+                                mealType = QuickImportMealType.Lunch,
+                                sourceTextHash = "hash",
+                                mealSummary = "1 foods, 389 kcal",
+                                foodCount = 1,
+                                state = QuickImportOutboxState.FailedHealthConnect,
+                                attemptCount = 1,
+                                lastAttemptAt = LocalDateTime.of(2026, 7, 3, 12, 2),
+                                lastErrorMessage = "Health Connect permissions are missing.",
+                            )
+                        ),
+                    ),
+                    onTextChange = {},
+                    onToggleAddDatabase = {},
+                    onToggleAddDay = {},
+                    onToggleHealthConnect = {},
+                    onRefreshDateTime = {},
+                    onDateTimeChange = {},
+                    onMealTypeChange = { _: QuickImportMealType -> },
+                    onImport = {},
+                    onClear = {},
+                )
+            }
+        }
+
+        composeRule.onNodeWithTag("quick_import_outbox_status").assertIsDisplayed()
+        composeRule.onNodeWithText("1 Health Connect write needs sync attention.").assertIsDisplayed()
     }
 
     private fun baseState(context: android.content.Context): AppUiState {
