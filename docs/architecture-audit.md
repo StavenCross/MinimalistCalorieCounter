@@ -19,7 +19,7 @@ All non-UI files touched in this cleanup are now under the 300-line cap:
 - `AutomationBootstrap.kt`: 298 lines after extracting HTTP helpers, JSON serializers, and route aliases.
 - `tools/mcc-mcp/src/server.ts`: 23 lines after splitting tool registration groups.
 - `AppViewModel.kt`: 282 lines after extracting feature action classes for Health Connect, Goals, Add Meal, persistence, database, archive/day, and UI chrome.
-- `AppViewModelQuickImportActions.kt`: 269 lines after moving commit helpers into `AppViewModelQuickImportHelpers.kt` and centralizing outcome clearing.
+- `AppViewModelQuickImportActions.kt`: 300 lines after moving outbox persistence helpers into `AppViewModelQuickImportHelpers.kt`.
 
 ## Cleanup Completed In This Pass
 
@@ -71,6 +71,11 @@ All non-UI files touched in this cleanup are now under the 300-line cap:
 - Added a single settings-sheet automation intent:
   - `AppViewModelUiActions.openSettingsSheet(...)`
   - `/settings/open` now navigates to Settings and opens the requested drawer as one command.
+- Added the first Add Meal Health Connect outbox slice:
+  - `classes/QuickImportOutbox.kt`
+  - `classes/QuickImportOutboxCsv.kt`
+  - Add Meal writes now use deterministic client record ids and persist pending/synced/failed write state.
+  - debug automation state exposes outbox rows for MCP-driven verification.
 
 ## Recommended Extraction Order
 

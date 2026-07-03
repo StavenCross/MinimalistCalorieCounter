@@ -237,6 +237,13 @@ fun ScreenQuickImport(
                 }
             }
 
+            val outboxAttentionCount = uiState.quickImportOutbox.count { it.needsAttention }
+            if (outboxAttentionCount > 0) {
+                item {
+                    QuickImportOutboxStatusCard(outboxAttentionCount)
+                }
+            }
+
             meal?.let {
                 item {
                     ParsedMealPreviewCard(
@@ -476,6 +483,36 @@ private fun CapturePanel(
                 modifier = Modifier
                     .fillMaxWidth()
                     .testTag("quick_import_paste"),
+            )
+        }
+    }
+}
+
+@Composable
+private fun QuickImportOutboxStatusCard(count: Int) {
+    SurfacePanel(
+        borderColor = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.5f),
+        backgroundColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+        modifier = Modifier.testTag("quick_import_outbox_status"),
+    ) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                Icons.Default.CloudDone,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.tertiary,
+                modifier = Modifier.size(20.dp),
+            )
+            Text(
+                text = if (count == 1) {
+                    "1 Health Connect write needs sync attention."
+                } else {
+                    "$count Health Connect writes need sync attention."
+                },
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface,
             )
         }
     }

@@ -4,6 +4,9 @@ import android.content.Context
 import com.makstuff.minimalistcaloriecounter.classes.QuickImportCommitOptions
 import com.makstuff.minimalistcaloriecounter.classes.QuickImportHealthWriteResult
 import com.makstuff.minimalistcaloriecounter.classes.QuickImportMealType
+import com.makstuff.minimalistcaloriecounter.classes.QuickImportOutbox
+import com.makstuff.minimalistcaloriecounter.classes.QuickImportOutboxItem
+import com.makstuff.minimalistcaloriecounter.classes.QuickImportOutboxState
 import com.makstuff.minimalistcaloriecounter.classes.QuickImportParser
 import com.makstuff.minimalistcaloriecounter.classes.QuickImportPlanner
 import com.makstuff.minimalistcaloriecounter.classes.QuickImportResult
@@ -149,7 +152,6 @@ internal class AppViewModelQuickImportActions(
             ).withoutQuickImportOutcome()
         }
     }
-
     fun commit(context: Context) {
         val state = env.uiState
         val meal = state.quickImportMeal ?: run {
@@ -186,6 +188,7 @@ internal class AppViewModelQuickImportActions(
         env.scope.launch {
             var databaseEntriesAdded = 0
             var dayFoodsAdded = 0
+            var outboxItem: QuickImportOutboxItem? = null
 
             try {
                 if (options.addFoodsToDatabase) {
@@ -208,7 +211,25 @@ internal class AppViewModelQuickImportActions(
                 }
 
                 val healthResult = if (options.writeHealthConnect) {
-                    env.healthConnectManager.insertQuickMealNutrition(plan.healthPayloads)
+                    val pendingItem = QuickImportOutbox.buildItem(
+                        sourceText = state.inputQuickImportText,
+                        meal = meal,
+                        intendedDateTime = state.inputQuickImportDateTime,
+                        mealType = state.quickImportMealType,
+                        createdAt = LocalDateTime.now(),
+                    )
+                    val existingItem = env.uiState.quickImportOutbox.firstOrNull { it.id == pendingItem.id }
+                    outboxItem = QuickImportOutbox.markAttempting(
+                        item = existingItem ?: pendingItem,
+                        attemptedAt = LocalDateTime.now(),
+                    )
+                    env.writeQuickImportOutboxItem(context, outboxItem)
+                    val result = env.healthConnectManager.insertQuickMealNutrition(
+                        QuickImportOutbox.withClientRecordIds(plan.healthPayloads, outboxItem)
+                    )
+                    outboxItem = QuickImportOutbox.markResult(outboxItem, result)
+                    env.writeQuickImportOutboxItem(context, outboxItem)
+                    result
                 } else {
                     null
                 }
@@ -252,6 +273,15 @@ internal class AppViewModelQuickImportActions(
                 env.state.update { it.copy(quickImportInProgress = false) }
                 throw e
             } catch (e: Throwable) {
+                outboxItem?.let {
+                    env.writeQuickImportOutboxItem(
+                        context = context,
+                        item = it.copy(
+                            state = QuickImportOutboxState.FailedHealthConnect,
+                            lastErrorMessage = e.message ?: "Add Meal failed.",
+                        ),
+                    )
+                }
                 env.state.update {
                     it.copy(
                         quickImportInProgress = false,

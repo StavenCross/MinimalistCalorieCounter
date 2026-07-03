@@ -271,6 +271,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     fun goalsUpdateFromCSV(context: Context) = persistenceActions.updateGoalsFromCsv(context)
 
+    fun quickImportOutboxUpdateFromCSV(context: Context) = persistenceActions.updateQuickImportOutboxFromCsv(context)
+
     fun optionsUpdateFromFile(context: Context) = persistenceActions.updateOptionsFromFile(context)
 
     fun optionsWriteToFile(context: Context) = persistenceActions.writeOptions(context)

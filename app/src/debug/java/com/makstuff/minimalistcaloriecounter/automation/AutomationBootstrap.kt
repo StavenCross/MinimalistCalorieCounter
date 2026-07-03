@@ -244,6 +244,8 @@ object AutomationBootstrap {
                 .put("dateTime", state.inputQuickImportDateTime.toString())
                 .put("mealType", state.quickImportMealType.label)
                 .put("snackOverride", state.quickImportSnackOverride)
+                .put("outbox", JSONArray(state.quickImportOutbox.map { it.toJson() }))
+                .put("outboxNeedsAttention", state.quickImportOutbox.count { it.needsAttention })
                 .put("addDatabase", state.quickImportAddFoodsToDatabase)
                 .put("addDay", state.quickImportAddFoodsToDay)
                 .put("writeHealthConnect", state.quickImportWriteHealthConnect)
