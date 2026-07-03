@@ -93,10 +93,6 @@ internal class AppViewModelUiActions(
         env.state.update { it.copy(alertDialogDayReset = visible) }
     }
 
-    fun setLanguageInfoDialog(visible: Boolean) {
-        env.state.update { it.copy(dialogLanguageInfo = visible) }
-    }
-
     fun setDatabaseResetDialog(visible: Boolean) {
         env.state.update { it.copy(alertDialogDatabaseReset = visible) }
     }

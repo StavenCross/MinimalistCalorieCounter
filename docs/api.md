@@ -29,7 +29,7 @@ curl http://127.0.0.1:18765/health
 - `POST /navigate`
   - Body: `{ "screen": "quick_add" | "meals" | "settings" | "database" | "day" }`
 - `POST /settings/open`
-  - Body: `{ "sheet": "health_data" | "import_tools" | "theme" | "language" | "maintenance" | "support" | null }`
+  - Body: `{ "sheet": "health_data" | "import_tools" | "theme" | "maintenance" | null }`
 - `POST /quick-import/preview`
   - Parses Add Meal text without writing.
 - `POST /quick-import/commit`

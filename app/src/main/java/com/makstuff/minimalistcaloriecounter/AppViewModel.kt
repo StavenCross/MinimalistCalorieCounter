@@ -233,8 +233,6 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     fun setAlertDialogDayReset(bool: Boolean) = uiActions.setDayResetDialog(bool)
 
-    fun setDialogLanguageInfo(bool: Boolean) = uiActions.setLanguageInfoDialog(bool)
-
     fun setAlertDialogDatabaseReset(bool: Boolean) = uiActions.setDatabaseResetDialog(bool)
 
     fun setAlertDialogArchiveImport(bool: Boolean) = uiActions.setArchiveImportDialog(bool)

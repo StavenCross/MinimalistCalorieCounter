@@ -4,9 +4,7 @@ enum class SettingsSheet(val key: String) {
     HealthData("health_data"),
     ImportTools("import_tools"),
     Theme("theme"),
-    Language("language"),
-    Maintenance("maintenance"),
-    Support("support");
+    Maintenance("maintenance");
 
     companion object {
         fun fromKey(key: String?): SettingsSheet? {

@@ -9,7 +9,6 @@ import com.makstuff.minimalistcaloriecounter.classes.Archive
 import com.makstuff.minimalistcaloriecounter.classes.Combo
 import com.makstuff.minimalistcaloriecounter.classes.DatabaseEntry
 import com.makstuff.minimalistcaloriecounter.classes.Goals
-import com.makstuff.minimalistcaloriecounter.classes.GridButtonData
 import com.makstuff.minimalistcaloriecounter.classes.HistoricalMealImportPreview
 import com.makstuff.minimalistcaloriecounter.classes.QuickImportMeal
 import com.makstuff.minimalistcaloriecounter.classes.QuickImportMealType
@@ -32,9 +31,6 @@ fun Context.findActivity(): Activity? {
     return null
 }
 data class AppUiState(
-    //Deprecated
-    val gridButtons: MutableList<GridButtonData> = mutableStateListOf(),
-
     //Data collections
     val database: MutableList<DatabaseEntry> = mutableStateListOf(),
     val databaseLetter: SnapshotStateList<Int> = mutableStateListOf(),
@@ -46,7 +42,6 @@ data class AppUiState(
     val navigationBarHighlight: NavButton = NAV_DAY,
     val topBarTitle: String = "",
     val automationRouteRequest: String? = null,
-    val dropdownMenuVisible: Boolean = false,
     val activeSettingsSheet: SettingsSheet? = null,
     val quickImportSettingsVisible: Boolean = false,
     /*
@@ -95,7 +90,6 @@ data class AppUiState(
     val inputArchiveEntryDate: LocalDate = LocalDateTime.now().minusHours(12).toLocalDate(),
 
     val inputCurrentComboComponentWeight: String = "",
-    val inputDayFoodWeight: String = "",
 
     val inputQuickImportText: String = "",
     val inputQuickImportDateTime: LocalDateTime = LocalDateTime.now(),
@@ -149,8 +143,6 @@ data class AppUiState(
     val alertDialogHealthConnectToasts: Boolean = false,
     val alertDialogHealthConnectPermissions: Boolean = false,
     val alertDialogDayReset: Boolean = false,
-    val dialogLanguage: Boolean = false,
-    val dialogLanguageInfo: Boolean = false,
 
     val alertDialogArchiveDelete: Boolean = false,
     val indexArchiveDelete: Int = -1,

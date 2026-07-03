@@ -10,7 +10,7 @@ class SettingsSheetTest {
         assertEquals(SettingsSheet.HealthData, SettingsSheet.fromKey("health_data"))
         assertEquals(SettingsSheet.ImportTools, SettingsSheet.fromKey("ImportTools"))
         assertEquals(SettingsSheet.Theme, SettingsSheet.fromKey("theme"))
-        assertEquals(SettingsSheet.Language, SettingsSheet.fromKey("LANGUAGE"))
+        assertEquals(SettingsSheet.Maintenance, SettingsSheet.fromKey("MAINTENANCE"))
     }
 
     @Test

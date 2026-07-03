@@ -122,10 +122,10 @@ test("settings panel tool posts sheet key to the bridge", async () => {
   };
 
   await openSettingsPanel(ctx, "theme", 18765);
-  await openSettingsPanel(ctx, "language", 18765);
+  await openSettingsPanel(ctx, "maintenance", 18765);
 
   assert.deepEqual(calls, [
     { path: "/settings/open", body: { sheet: "theme" } },
-    { path: "/settings/open", body: { sheet: "language" } },
+    { path: "/settings/open", body: { sheet: "maintenance" } },
   ]);
 });
