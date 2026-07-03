@@ -127,7 +127,22 @@ class GoalCalculatorTest {
                 ),
             ),
             currentTargets = completeTargets(2100.0).withValue(GoalMacro.Protein, 190.0),
-            history = listOf(GoalHistoryEntry(today, completeTargets(2100.0), "recommended")),
+            history = listOf(
+                GoalHistoryEntry(
+                    effectiveDate = today,
+                    targets = completeTargets(2100.0),
+                    source = "recommended",
+                    generatedDate = today.minusDays(1),
+                    bmr = 1850.0,
+                    tdee = 2550.0,
+                    weightKg = 90.0,
+                    bodyFatPercent = 20.0,
+                    leanMassKg = 72.0,
+                    activityLevel = ActivityLevel.ModeratelyActive,
+                    weightLossTarget = WeeklyWeightLossTarget.OnePound,
+                    applied = true,
+                )
+            ),
             recommendation = GoalRecommendation(
                 generatedDate = today,
                 targets = completeTargets(2050.0),
@@ -145,7 +160,33 @@ class GoalCalculatorTest {
         assertEquals(190.0, roundTripped.currentTargets.protein!!, 0.01)
         assertTrue(GoalMacro.Protein in roundTripped.currentTargets.lockedMacros)
         assertEquals(1, roundTripped.history.size)
+        assertEquals(1850.0, roundTripped.history.single().bmr!!, 0.01)
+        assertEquals(2550.0, roundTripped.history.single().tdee!!, 0.01)
+        assertEquals(72.0, roundTripped.history.single().leanMassKg!!, 0.01)
+        assertEquals(ActivityLevel.ModeratelyActive, roundTripped.history.single().activityLevel)
         assertEquals(2050.0, roundTripped.recommendation!!.targets.calories!!, 0.01)
+    }
+
+    @Test
+    fun `recommendation history captures source measurements`() {
+        val recommendation = GoalRecommendation(
+            generatedDate = today,
+            targets = completeTargets(2050.0),
+            bmr = 1850.0,
+            tdee = 2550.0,
+        )
+
+        val history = recommendation.toHistoryEntry(today.plusDays(1), completeProfile())
+
+        assertEquals(today, history.generatedDate)
+        assertEquals(1850.0, history.bmr!!, 0.01)
+        assertEquals(2550.0, history.tdee!!, 0.01)
+        assertEquals(90.0, history.weightKg!!, 0.01)
+        assertEquals(20.0, history.bodyFatPercent!!, 0.01)
+        assertEquals(72.0, history.leanMassKg!!, 0.01)
+        assertEquals(ActivityLevel.Sedentary, history.activityLevel)
+        assertEquals(WeeklyWeightLossTarget.Maintain, history.weightLossTarget)
+        assertTrue(history.applied)
     }
 
     @Test

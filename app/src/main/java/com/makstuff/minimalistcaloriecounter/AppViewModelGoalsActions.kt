@@ -3,11 +3,11 @@ package com.makstuff.minimalistcaloriecounter
 import com.makstuff.minimalistcaloriecounter.classes.ActivityLevel
 import com.makstuff.minimalistcaloriecounter.classes.GoalCalculator
 import com.makstuff.minimalistcaloriecounter.classes.GoalFieldKey
-import com.makstuff.minimalistcaloriecounter.classes.GoalHistoryEntry
 import com.makstuff.minimalistcaloriecounter.classes.GoalMacro
 import com.makstuff.minimalistcaloriecounter.classes.GoalMeasurement
 import com.makstuff.minimalistcaloriecounter.classes.GoalSex
 import com.makstuff.minimalistcaloriecounter.classes.WeeklyWeightLossTarget
+import com.makstuff.minimalistcaloriecounter.classes.toHistoryEntry
 import com.makstuff.minimalistcaloriecounter.health.HealthConnectGoalProfileReadResult
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -129,7 +129,8 @@ internal class AppViewModelGoalsActions(private val env: AppViewModelEnvironment
     fun applyRecommendation(date: LocalDate = LocalDate.now()) {
         env.state.update { currentState ->
             val recommendation = currentState.goals.recommendation ?: return@update currentState
-            val history = (currentState.goals.history + GoalHistoryEntry(date, recommendation.targets, "recommended")).sortedBy { it.effectiveDate }
+            val history = (currentState.goals.history + recommendation.toHistoryEntry(date, currentState.goals.profile))
+                .sortedBy { it.effectiveDate }
             currentState.copy(
                 goals = currentState.goals.copy(
                     currentTargets = recommendation.targets,
