@@ -15,9 +15,7 @@ import com.makstuff.minimalistcaloriecounter.ui.navigation.AppRoutes
 import com.makstuff.minimalistcaloriecounter.ui.settings.SettingsSheet
 import org.json.JSONArray
 import org.json.JSONObject
-import java.io.BufferedReader
 import java.io.BufferedWriter
-import java.io.InputStreamReader
 import java.io.OutputStreamWriter
 import java.net.InetAddress
 import java.net.ServerSocket
@@ -71,9 +69,8 @@ object AutomationBootstrap {
 
         private fun handle(socket: Socket) {
             socket.use {
-                val reader = BufferedReader(InputStreamReader(it.getInputStream()))
                 val writer = BufferedWriter(OutputStreamWriter(it.getOutputStream()))
-                val response = runCatching { dispatch(readRequest(reader)) }
+                val response = runCatching { dispatch(readRequest(it.getInputStream())) }
                     .getOrElse { error ->
                         jsonResponse(
                             statusCode = 500,

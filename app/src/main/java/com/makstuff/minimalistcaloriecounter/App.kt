@@ -5,7 +5,6 @@ import android.content.Intent
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.background
@@ -80,7 +79,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.window.DialogProperties
 import androidx.core.net.toUri
-import androidx.core.os.LocaleListCompat
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -275,12 +273,9 @@ fun App(
         contract = ActivityResultContracts.OpenDocument(),
         onResult = { uri ->
             try {
-                val folder = context.getExternalFilesDir(null) ?: context.filesDir
-                uri?.let { context.contentResolver.openInputStream(it) }?.copyTo(
-                    File(folder, "database.csv")
-                        .outputStream()
-                )
-                viewModel.databaseUpdateFromCSV(context)
+                uri?.let { context.contentResolver.openInputStream(it) }?.use { inputStream ->
+                    viewModel.databaseImportCSV(context, inputStream)
+                }
                 Toast.makeText(
                     context, context.getString(R.string.database) + ": " + context.getString(R.string.import_successful), Toast.LENGTH_LONG
                 ).show()
@@ -306,12 +301,9 @@ fun App(
         contract = ActivityResultContracts.OpenDocument(),
         onResult = { uri ->
             try {
-                val folder = context.getExternalFilesDir(null) ?: context.filesDir
-                uri?.let { context.contentResolver.openInputStream(it) }?.copyTo(
-                    File(folder, "archive.csv")
-                        .outputStream()
-                )
-                viewModel.archiveUpdateFromCSV(context)
+                uri?.let { context.contentResolver.openInputStream(it) }?.use { inputStream ->
+                    viewModel.archiveImportCSV(context, inputStream)
+                }
                 Toast.makeText(
                     context, context.getString(R.string.archive) + ": " + context.getString(R.string.import_successful), Toast.LENGTH_LONG
                 ).show()
@@ -463,15 +455,6 @@ fun App(
             )
         }
 
-        val currentLocale = AppCompatDelegate.getApplicationLocales().toLanguageTags()
-        val currentLanguageLabel = when {
-            currentLocale.contains("en") -> stringResource(R.string.always_english)
-            currentLocale.contains("de") -> stringResource(R.string.always_german)
-            currentLocale.contains("fr") -> stringResource(R.string.always_french)
-            currentLocale.contains("it") -> stringResource(R.string.always_italian)
-            currentLocale.contains("es") -> stringResource(R.string.always_spanish)
-            else -> stringResource(R.string.system_default)
-        }
         val currentThemeLabel = when (uiState.themeUserSetting) {
             AppTheme.MODE_AUTO -> stringArrayResource(R.array.dark_mode_options)[0]
             AppTheme.MODE_DAY -> stringArrayResource(R.array.dark_mode_options)[1]
@@ -589,57 +572,6 @@ fun App(
                                 viewModel.updateActiveSettingsSheet(null)
                             }
                         }
-                        SettingsSheet.Language -> {
-                            SheetTitle("Language", "Choose the app language.")
-                            SelectableOptionsItem(
-                                text = stringResource(R.string.always_english),
-                                selected = currentLocale.contains("en"),
-                            ) {
-                                AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags("en"))
-                                viewModel.setDialogLanguageInfo(bool = true)
-                                viewModel.updateActiveSettingsSheet(null)
-                            }
-                            SelectableOptionsItem(
-                                text = stringResource(R.string.always_german),
-                                selected = currentLocale.contains("de"),
-                            ) {
-                                AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags("de"))
-                                viewModel.setDialogLanguageInfo(bool = true)
-                                viewModel.updateActiveSettingsSheet(null)
-                            }
-                            SelectableOptionsItem(
-                                text = stringResource(R.string.always_french),
-                                selected = currentLocale.contains("fr"),
-                            ) {
-                                AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags("fr"))
-                                viewModel.setDialogLanguageInfo(bool = true)
-                                viewModel.updateActiveSettingsSheet(null)
-                            }
-                            SelectableOptionsItem(
-                                text = stringResource(R.string.always_italian),
-                                selected = currentLocale.contains("it"),
-                            ) {
-                                AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags("it"))
-                                viewModel.setDialogLanguageInfo(bool = true)
-                                viewModel.updateActiveSettingsSheet(null)
-                            }
-                            SelectableOptionsItem(
-                                text = stringResource(R.string.always_spanish),
-                                selected = currentLocale.contains("es"),
-                            ) {
-                                AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags("es"))
-                                viewModel.setDialogLanguageInfo(bool = true)
-                                viewModel.updateActiveSettingsSheet(null)
-                            }
-                            SelectableOptionsItem(
-                                text = stringResource(R.string.system_default),
-                                selected = currentLocale.isBlank(),
-                            ) {
-                                AppCompatDelegate.setApplicationLocales(LocaleListCompat.getEmptyLocaleList())
-                                viewModel.setDialogLanguageInfo(bool = true)
-                                viewModel.updateActiveSettingsSheet(null)
-                            }
-                        }
                         SettingsSheet.Maintenance -> {
                             SheetTitle("Troubleshooting tools", "Database and archive utilities live here so they stay out of the daily workflow.")
                             OptionsSectionHeader("Database tools")
@@ -661,37 +593,6 @@ fun App(
                             }
                             OptionsItem(stringResource(R.string.dropdown_clear_archive)) {
                                 viewModel.setAlertDialogArchiveReset(true)
-                            }
-                        }
-                        SettingsSheet.Support -> {
-                            SheetTitle("Support", "Project links and original app resources.")
-                            OptionsItem(stringResource(R.string.dropdown_github)) {
-                                uriHandler.openUri("https://github.com/Makstuff/MinimalistCalorieCounter")
-                            }
-                            OptionsItem(stringResource(R.string.privacy_policy)) {
-                                uriHandler.openUri("https://github.com/Makstuff/MinimalistCalorieCounter/blob/master/PRIVACY_POLICY.md")
-                            }
-                            OptionsItem(stringResource(R.string.report_problem)) {
-                                val intent = Intent(Intent.ACTION_SENDTO).apply {
-                                    val uriString = "mailto:message.makstuff@outlook.com?subject=Minimalist Calorie Counter"
-                                    data = uriString.replace(" ", "%20").toUri()
-                                }
-                                try {
-                                    context.startActivity(intent)
-                                } catch (_: Exception) {
-                                    Toast.makeText(context, "No email app found", Toast.LENGTH_SHORT).show()
-                                }
-                            }
-                            OptionsItem(stringResource(R.string.dropdown_rate)) {
-                                val appId = "com.makstuff.minimalistcaloriecounter"
-                                val intent = Intent(Intent.ACTION_VIEW).apply {
-                                    data = "market://details?id=$appId".toUri()
-                                }
-                                try {
-                                    context.startActivity(intent)
-                                } catch (_: Exception) {
-                                    uriHandler.openUri("https://play.google.com/store/apps/details?id=$appId")
-                                }
                             }
                         }
                     }
@@ -770,11 +671,6 @@ fun App(
                         trailingText = currentThemeLabel,
                         onClick = { viewModel.updateActiveSettingsSheet(SettingsSheet.Theme) },
                     )
-                    OptionsItem(
-                        text = stringResource(R.string.choose_language),
-                        trailingText = currentLanguageLabel,
-                        onClick = { viewModel.updateActiveSettingsSheet(SettingsSheet.Language) },
-                    )
                 }
             }
             item {
@@ -785,9 +681,6 @@ fun App(
                 ) {
                     OptionsItem("Database and archive tools") {
                         viewModel.updateActiveSettingsSheet(SettingsSheet.Maintenance)
-                    }
-                    OptionsItem(stringResource(R.string.support)) {
-                        viewModel.updateActiveSettingsSheet(SettingsSheet.Support)
                     }
                 }
             }
@@ -1029,32 +922,6 @@ fun App(
                                         })
                                 },
                                 text = { Text(stringResource(R.string.dialog_health_connect_toasts)) },
-                                title = { Text(stringResource(R.string.information)) })
-                        }
-                    }
-                    when {
-                        uiState.dialogLanguageInfo -> {
-                            AlertDialog(
-                                onDismissRequest = { viewModel.setDialogLanguageInfo(false) },
-                                properties = DialogProperties(
-                                    dismissOnClickOutside = false,
-                                    dismissOnBackPress = false
-                                ),
-                                confirmButton = {
-                                    ButtonText(
-                                        text = stringResource(R.string.button_understood),
-                                        onClick = {
-                                            viewModel.setDialogLanguageInfo(false)
-                                        })
-                                },
-                                text = {
-                                    Text(
-                                        stringResource(
-                                            R.string.dialog_language,
-                                            stringResource(R.string.dropdown_reset_database)
-                                        )
-                                    )
-                                },
                                 title = { Text(stringResource(R.string.information)) })
                         }
                     }
@@ -1811,14 +1678,14 @@ fun App(
                     )
                     Spacer(modifier = Modifier.height(24.dp))
                     LinearProgressIndicator(
-                        progress = { uiState.healthConnectSyncProgress ?: 0f },
+                        progress = { uiState.healthConnectSyncProgress },
                         modifier = Modifier.fillMaxWidth(),
                         strokeCap = androidx.compose.ui.graphics.StrokeCap.Round
                     )
                 }
             },
             confirmButton = {
-                if ((uiState.healthConnectSyncProgress ?: 0f) >= 1f) {
+                if (uiState.healthConnectSyncProgress >= 1f) {
                     ButtonText(
                         text = stringResource(R.string.button_finish),
                         onClick = { viewModel.finishHealthConnectSync() }
@@ -1847,7 +1714,7 @@ fun App(
                 )
             },
             title = { Text(stringResource(R.string.confirmation)) },
-            text = { Text(stringResource(R.string.health_connect_sync_error, uiState.healthConnectSyncMessage ?: "")) }
+            text = { Text(stringResource(R.string.health_connect_sync_error, uiState.healthConnectSyncMessage)) }
         )
     }
 }

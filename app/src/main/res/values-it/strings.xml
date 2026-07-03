@@ -1,9 +1,4 @@
 <resources>
-    <string name="always_english">Inglese (English)</string>
-    <string name="always_german">Tedesco (German)</string>
-    <string name="always_french">Francese (French)</string>
-    <string name="always_italian">Italiano (Italian)</string>
-    <string name="always_spanish">Spagnolo (Spanish)</string>
     <string name="app_name">Contacalorie Minimalista</string>
     <string name="archive">Archivio</string>
     <string name="body_weight">Peso corporeo</string>
@@ -29,7 +24,6 @@
     <string name="button_turn_to_database_entry">Trasforma in voce database</string>
     <string name="carbohydrate_protein_fat_combined">La somma di carbo, proteine, grassi e fibre: max 100g.</string>
     <string name="carbohydrates_include_sugar">Lo zucchero non può superare i carboidrati totali.</string>
-    <string name="choose_language">Lingua (Language)</string>
     <string name="csv_wrong_number_fields">Il CSV ha un numero errato di campi.</string>
     <string name="custom_weights">Pesi di selezione rapida personalizzati</string>
     <string name="custom_weights_example">es: \"55:1 Cucchiaio-110:2 Cucchiai\"</string>
@@ -48,7 +42,6 @@
     <string name="dialog_health_connect_sync">Questo sincronizzerà il tuo archivio completo con Health Connect. Se questa app ha precedentemente creato voci Health Connect per i giorni che fanno parte dell\'attuale archivio in-app, queste voci di Health Connect verranno sovrascritte. Le voci di Health Connect per i giorni che NON fanno parte dell\'attuale archivio in-app non saranno interessate.\n\nTieni presente che per archivi che contengono più anni, questo processo può richiedere 10 minuti e oltre. Per garantire una sincronizzazione completa, non dovresti usare il telefono per altre cose durante questo periodo.</string>
     <string name="dialog_database_reset">Stai per ripristinare il tuo database allo stato di fabbrica. Tutte le voci aggiunte andranno perse permanentemente.</string>
 
-    <string name="dialog_language">Se desideri cambiare anche la lingua del database, puoi ora ripristinare il database utilizzando l\'opzione «%1$s». Tieni presente che questo caricherà il database predefinito nella lingua corrente e tutte le voci aggiunte nella lingua precedente andranno perse permanentemente.</string>
     <string name="dialog_reset_day">Questo eliminerà tutto il cibo nella tua giornata.</string>
     <string name="dropdown_backup_archive">Esporta Archivio</string>
     <string name="dropdown_backup_database">Esporta Database</string>
@@ -77,7 +70,6 @@
     <string name="overall_weight">Peso totale</string>
     <string name="quickselect_value_">Il valore della selezione rapida può essere solo \"y\" o \"n\".</string>
     <string name="sum_if_empty">somma se vuoto</string>
-    <string name="system_default">Predefinita di sistema\n(System default)</string>
     <string name="title_add_food_to_day">Aggiungi cibo al giorno</string>
     <string name="title_create_new_archive_entry">Crea nuova voce archivio</string>
     <string name="title_create_new_database_entry">Crea nuova voce database</string>
@@ -118,7 +110,6 @@
         <item>Costo</item>
     </string-array>
     <string name="report_problem">Contatta lo sviluppatore</string>
-    <string name="support">Supporto</string>
     <string name="button_understood">Capito</string>
     <string name="dropdown_rate">Valuta sul Play Store 🙏❤️</string>
     <string name="dialog_archive_delete">Sei sicuro di voler eliminare questa voce dell\'archivio?</string>

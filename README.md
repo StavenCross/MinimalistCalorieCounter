@@ -6,14 +6,15 @@
 - On any Food's edit page, you can add set Custom Quickselect Weights (e.g., "55:1 Scoop-110:2 Scoops"). These appear below the Standard Quickselect Weights, taking up two columns.
 - You can repeatedly press the "Day" button in the navigation bar to toggle between the "add" and "edit" pages.
 - In the "Add Food" page, the "Enter" key on the keyboard is replaced by a "Next" key to jump to the next text field, except on the final text field where it becomes a "Checkmark" key to instantly save instead.
-- When creating a Recipe, you can leave the "Overall Weight" field empty to automatically use the calculated sum of all ingredient weights. This can be useful for things like sandwiches where no extra water weight is added.
 - The default Database includes an "Average" Food that is set to exactly 100kcal per 100g while maintaining a healthy balance of nutrients. If I estimate based on experience that a meal was roughly 700kcal, I simply log 700g of "Average" and call it good enough.
 
 #### Health Connect
 
-- If Health Connect Auto-Sync is active, every added, changed or deleted single Archive Entry will be instantly mirrored in Health Connect. Bulk changes (Import Archive, Clear Archive) do not automatically trigger syncs and must be synced manually via "Health Connect Full Manual Sync" if so desired. To be able to keep track of when something is happening in Health Connect, every write action is accompanied by a toast notification (e.g., "Archive Entry added to Health Connect"). This notifications can be disabled in options.
--  Health Connect has an unspecific yet strict limit on how many entries an app is allowed to create per second/minute/day/insertguess. The app attempts to max out that limit, and if a write attempt is rejected it tries again after a couple seconds until the attempt goes through. For my personal 3 year archive, this probably took 15 minutes easily. No idea if there are better solutions, but it works, and you typically do a big sync only once (since otherwise the Auto-Sync has got your back) so I guess it's good enough.
-- I tried to implement an option where you can import your data FROM Health Connect INTO Minimalist Calorie Counter, but due to Play Store Review team having a massive stick up their ass when it comes to permissions, this didn't work out.
+- Add Meal can write one Health Connect Nutrition record per parsed food, including calories, macros, fiber, meal type, and timestamp.
+- The Meals screen reads app-owned Health Connect Nutrition records for the selected day so logged meals can be reviewed and deleted.
+- Goals can read authorized Health Connect body metrics, such as weight, height, body fat, and lean mass, to fill unlocked goal fields.
+- Settings includes date-range tools for deleting app-owned Health Connect Nutrition records and exporting authorized Health Connect data to CSV.
+- Health Connect has strict write-rate limits. Historical meal imports are chunked and retried when quota errors occur.
 - Health Connect is by default local-only, but to protect against data loss, if you search for "Health Connect" in your phone settings, then click "Manage Data" and "Backup and restore", you can set a daily, weekly or monthly upload to Google Drive.
 
 #### Tinkering
@@ -26,11 +27,9 @@
 
 This section is mainly based on emails I have gotten that request various features. I am very open to small tweaks and fixed and QoL stuff, but given the crappy structure of my base code, most major changes and extensions are super annoying to do without breaking anything, and need a lot of motivation. Given that I personally am mostly happy with the app's current set of features, this motivation can be hard to find.
 
-- Recipes are converted to a "normal" Database Entry when saved, and thus can not be edited ingredient-wise once they have been saved. To make this work I would have to somehow distinguish between "base food" and "recipe" in the database and give them separate edit screens, figure out how to combinine recipes with other recipes and how to not break existing databases, etc.. This feature is something I can see having quite a lot of use, even some for my own logging, so I might still do it at some point but no promises.
-
 - Micronutrients (like Vitamins and Minerals) are a similar case. Given how many there are and that most people care either about none at all or a very limited but varying subset of them, essentially the user would have to be able to pick what they want to track. Which would require a custom database structure for each user. Again, not impossible, but annoying to add and rather niche so probably never.
 
-- During the initial development I was not aware of how weird USA and Canada's food labels are with their arbitrary "portions" and including fiber in carbohydrate, so the app is incompatible with this type of labels. All things considered this would be one of the less annoying extensions, but for now, my solution is excluding USA and Canada from the Play Store target regions :P
+- Historical database entry screens still inherit the original app's European-style label assumptions. The Add Meal workflow is the preferred path for US-style nutrition blurbs.
 
 ## About this app
 

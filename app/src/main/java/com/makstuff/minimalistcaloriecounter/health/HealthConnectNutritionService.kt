@@ -1,7 +1,6 @@
 package com.makstuff.minimalistcaloriecounter.health
 
 import android.content.Context
-import android.util.Log
 import androidx.health.connect.client.HealthConnectClient
 import androidx.health.connect.client.records.NutritionRecord
 import androidx.health.connect.client.records.metadata.DataOrigin
@@ -35,14 +34,7 @@ internal class HealthConnectNutritionService(
 
     suspend fun insertQuickMealNutrition(payloads: List<QuickImportHealthPayload>): QuickImportHealthWriteResult {
         return try {
-            payloads.forEach { payload ->
-                Log.i(
-                    "MCCHealthConnect",
-                    "Writing quick food nutrition: name=${payload.name}, energy=${payload.energy} kcal, energyFromFat=${payload.energyFromFat} kcal, carbs=${payload.totalCarbohydrate} g, protein=${payload.protein} g, fat=${payload.totalFat} g"
-                )
-            }
             client.insertRecords(payloads.map { it.toNutritionRecord() })
-            Log.i("MCCHealthConnect", "Quick food nutrition write succeeded: ${payloads.size} records")
             QuickImportHealthWriteResult.Success
         } catch (e: kotlinx.coroutines.CancellationException) {
             throw e
@@ -188,14 +180,19 @@ internal class HealthConnectNutritionService(
     private suspend fun readNutritionRecords(date: LocalDate): List<NutritionRecord> {
         val startOfDay = date.atStartOfDay(ZoneId.systemDefault()).toInstant()
         val endOfDay = date.plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant()
-        return client.readRecords(
-            ReadRecordsRequest(
-                recordType = NutritionRecord::class,
-                timeRangeFilter = TimeRangeFilter.between(startOfDay, endOfDay),
-                dataOriginFilter = setOf(DataOrigin(context.packageName)),
-                ascendingOrder = true,
+        return readAllHealthConnectPages { pageToken ->
+            val response = client.readRecords(
+                ReadRecordsRequest(
+                    recordType = NutritionRecord::class,
+                    timeRangeFilter = TimeRangeFilter.between(startOfDay, endOfDay),
+                    dataOriginFilter = setOf(DataOrigin(context.packageName)),
+                    ascendingOrder = true,
+                    pageSize = HEALTH_CONNECT_PAGE_SIZE,
+                    pageToken = pageToken,
+                )
             )
-        ).records
+            HealthConnectPage(response.records, response.pageToken)
+        }
     }
 
 }

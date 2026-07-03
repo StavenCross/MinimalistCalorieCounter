@@ -101,7 +101,7 @@ class QuickImportParserTest {
     @Test
     fun sanitizesDatabaseNamesForLegacyDatabaseRules() {
         assertEquals("Food 2 eggs scrambled", QuickImportSanitizer.databaseName("2 eggs, scrambled"))
-        assertEquals("Quick Import Food", QuickImportSanitizer.databaseName(" , "))
+        assertEquals("Add Meal Food", QuickImportSanitizer.databaseName(" , "))
     }
 
     private fun assertClose(expected: Double, actual: Double?, tolerance: Double = 0.0001) {

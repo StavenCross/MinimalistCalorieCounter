@@ -21,6 +21,7 @@ import com.makstuff.minimalistcaloriecounter.ui.settings.SettingsSheet
 import com.makstuff.minimalistcaloriecounter.ui.theme.AppTheme
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import java.io.InputStream
 import java.time.LocalDate
 import java.time.LocalDateTime
 
@@ -232,8 +233,6 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     fun setAlertDialogDayReset(bool: Boolean) = uiActions.setDayResetDialog(bool)
 
-    fun setDialogLanguageInfo(bool: Boolean) = uiActions.setLanguageInfoDialog(bool)
-
     fun setAlertDialogDatabaseReset(bool: Boolean) = uiActions.setDatabaseResetDialog(bool)
 
     fun setAlertDialogArchiveImport(bool: Boolean) = uiActions.setArchiveImportDialog(bool)
@@ -258,6 +257,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     fun databaseUpdateFromCSV(context: Context) = persistenceActions.updateDatabaseFromCsv(context)
 
+    fun databaseImportCSV(context: Context, inputStream: InputStream) = persistenceActions.importDatabaseCsv(context, inputStream)
+
     fun databaseResetCSV(overwriteIfExists: Boolean, context: Context) = persistenceActions.resetDatabaseCsv(overwriteIfExists, context)
 
     fun archiveResetCSV(overwriteIfExists: Boolean, context: Context) = persistenceActions.resetArchiveCsv(overwriteIfExists, context)
@@ -277,6 +278,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     fun optionsResetFile(overwriteIfExists: Boolean, context: Context) = persistenceActions.resetOptions(overwriteIfExists, context)
 
     fun archiveUpdateFromCSV(context: Context) = persistenceActions.updateArchiveFromCsv(context)
+
+    fun archiveImportCSV(context: Context, inputStream: InputStream) = persistenceActions.importArchiveCsv(context, inputStream)
 
     fun setNameFoodDayAdd(string: String) = uiActions.setNameFoodDayAdd(string)
 

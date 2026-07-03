@@ -1,9 +1,4 @@
 <resources>
-    <string name="always_english">Englisch (English)</string>
-    <string name="always_german">Deutsch (German)</string>
-    <string name="always_french">Französisch (French)</string>
-    <string name="always_italian">Italienisch (Italian)</string>
-    <string name="always_spanish">Spanisch (Spanish)</string>
     <string name="app_name">Einfacher Kalorienzähler</string>
     <string name="archive">Archiv</string>
     <string name="body_weight">Körpergewicht</string>
@@ -29,7 +24,6 @@
     <string name="button_turn_to_database_entry">Zu Datenbank-\neintrag umwandeln</string>
     <string name="carbohydrate_protein_fat_combined">Makros und Ballaststoffe dürfen max. 100g ergeben.</string>
     <string name="carbohydrates_include_sugar">Kohlenhydrate inkludieren Zucker, deswegen kann Zucker kein höheres Gewicht haben.</string>
-    <string name="choose_language">Sprache (Language)</string>
     <string name="csv_wrong_number_fields">CSV hat die falsche Anzahl von Feldern.</string>
     <string name="custom_weights">Eigene Schnellauswahl-Gewichte</string>
     <string name="custom_weights_example">z.b. \"55:1 Löffel-110:2 Löffel\"</string>
@@ -48,7 +42,6 @@
     <string name="dialog_health_connect_sync">Dies wird dein vollständiges Archiv mit Health Connect synchronisieren. Falls diese App bereits Health Connect-Einträge für Tage erstellt hat, die Teil des aktuellen In-App-Archivs sind, werden diese Health Connect-Einträge überschrieben. Health Connect-Einträge für Tage, die NICHT Teil des aktuellen In-App-Archivs sind, sind nicht betroffen.\n\nBeachte, dass dieser Vorgang bei Archiven, die mehrere Jahre umfassen, 10 Minuten und mehr dauern kann. Um eine vollständige Synchronisierung zu gewährleisten, solltest du dein Telefon während dieser Zeit nicht für andere Dinge benutzen.</string>
     <string name="dialog_database_reset">Du bist dabei, deine gesamte Datenbank in den Ursprungszustand zurückzuversetzen. Alle Einträge, die du hinzugefügt hast, werden unwiederbringlich gelöscht.</string>
 
-    <string name="dialog_language">Falls Du auch die Sprache der Datenbank ändern willst, kannst Du die Datenbank nun über die Option „%1$s“ zurücksetzen. Beachte, dass dabei die Standard-Datenbank in der aktuellen Sprache geladen wird und alle Einträge, die Du in der vorherigen Sprache hinzugefügt hast, unwiederbringlich gelöscht werden.</string>
     <string name="dialog_reset_day">Du bist dabei, alle Essenseinträge in deinem Tag zu löschen.</string>
     <string name="dropdown_backup_archive">Archiv exportieren</string>
     <string name="dropdown_backup_database">Datenbank exportieren</string>
@@ -77,7 +70,6 @@
     <string name="overall_weight">Gesamtgewicht</string>
     <string name="quickselect_value_">\"Quickselect\" kann nur \"y\" oder \"n\" sein.</string>
     <string name="sum_if_empty">sonst Summe</string>
-    <string name="system_default">Systemstandard\n(System default)</string>
     <string name="title_add_food_to_day">Essen zu Tag hinzufügen</string>
     <string name="title_create_new_archive_entry">Neuen Archiveintrag erstellen</string>
     <string name="title_create_new_database_entry">Datenbankeintrag erstellen</string>
@@ -118,7 +110,6 @@
         <item>Preis</item>
     </string-array>
     <string name="report_problem">Entwickler kontaktieren</string>
-    <string name="support">Support</string>
     <string name="button_understood">Verstanden</string>
     <string name="dropdown_rate">App im Play Store bewerten 🙏❤️</string>
     <string name="dialog_archive_delete">Bist du sicher, dass du diesen Archiveintrag löschen möchtest?</string>

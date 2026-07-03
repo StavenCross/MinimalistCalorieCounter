@@ -1,20 +1,26 @@
 # Health Connect Integration
 
-The app writes Nutrition records to Health Connect for Quick Add and historical imports.
+The app writes Nutrition records to Health Connect for Add Meal and historical imports.
 
 ## Permissions
 
-The app requests:
+Core meal logging requests:
 
 - Read Nutrition
 - Write Nutrition
+- Read Weight
 - Write Weight
+- Read Height
+- Read Body Fat
+- Read Lean Body Mass
 
-Read Nutrition is needed so the app can display Meals and avoid historical-import duplicates. Health Connect permissions remain user controlled and cannot be silently granted by automation.
+The export workflow also requests broad Health Connect read permissions for supported record types, plus historical-data access, so it can produce a review CSV for external analysis.
 
-## Quick Add Writes
+Read Nutrition is needed so the app can display Meals and avoid historical-import duplicates. Weight, height, body-fat, and lean-mass reads support Goals. Health Connect permissions remain user controlled and cannot be silently granted by automation.
 
-Quick Add writes one Health Connect `NutritionRecord` per parsed food.
+## Add Meal Writes
+
+Add Meal writes one Health Connect `NutritionRecord` per parsed food.
 
 Each food record includes:
 

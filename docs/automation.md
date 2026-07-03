@@ -28,7 +28,7 @@ Run:
 scripts/android/run-automation-smoke.sh
 ```
 
-The script installs the debug APK, launches the app, forwards the port, checks `/health`, navigates to Quick Add, previews a sample meal, and writes state to `/tmp/mcc-automation-state.json`.
+The script installs the debug APK, launches the app, forwards the port, checks `/health`, navigates to Add Meal, previews a sample meal, and writes state to `/tmp/mcc-automation-state.json`.
 
 ## Design Rules
 
