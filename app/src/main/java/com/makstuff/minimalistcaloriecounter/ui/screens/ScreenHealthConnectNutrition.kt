@@ -26,6 +26,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.BakeryDining
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.EggAlt
 import androidx.compose.material.icons.filled.Grass
@@ -60,6 +62,8 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -73,7 +77,9 @@ import com.makstuff.minimalistcaloriecounter.ui.model.healthGroupDetailItems
 import com.makstuff.minimalistcaloriecounter.ui.model.healthMealDetailItems
 import com.makstuff.minimalistcaloriecounter.ui.model.macroProgressArc
 import com.makstuff.minimalistcaloriecounter.ui.model.macroSummaryItems
+import com.makstuff.minimalistcaloriecounter.ui.model.mealGroupSummaryText
 import com.makstuff.minimalistcaloriecounter.ui.model.mealGroups
+import com.makstuff.minimalistcaloriecounter.ui.model.mealsDaySummaryText
 import com.makstuff.minimalistcaloriecounter.ui.model.nutritionDaySummary
 import com.makstuff.minimalistcaloriecounter.ui.model.supportsMacroHint
 import com.makstuff.minimalistcaloriecounter.ui.reused.MacroHintBox
@@ -100,6 +106,18 @@ fun ScreenHealthConnectNutrition(
     var selectedFood by remember { mutableStateOf<HealthConnectNutritionMeal?>(null) }
     var selectedMealGroup by remember { mutableStateOf<NutritionMealGroup?>(null) }
     var datePickerVisible by remember { mutableStateOf(false) }
+    val clipboard = LocalClipboardManager.current
+    var daySummaryCopied by remember { mutableStateOf(false) }
+    var mealSummaryCopied by remember { mutableStateOf(false) }
+    val targets = uiState.goals.activeTargetsFor(selectedDate)
+    val daySummaryText = mealsDaySummaryText(selectedDate, meals, targets)
+
+    LaunchedEffect(daySummaryText) {
+        daySummaryCopied = false
+    }
+    LaunchedEffect(selectedMealGroup) {
+        mealSummaryCopied = false
+    }
 
     selectedFood?.let { food ->
         FoodDetailDialog(
@@ -115,7 +133,12 @@ fun ScreenHealthConnectNutrition(
     selectedMealGroup?.let { group ->
         MealDetailDialog(
             group = group,
+            copied = mealSummaryCopied,
             onDismiss = { selectedMealGroup = null },
+            onCopy = {
+                clipboard.setText(AnnotatedString(mealGroupSummaryText(group)))
+                mealSummaryCopied = true
+            },
             onFoodClick = {
                 selectedMealGroup = null
                 selectedFood = it
@@ -158,9 +181,14 @@ fun ScreenHealthConnectNutrition(
                 DaySummaryCard(
                     date = selectedDate,
                     meals = meals,
-                    targets = uiState.goals.activeTargetsFor(selectedDate),
+                    targets = targets,
                     isLoading = uiState.healthConnectViewerLoading,
                     message = uiState.healthConnectViewerMessage,
+                    copied = daySummaryCopied,
+                    onCopySummary = {
+                        clipboard.setText(AnnotatedString(daySummaryText))
+                        daySummaryCopied = true
+                    },
                 )
             }
 
@@ -326,6 +354,8 @@ private fun DaySummaryCard(
     targets: MacroTargets,
     isLoading: Boolean,
     message: String?,
+    copied: Boolean,
+    onCopySummary: () -> Unit,
 ) {
     val summary = nutritionDaySummary(meals, targets)
     val totals = summary.totals
@@ -398,6 +428,19 @@ private fun DaySummaryCard(
                 items = macroSummaryItems(totals)
             )
             GoalProgressRow(summary.progress)
+            TextButton(
+                onClick = onCopySummary,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("meals_day_copy_summary"),
+            ) {
+                Icon(
+                    imageVector = if (copied) Icons.Default.Check else Icons.Default.ContentCopy,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp),
+                )
+                Text(if (copied) "Day copied" else "Copy day summary")
+            }
         }
     }
 }
@@ -736,7 +779,9 @@ private fun CompactFoodRow(
 @Composable
 private fun MealDetailDialog(
     group: NutritionMealGroup,
+    copied: Boolean,
     onDismiss: () -> Unit,
+    onCopy: () -> Unit,
     onFoodClick: (HealthConnectNutritionMeal) -> Unit,
 ) {
     val calories = group.foods.sumOf { it.energy }
@@ -758,7 +803,7 @@ private fun MealDetailDialog(
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 MealTitle(
@@ -771,6 +816,16 @@ private fun MealDetailDialog(
                     fontWeight = FontWeight.Bold,
                     maxLines = 1,
                 )
+                IconButton(
+                    onClick = onCopy,
+                    modifier = Modifier.testTag("meals_meal_copy_summary"),
+                ) {
+                    Icon(
+                        imageVector = if (copied) Icons.Default.Check else Icons.Default.ContentCopy,
+                        contentDescription = if (copied) "Meal summary copied" else "Copy meal summary",
+                        tint = if (copied) MacroFiber else MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
             Column(
                 modifier = Modifier
