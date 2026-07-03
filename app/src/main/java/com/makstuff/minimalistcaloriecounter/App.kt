@@ -126,6 +126,7 @@ import com.makstuff.minimalistcaloriecounter.ui.settings.SettingsSheet
 import com.makstuff.minimalistcaloriecounter.ui.theme.AppTheme
 import com.makstuff.minimalistcaloriecounter.health.HealthConnectManager
 import com.makstuff.minimalistcaloriecounter.health.HealthConnectExportMode
+import com.makstuff.minimalistcaloriecounter.health.HealthConnectCleanupMode
 import androidx.health.connect.client.HealthConnectClient
 import androidx.health.connect.client.PermissionController
 import kotlin.time.Duration.Companion.milliseconds
@@ -357,6 +358,7 @@ fun App(
         val settingsSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
         val cleanupStartDate = uiState.healthConnectNutritionCleanupStartDate
         val cleanupEndDate = uiState.healthConnectNutritionCleanupEndDate
+        val cleanupPreview = uiState.healthConnectNutritionCleanupPreview
         val exportStartDate = uiState.healthConnectExportStartDate
         val exportEndDate = uiState.healthConnectExportEndDate
         val cleanupStartPicker = remember(cleanupStartDate) {
@@ -459,7 +461,11 @@ fun App(
                     )
                 },
                 title = { Text(stringResource(R.string.confirmation)) },
-                text = { Text("Remove all meal and nutrition records written by this app from ${cleanupStartDate} through ${cleanupEndDate}? This includes Add Meal, historical imports, and legacy Daily Total nutrition rows in that range.") },
+                text = {
+                    Text(
+                        "Remove ${cleanupPreview?.total ?: 0} ${uiState.healthConnectNutritionCleanupMode.label.lowercase()} records from ${cleanupStartDate} through ${cleanupEndDate}?"
+                    )
+                },
             )
         }
 
@@ -534,10 +540,36 @@ fun App(
                             OptionsItem("End date", trailingText = cleanupEndDate.format(DateTimeFormatter.ISO_LOCAL_DATE)) {
                                 cleanupEndPicker.show()
                             }
+                            OptionsItem("Cleanup mode", trailingText = uiState.healthConnectNutritionCleanupMode.label) {
+                                val modes = HealthConnectCleanupMode.entries
+                                val current = modes.indexOf(uiState.healthConnectNutritionCleanupMode).coerceAtLeast(0)
+                                viewModel.updateHealthConnectNutritionCleanupMode(modes[(current + 1) % modes.size])
+                            }
                             OptionsItem(
-                                text = if (uiState.historicalMealImportInProgress) "Removal in progress..." else "Remove meals and nutrition",
+                                text = if (uiState.historicalMealImportInProgress) "Previewing records..." else "Preview records to remove",
                             ) {
-                                historicalCleanupConfirmVisible = true
+                                handleHCInteraction { viewModel.previewHealthConnectNutritionRange() }
+                            }
+                            cleanupPreview?.let { preview ->
+                                SheetNote(
+                                    "Preview: ${preview.total} total. Historical ${preview.historicalImports}, Add Meal ${preview.addMeal}, legacy daily totals ${preview.legacyDailyTotals}.",
+                                    isError = false,
+                                )
+                            }
+                            OptionsItem(
+                                text = if (uiState.historicalMealImportInProgress) {
+                                    "Removal in progress..."
+                                } else if (cleanupPreview == null) {
+                                    "Preview before removing"
+                                } else {
+                                    "Remove ${cleanupPreview.total} previewed records"
+                                },
+                            ) {
+                                if (cleanupPreview != null) {
+                                    historicalCleanupConfirmVisible = true
+                                } else {
+                                    viewModel.previewHealthConnectNutritionRange()
+                                }
                             }
                             uiState.historicalMealImportMessage?.let { message ->
                                 SheetNote(message, isError = false)

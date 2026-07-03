@@ -16,6 +16,7 @@ import com.makstuff.minimalistcaloriecounter.classes.QuickImportMealType
 import com.makstuff.minimalistcaloriecounter.classes.WeeklyWeightLossTarget
 import com.makstuff.minimalistcaloriecounter.health.HealthConnectManager
 import com.makstuff.minimalistcaloriecounter.health.HealthConnectExportMode
+import com.makstuff.minimalistcaloriecounter.health.HealthConnectCleanupMode
 import com.makstuff.minimalistcaloriecounter.essentials.NavButton
 import com.makstuff.minimalistcaloriecounter.persistence.AppCsvStore
 import com.makstuff.minimalistcaloriecounter.ui.settings.SettingsSheet
@@ -111,23 +112,16 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     fun writeHistoricalMealImport() = healthConnectMealActions.writeHistoricalImport()
 
     fun cleanupHistoricalMealImport() = healthConnectMealActions.cleanupHistoricalImport()
-
     fun updateHealthConnectNutritionCleanupStartDate(date: LocalDate) = healthConnectExportActions.updateCleanupStartDate(date)
-
     fun updateHealthConnectNutritionCleanupEndDate(date: LocalDate) = healthConnectExportActions.updateCleanupEndDate(date)
-
+    fun updateHealthConnectNutritionCleanupMode(mode: HealthConnectCleanupMode) = healthConnectExportActions.updateCleanupMode(mode)
+    fun previewHealthConnectNutritionRange() = healthConnectExportActions.previewNutritionRange()
     fun updateHealthConnectExportStartDate(date: LocalDate) = healthConnectExportActions.updateExportStartDate(date)
-
     fun updateHealthConnectExportEndDate(date: LocalDate) = healthConnectExportActions.updateExportEndDate(date)
-
     fun updateHealthConnectExportMode(mode: HealthConnectExportMode) = healthConnectExportActions.updateExportMode(mode)
-
     fun updateHealthConnectExportRedacted(redacted: Boolean) = healthConnectExportActions.updateExportRedacted(redacted)
-
     fun exportHealthConnectRange() = healthConnectExportActions.exportRange()
-
     fun removeHealthConnectNutritionRange() = healthConnectExportActions.removeNutritionRange()
-
 
     fun setAlertDialogHealthConnectActivation(bool: Boolean) = uiActions.setHealthConnectActivationDialog(bool)
 

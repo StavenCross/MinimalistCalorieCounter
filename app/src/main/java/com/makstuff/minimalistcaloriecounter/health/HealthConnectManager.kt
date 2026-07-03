@@ -62,8 +62,6 @@ class HealthConnectManager(private val context: Context) {
 
     val permissions = writePermissions + readNutritionPermissions + readGoalProfilePermissions
 
-    val exportPermissions = exportReadPermissions
-
     fun exportPermissionsFor(mode: HealthConnectExportMode): Set<String> {
         return mode.recordTypes()
             .map { HealthPermission.getReadPermission(it) }
@@ -219,6 +217,7 @@ class HealthConnectManager(private val context: Context) {
     suspend fun deleteNutritionRecordsInRange(
         startDate: LocalDate,
         endDate: LocalDate,
+        mode: HealthConnectCleanupMode,
         onProgress: (Float?, Int, Int) -> Unit,
     ): HistoricalMealHealthConnectResult {
         if (!isSdkAvailable()) return HistoricalMealHealthConnectResult.HealthConnectUnavailable
@@ -227,7 +226,23 @@ class HealthConnectManager(private val context: Context) {
         if (!hasNutritionMutationPermissions()) {
             return HistoricalMealHealthConnectResult.PermissionsMissing
         }
-        return HealthConnectNutritionService(context, client).deleteNutritionRecordsInRange(startDate, endDate, onProgress)
+        return HealthConnectNutritionService(context, client).deleteNutritionRecordsInRange(startDate, endDate, mode, onProgress)
+    }
+
+    suspend fun previewNutritionRecordsInRange(
+        startDate: LocalDate,
+        endDate: LocalDate,
+        mode: HealthConnectCleanupMode,
+        onProgress: (Float?, Int, Int) -> Unit,
+    ): HealthConnectCleanupPreviewResult {
+        if (!isSdkAvailable()) return HealthConnectCleanupPreviewResult.HealthConnectUnavailable
+        val client = getClient() ?: return HealthConnectCleanupPreviewResult.HealthConnectUnavailable
+
+        if (!hasNutritionMutationPermissions()) {
+            return HealthConnectCleanupPreviewResult.PermissionsMissing
+        }
+        return HealthConnectNutritionService(context, client)
+            .previewNutritionRecordsInRange(startDate, endDate, mode, onProgress)
     }
 
     suspend fun syncSingleEntry(date: LocalDate, weight: Double, nutrients: Nutrients) {

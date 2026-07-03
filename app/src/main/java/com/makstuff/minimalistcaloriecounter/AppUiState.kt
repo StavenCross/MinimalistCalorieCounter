@@ -15,6 +15,8 @@ import com.makstuff.minimalistcaloriecounter.classes.QuickImportMealType
 import com.makstuff.minimalistcaloriecounter.classes.QuickImportOutboxItem
 import com.makstuff.minimalistcaloriecounter.classes.QuickImportResult
 import com.makstuff.minimalistcaloriecounter.health.HealthConnectExportMode
+import com.makstuff.minimalistcaloriecounter.health.HealthConnectCleanupMode
+import com.makstuff.minimalistcaloriecounter.health.HealthConnectCleanupPreview
 import com.makstuff.minimalistcaloriecounter.health.HealthConnectNutritionMeal
 import com.makstuff.minimalistcaloriecounter.essentials.NAV_DAY
 import com.makstuff.minimalistcaloriecounter.essentials.NavButton
@@ -137,6 +139,8 @@ data class AppUiState(
     val healthConnectExportInProgress: Boolean = false,
     val healthConnectNutritionCleanupStartDate: LocalDate = LocalDateTime.now().minusHours(12).toLocalDate(),
     val healthConnectNutritionCleanupEndDate: LocalDate = LocalDateTime.now().minusHours(12).toLocalDate(),
+    val healthConnectNutritionCleanupMode: HealthConnectCleanupMode = HealthConnectCleanupMode.AllAppNutrition,
+    val healthConnectNutritionCleanupPreview: HealthConnectCleanupPreview? = null,
     val loading: Boolean = true,
 
     val alertDialogArchiveReset: Boolean = false,
