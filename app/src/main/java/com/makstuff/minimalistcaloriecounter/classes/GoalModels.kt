@@ -156,6 +156,15 @@ data class GoalHistoryEntry(
     val effectiveDate: LocalDate,
     val targets: MacroTargets,
     val source: String,
+    val generatedDate: LocalDate? = null,
+    val bmr: Double? = null,
+    val tdee: Double? = null,
+    val weightKg: Double? = null,
+    val bodyFatPercent: Double? = null,
+    val leanMassKg: Double? = null,
+    val activityLevel: ActivityLevel? = null,
+    val weightLossTarget: WeeklyWeightLossTarget? = null,
+    val applied: Boolean = true,
 )
 
 data class GoalRecommendation(
@@ -165,6 +174,28 @@ data class GoalRecommendation(
     val tdee: Double,
     val warning: String? = null,
 )
+
+fun GoalRecommendation.toHistoryEntry(
+    effectiveDate: LocalDate,
+    profile: GoalProfile,
+    source: String = "recommended",
+    applied: Boolean = true,
+): GoalHistoryEntry {
+    return GoalHistoryEntry(
+        effectiveDate = effectiveDate,
+        targets = targets,
+        source = source,
+        generatedDate = generatedDate,
+        bmr = bmr,
+        tdee = tdee,
+        weightKg = profile.weightKg.value,
+        bodyFatPercent = profile.bodyFatPercent.value,
+        leanMassKg = profile.leanMassOrCalculatedKg(),
+        activityLevel = profile.activityLevel,
+        weightLossTarget = profile.weightLossTarget,
+        applied = applied,
+    )
+}
 
 data class Goals(
     val profile: GoalProfile = GoalProfile(),

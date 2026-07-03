@@ -11,14 +11,14 @@ Generated output, Gradle build folders, `node_modules`, and IDE metadata are exc
 | `app/src/main/java/com/makstuff/minimalistcaloriecounter/App.kt` | 2022 | App shell / route wiring / UI | High |
 | `app/src/main/java/com/makstuff/minimalistcaloriecounter/ui/screens/ScreenQuickImport.kt` | 1544 | Compose screen and components | Medium, UI-file exception applies |
 | `app/src/main/java/com/makstuff/minimalistcaloriecounter/ui/screens/ScreenHealthConnectNutrition.kt` | 977 | Compose screen and components | Medium, UI-file exception applies |
-| `app/src/main/java/com/makstuff/minimalistcaloriecounter/ui/screens/ScreenGoals.kt` | 843 | Compose screen and components | Medium, UI-file exception applies |
+| `app/src/main/java/com/makstuff/minimalistcaloriecounter/ui/screens/ScreenGoals.kt` | 917 | Compose screen and components | Medium, UI-file exception applies |
 
 All non-UI files touched in this cleanup are now under the 300-line cap:
 
 - `HealthConnectManager.kt`: 300 lines after extracting export, nutrition, archive sync, mapper, goal-profile reader, and permission-scope policy helpers.
 - `AutomationBootstrap.kt`: 298 lines after extracting HTTP helpers, JSON serializers, and route aliases.
 - `tools/mcc-mcp/src/server.ts`: 23 lines after splitting tool registration groups.
-- `AppViewModel.kt`: 282 lines after extracting feature action classes for Health Connect, Goals, Add Meal, persistence, database, archive/day, and UI chrome.
+- `AppViewModel.kt`: 297 lines after extracting feature action classes for Health Connect, Goals, Add Meal, persistence, database, archive/day, and UI chrome.
 - `AppViewModelQuickImportActions.kt`: 300 lines after moving outbox persistence helpers into `AppViewModelQuickImportHelpers.kt`.
 
 ## Cleanup Completed In This Pass
@@ -86,6 +86,7 @@ All non-UI files touched in this cleanup are now under the 300-line cap:
 - Added meal-level Health Connect deletes by forwarding the selected meal group's app-owned record ids through the existing delete path.
 - Added meal repeat preparation through Add Meal so repeat writes reuse the existing parser, outbox, and Health Connect commit flow.
 - Added day check-in text export to Downloads and extracted a shared Downloads text writer for Health Connect CSV and check-in exports.
+- Added richer Goals recommendation history metadata and a compact history card so applied targets show their BMR/TDEE and measurement context.
 
 ## Recommended Extraction Order
 

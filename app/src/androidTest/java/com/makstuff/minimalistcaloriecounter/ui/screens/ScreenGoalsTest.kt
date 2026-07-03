@@ -16,6 +16,7 @@ import com.makstuff.minimalistcaloriecounter.classes.ActivityLevel
 import com.makstuff.minimalistcaloriecounter.classes.Archive
 import com.makstuff.minimalistcaloriecounter.classes.Combo
 import com.makstuff.minimalistcaloriecounter.classes.GoalFieldKey
+import com.makstuff.minimalistcaloriecounter.classes.GoalHistoryEntry
 import com.makstuff.minimalistcaloriecounter.classes.GoalMacro
 import com.makstuff.minimalistcaloriecounter.classes.GoalMeasurement
 import com.makstuff.minimalistcaloriecounter.classes.GoalProfile
@@ -184,6 +185,50 @@ class ScreenGoalsTest {
         composeRule.waitForIdle()
         composeRule.onNodeWithTag("goals_weight_loss_option_OnePound").performClick()
         assertEquals(WeeklyWeightLossTarget.OnePound, target)
+    }
+
+    @Test
+    fun historyCardShowsSavedRecommendationContext() {
+        composeRule.setContent {
+            AppTheme(dynamicColor = false) {
+                ScreenGoals(
+                    uiState = baseState().copy(
+                        goals = Goals(
+                            currentTargets = MacroTargets(calories = 2050.0),
+                            history = listOf(
+                                GoalHistoryEntry(
+                                    effectiveDate = LocalDate.of(2026, 7, 3),
+                                    targets = MacroTargets(calories = 2050.0),
+                                    source = "recommended",
+                                    bmr = 1850.0,
+                                    tdee = 2550.0,
+                                    weightKg = 90.0,
+                                    leanMassKg = 72.0,
+                                    weightLossTarget = WeeklyWeightLossTarget.OnePound,
+                                )
+                            ),
+                        )
+                    ),
+                    onSettingsDismiss = {},
+                    onRefreshHealthConnect = {},
+                    onRecalculate = {},
+                    onApplyRecommendation = {},
+                    onDismissRecommendation = {},
+                    onBirthdayChange = {},
+                    onSexChange = {},
+                    onActivityLevelChange = {},
+                    onWeightLossTargetChange = {},
+                    onMeasurementChange = { _, _ -> },
+                    onMeasurementLockToggle = {},
+                    onMacroChange = { _, _ -> },
+                    onMacroLockToggle = {},
+                )
+            }
+        }
+
+        composeRule.onNodeWithText("Recommendation history").assertIsDisplayed()
+        composeRule.onNodeWithText("Recommended • BMR 1850 • TDEE 2550").assertIsDisplayed()
+        composeRule.onNodeWithText("90 kg • 72 kg lean • 1 lb/week").assertIsDisplayed()
     }
 
     private fun baseState(): AppUiState {

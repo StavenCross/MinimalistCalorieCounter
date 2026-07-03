@@ -40,6 +40,15 @@ object GoalsCsv {
                 entry.targets.carbs?.toString().orEmpty(),
                 entry.targets.fat?.toString().orEmpty(),
                 entry.targets.fiber?.toString().orEmpty(),
+                entry.generatedDate?.toString().orEmpty(),
+                entry.bmr?.toString().orEmpty(),
+                entry.tdee?.toString().orEmpty(),
+                entry.weightKg?.toString().orEmpty(),
+                entry.bodyFatPercent?.toString().orEmpty(),
+                entry.leanMassKg?.toString().orEmpty(),
+                entry.activityLevel?.name.orEmpty(),
+                entry.weightLossTarget?.name.orEmpty(),
+                entry.applied.toString(),
             )
         }
         goals.recommendation?.let { recommendation ->
@@ -113,7 +122,16 @@ object GoalsCsv {
                                 carbs = row.getOrNull(5).parseDoubleOrNull(),
                                 fat = row.getOrNull(6).parseDoubleOrNull(),
                                 fiber = row.getOrNull(7).parseDoubleOrNull(),
-                            )
+                            ),
+                            generatedDate = row.getOrNull(8).parseDateOrNull(),
+                            bmr = row.getOrNull(9).parseDoubleOrNull(),
+                            tdee = row.getOrNull(10).parseDoubleOrNull(),
+                            weightKg = row.getOrNull(11).parseDoubleOrNull(),
+                            bodyFatPercent = row.getOrNull(12).parseDoubleOrNull(),
+                            leanMassKg = row.getOrNull(13).parseDoubleOrNull(),
+                            activityLevel = row.getOrNull(14)?.takeIf { it.isNotBlank() }?.let { ActivityLevel.fromName(it) },
+                            weightLossTarget = row.getOrNull(15)?.takeIf { it.isNotBlank() }?.let { WeeklyWeightLossTarget.fromName(it) },
+                            applied = row.getOrNull(16)?.toBooleanStrictOrNull() ?: true,
                         )
                     }
                 }

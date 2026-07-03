@@ -73,6 +73,7 @@ import androidx.compose.ui.unit.dp
 import com.makstuff.minimalistcaloriecounter.AppUiState
 import com.makstuff.minimalistcaloriecounter.classes.ActivityLevel
 import com.makstuff.minimalistcaloriecounter.classes.GoalFieldKey
+import com.makstuff.minimalistcaloriecounter.classes.GoalHistoryEntry
 import com.makstuff.minimalistcaloriecounter.classes.GoalMacro
 import com.makstuff.minimalistcaloriecounter.classes.GoalMeasurement
 import com.makstuff.minimalistcaloriecounter.classes.GoalSex
@@ -159,6 +160,12 @@ fun ScreenGoals(
                     onApply = onApplyRecommendation,
                     onDismiss = onDismissRecommendation,
                 )
+            }
+        }
+
+        if (goals.history.isNotEmpty()) {
+            item {
+                GoalHistoryCard(entries = goals.history)
             }
         }
 
@@ -282,6 +289,73 @@ private fun RecommendationCard(
                 Text("Apply")
             }
         }
+    }
+}
+
+@Composable
+private fun GoalHistoryCard(entries: List<GoalHistoryEntry>) {
+    SurfacePanel(
+        backgroundColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+        borderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.16f),
+        contentPadding = 14,
+        verticalSpacing = 10,
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            AccentIcon(Icons.AutoMirrored.Filled.TrendingDown, AccentGoals, 42)
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text("Recommendation history", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Text(
+                    text = "${entries.size} target decisions saved",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+        entries.sortedByDescending { it.effectiveDate }.take(3).forEach { entry ->
+            GoalHistoryRow(entry)
+        }
+    }
+}
+
+@Composable
+private fun GoalHistoryRow(entry: GoalHistoryEntry) {
+    Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(entry.effectiveDate.toString(), style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold)
+            Text(entry.targets.calories.formatTarget("kcal"), style = MaterialTheme.typography.labelLarge)
+        }
+        Text(
+            text = buildString {
+                append(entry.source.replaceFirstChar { it.uppercase() })
+                entry.bmr?.let { append(" • BMR ${it.toFormattedString(true)}") }
+                entry.tdee?.let { append(" • TDEE ${it.toFormattedString(true)}") }
+            },
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Text(
+            text = buildString {
+                entry.weightKg?.let { append("${it.toFormattedString(true)} kg") }
+                entry.leanMassKg?.let {
+                    if (isNotEmpty()) append(" • ")
+                    append("${it.toFormattedString(true)} kg lean")
+                }
+                entry.weightLossTarget?.let {
+                    if (isNotEmpty()) append(" • ")
+                    append(it.label)
+                }
+            }.ifBlank { "Source measurements unavailable" },
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }
 
