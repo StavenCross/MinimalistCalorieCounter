@@ -3,6 +3,7 @@ package com.makstuff.minimalistcaloriecounter.ui.screens
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -229,6 +230,37 @@ class ScreenGoalsTest {
         composeRule.onNodeWithText("Recommendation history").assertIsDisplayed()
         composeRule.onNodeWithText("Recommended • BMR 1850 • TDEE 2550").assertIsDisplayed()
         composeRule.onNodeWithText("90 kg • 72 kg lean • 1 lb/week").assertIsDisplayed()
+    }
+
+    @Test
+    fun recalculationCardShowsScheduleAndEmitsRecalculate() {
+        var recalculateCount = 0
+
+        composeRule.setContent {
+            AppTheme(dynamicColor = false) {
+                ScreenGoals(
+                    uiState = baseState(),
+                    onSettingsDismiss = {},
+                    onRefreshHealthConnect = {},
+                    onRecalculate = { recalculateCount++ },
+                    onApplyRecommendation = {},
+                    onDismissRecommendation = {},
+                    onBirthdayChange = {},
+                    onSexChange = {},
+                    onActivityLevelChange = {},
+                    onWeightLossTargetChange = {},
+                    onMeasurementChange = { _, _ -> },
+                    onMeasurementLockToggle = {},
+                    onMacroChange = { _, _ -> },
+                    onMacroLockToggle = {},
+                )
+            }
+        }
+
+        composeRule.onNodeWithText("Sunday recalculation").assertIsDisplayed()
+        composeRule.onNodeWithText("Last recommendation: none yet").assertIsDisplayed()
+        composeRule.onNodeWithContentDescription("Recalculate goals").performClick()
+        assertEquals(1, recalculateCount)
     }
 
     private fun baseState(): AppUiState {

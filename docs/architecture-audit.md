@@ -87,6 +87,7 @@ All non-UI files touched in this cleanup are now under the 300-line cap:
 - Added meal repeat preparation through Add Meal so repeat writes reuse the existing parser, outbox, and Health Connect commit flow.
 - Added day check-in text export to Downloads and extracted a shared Downloads text writer for Health Connect CSV and check-in exports.
 - Added richer Goals recommendation history metadata and a compact history card so applied targets show their BMR/TDEE and measurement context.
+- Added explicit Goals Sunday recalculation status with a testable schedule helper and a visible recalculation card.
 
 ## Recommended Extraction Order
 

@@ -76,6 +76,8 @@ import com.makstuff.minimalistcaloriecounter.classes.GoalFieldKey
 import com.makstuff.minimalistcaloriecounter.classes.GoalHistoryEntry
 import com.makstuff.minimalistcaloriecounter.classes.GoalMacro
 import com.makstuff.minimalistcaloriecounter.classes.GoalMeasurement
+import com.makstuff.minimalistcaloriecounter.classes.GoalRecalculationSchedule
+import com.makstuff.minimalistcaloriecounter.classes.GoalRecalculationStatus
 import com.makstuff.minimalistcaloriecounter.classes.GoalSex
 import com.makstuff.minimalistcaloriecounter.classes.GoalValueSource
 import com.makstuff.minimalistcaloriecounter.classes.MacroTargets
@@ -116,6 +118,7 @@ fun ScreenGoals(
 ) {
     val goals = uiState.goals
     val activeTargets = goals.activeTargetsFor(LocalDate.now())
+    val recalculationStatus = GoalRecalculationSchedule.status(goals)
 
     if (goals.settingsVisible) {
         GoalsSettingsSheet(
@@ -161,6 +164,13 @@ fun ScreenGoals(
                     onDismiss = onDismissRecommendation,
                 )
             }
+        }
+
+        item {
+            RecalculationCard(
+                status = recalculationStatus,
+                onRecalculate = onRecalculate,
+            )
         }
 
         if (goals.history.isNotEmpty()) {
@@ -289,6 +299,43 @@ private fun RecommendationCard(
                 Text("Apply")
             }
         }
+    }
+}
+
+@Composable
+private fun RecalculationCard(
+    status: GoalRecalculationStatus,
+    onRecalculate: () -> Unit,
+) {
+    SurfacePanel(
+        backgroundColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+        borderColor = if (status.dueToday) AccentGoals.copy(alpha = 0.42f) else MaterialTheme.colorScheme.outline.copy(alpha = 0.16f),
+        contentPadding = 14,
+        verticalSpacing = 10,
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            AccentIcon(Icons.Default.Event, AccentGoals, 42)
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text("Sunday recalculation", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Text(
+                    text = if (status.dueToday) "Due today" else "Next check ${status.nextSunday}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = if (status.dueToday) AccentGoals else MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            IconButton(onClick = onRecalculate) {
+                Icon(Icons.Default.Calculate, contentDescription = "Recalculate goals", tint = AccentGoals)
+            }
+        }
+        Text(
+            text = "Last recommendation: ${status.lastRecommendationDate?.toString() ?: "none yet"}",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }
 
