@@ -22,7 +22,7 @@ Read Nutrition is needed so the app can display Meals and avoid historical-impor
 
 Add Meal writes one Health Connect `NutritionRecord` per parsed food.
 
-Add Meal also records each Health Connect write intent in `quick_import_outbox.csv`. The outbox tracks deterministic client record ids, intended meal timestamp, meal type, attempt count, last error, and whether the write is pending, retrying, synced, or failed. This keeps local backup state visible when local database/day writes succeed but Health Connect is unavailable or missing permissions.
+Add Meal also records each Health Connect write intent in `quick_import_outbox.csv`. The outbox tracks deterministic client record ids, intended meal timestamp, meal type, stored Health Connect payloads, attempt count, last error, and whether the write is pending, retrying, synced, or failed. This keeps local backup state visible when local database/day writes succeed but Health Connect is unavailable or missing permissions. Retry uses the stored payloads and the same deterministic client record ids.
 
 Each food record includes:
 

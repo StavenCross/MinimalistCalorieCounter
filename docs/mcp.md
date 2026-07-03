@@ -35,6 +35,8 @@ npm start
   - Parses a meal blurb without writing.
 - `mcc_quick_import_commit`
   - Commits an Add Meal meal through the real app path.
+- `mcc_quick_import_retry`
+  - Retries a failed or pending Add Meal Health Connect write by outbox id.
 - `mcc_select_meals_date`
   - Selects a Meals page date.
 - `mcc_health_read_day`

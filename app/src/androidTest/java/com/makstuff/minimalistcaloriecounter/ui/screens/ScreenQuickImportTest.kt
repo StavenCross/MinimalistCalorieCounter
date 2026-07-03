@@ -16,6 +16,7 @@ import com.makstuff.minimalistcaloriecounter.classes.Archive
 import com.makstuff.minimalistcaloriecounter.classes.Combo
 import com.makstuff.minimalistcaloriecounter.classes.Goals
 import com.makstuff.minimalistcaloriecounter.classes.MacroTargets
+import com.makstuff.minimalistcaloriecounter.classes.QuickImportHealthPayload
 import com.makstuff.minimalistcaloriecounter.classes.QuickImportMealType
 import com.makstuff.minimalistcaloriecounter.classes.QuickImportOutboxItem
 import com.makstuff.minimalistcaloriecounter.classes.QuickImportOutboxState
@@ -86,6 +87,7 @@ class ScreenQuickImportTest {
     @Test
     fun missingParsedMealDisablesImport() {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
+        var retryId: String? = null
 
         composeRule.setContent {
             AppTheme {
@@ -218,6 +220,22 @@ class ScreenQuickImportTest {
                                 attemptCount = 1,
                                 lastAttemptAt = LocalDateTime.of(2026, 7, 3, 12, 2),
                                 lastErrorMessage = "Health Connect permissions are missing.",
+                                healthPayloads = listOf(
+                                    QuickImportHealthPayload(
+                                        dateTime = LocalDateTime.of(2026, 7, 3, 12, 0),
+                                        mealType = QuickImportMealType.Lunch.healthConnectValue,
+                                        energy = 389.0,
+                                        energyFromFat = 62.1,
+                                        totalCarbohydrate = 66.3,
+                                        sugar = 0.9,
+                                        protein = 16.9,
+                                        totalFat = 6.9,
+                                        saturatedFat = 1.2,
+                                        dietaryFiber = 10.6,
+                                        name = "100g test oats",
+                                        clientRecordId = "mcc-add-meal-abc123-0",
+                                    )
+                                ),
                             )
                         ),
                     ),
@@ -236,6 +254,7 @@ class ScreenQuickImportTest {
 
         composeRule.onNodeWithTag("quick_import_outbox_status").assertIsDisplayed()
         composeRule.onNodeWithText("1 Health Connect write needs sync attention.").assertIsDisplayed()
+        composeRule.onNodeWithTag("quick_import_outbox_retry").assertIsDisplayed().assertIsEnabled()
     }
 
     private fun baseState(context: android.content.Context): AppUiState {

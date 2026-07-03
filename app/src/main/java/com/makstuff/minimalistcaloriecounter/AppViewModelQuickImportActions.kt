@@ -216,6 +216,7 @@ internal class AppViewModelQuickImportActions(
                         meal = meal,
                         intendedDateTime = state.inputQuickImportDateTime,
                         mealType = state.quickImportMealType,
+                        healthPayloads = plan.healthPayloads,
                         createdAt = LocalDateTime.now(),
                     )
                     val existingItem = env.uiState.quickImportOutbox.firstOrNull { it.id == pendingItem.id }
@@ -224,9 +225,7 @@ internal class AppViewModelQuickImportActions(
                         attemptedAt = LocalDateTime.now(),
                     )
                     env.writeQuickImportOutboxItem(context, outboxItem)
-                    val result = env.healthConnectManager.insertQuickMealNutrition(
-                        QuickImportOutbox.withClientRecordIds(plan.healthPayloads, outboxItem)
-                    )
+                    val result = env.healthConnectManager.insertQuickMealNutrition(outboxItem.healthPayloads)
                     outboxItem = QuickImportOutbox.markResult(outboxItem, result)
                     env.writeQuickImportOutboxItem(context, outboxItem)
                     result

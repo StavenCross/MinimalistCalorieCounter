@@ -18,8 +18,12 @@ cd "$ROOT_DIR"
 "$ADB" -s "$SERIAL" shell pm grant "$PACKAGE" android.permission.health.READ_NUTRITION >/dev/null 2>&1 || true
 "$ADB" -s "$SERIAL" shell pm grant "$PACKAGE" android.permission.health.WRITE_NUTRITION >/dev/null 2>&1 || true
 
+INSTRUMENT_OUTPUT="$(mktemp)"
 "$ADB" -s "$SERIAL" shell am instrument -w \
   -e class com.makstuff.minimalistcaloriecounter.health.HistoricalMealHealthConnectImportTest#writesJulyFirstHistoricalMealsToHealthConnect \
-  "$TEST_PACKAGE/$RUNNER"
+  "$TEST_PACKAGE/$RUNNER" | tee "$INSTRUMENT_OUTPUT"
+if grep -Eq "FAILURES!!!|There (was|were) [0-9]+ failure" "$INSTRUMENT_OUTPUT"; then
+  exit 1
+fi
 
 echo "Fold emulator Health Connect smoke passed on $SERIAL"

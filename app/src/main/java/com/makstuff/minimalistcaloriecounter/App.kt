@@ -1470,6 +1470,7 @@ fun App(
                     onMealTypeChange = { viewModel.updateQuickImportMealTypeOverride(it) },
                     onImport = { viewModel.quickImportCommit(context) },
                     onClear = { viewModel.resetQuickImport() },
+                    onRetryOutbox = { viewModel.quickImportRetryHealthConnect(context, it) },
                 )
             }
 

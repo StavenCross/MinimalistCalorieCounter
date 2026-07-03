@@ -35,6 +35,9 @@ curl http://127.0.0.1:18765/health
 - `POST /quick-import/commit`
   - Commits through the same ViewModel path as the Add Meal button.
   - Health Connect write attempts are reflected in the Add Meal outbox section returned by `GET /state`.
+- `POST /quick-import/retry`
+  - Body: `{ "id": "<outbox-id>" }`
+  - Retries one Add Meal Health Connect write from stored outbox payloads.
 - `POST /meals/select-date`
   - Body: `{ "date": "YYYY-MM-DD" }`
 - `POST /health-connect/read-day`

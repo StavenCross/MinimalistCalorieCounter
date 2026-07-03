@@ -6,6 +6,7 @@ import {
   createToolContext,
   exportHealthRange,
   openSettingsPanel,
+  quickImportRetry,
   setGoalsMacro,
   setGoalsProfile,
   toggleGoalsMeasurementLock,
@@ -128,4 +129,21 @@ test("settings panel tool posts sheet key to the bridge", async () => {
     { path: "/settings/open", body: { sheet: "theme" } },
     { path: "/settings/open", body: { sheet: "maintenance" } },
   ]);
+});
+
+test("quick import retry posts outbox id to the bridge", async () => {
+  const calls: Array<{ path: string; body: Record<string, unknown> }> = [];
+  const ctx = {
+    ...createToolContext(async () => ({ stdout: "", stderr: "" })),
+    bridgeFor: () => ({
+      post: async (path: string, body: Record<string, unknown>) => {
+        calls.push({ path, body });
+        return { ok: true };
+      },
+      get: async () => ({ ok: true }),
+    }),
+  };
+
+  assert.deepEqual(await quickImportRetry(ctx, "abc123", 18765), { ok: true });
+  assert.deepEqual(calls, [{ path: "/quick-import/retry", body: { id: "abc123" } }]);
 });
