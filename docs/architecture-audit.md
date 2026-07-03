@@ -80,6 +80,9 @@ All non-UI files touched in this cleanup are now under the 300-line cap:
 - Extracted Settings display components:
   - `ui/settings/SettingsComponents.kt`
   - settings cards, option rows, selectable rows, and section headers now live outside `App.kt`.
+- Extracted app file launchers:
+  - `AppFileLaunchers.kt`
+  - database/archive import-export launchers and historical meal import parsing now live outside `App.kt`.
 - Added a single settings-sheet automation intent:
   - `AppViewModelUiActions.openSettingsSheet(...)`
   - `/settings/open` now navigates to Settings and opens the requested drawer as one command.

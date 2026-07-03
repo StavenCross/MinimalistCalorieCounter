@@ -4,7 +4,6 @@ import android.app.DatePickerDialog
 import android.content.Intent
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.background
@@ -132,10 +131,8 @@ import androidx.health.connect.client.HealthConnectClient
 import androidx.health.connect.client.PermissionController
 import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.delay
-import java.io.File
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
-import com.github.doyaaaaaken.kotlincsv.dsl.csvReader
 
 private val AccentMenu = Color(0xFF90CAF9)
 private val AccentSettings = Color(0xFFFFD166)
@@ -157,6 +154,7 @@ fun App(
     val currentBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = currentBackStackEntry?.destination?.route
     var mainMenuExpanded by remember { mutableStateOf(false) }
+    val fileLaunchers = rememberAppFileLaunchers(viewModel)
 
     val healthConnectRequestPermissionLauncher = rememberLauncherForActivityResult(
         contract = PermissionController.createRequestPermissionResultContract(),
@@ -274,80 +272,6 @@ fun App(
         delay(1000.milliseconds)//1000 seems enough to prevent glitches from dark mode override loading
         viewModel.setLoadingToFalse()
     }
-    val databaseImporter = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.OpenDocument(),
-        onResult = { uri ->
-            try {
-                uri?.let { context.contentResolver.openInputStream(it) }?.use { inputStream ->
-                    viewModel.databaseImportCSV(context, inputStream)
-                }
-                Toast.makeText(
-                    context, context.getString(R.string.database) + ": " + context.getString(R.string.import_successful), Toast.LENGTH_LONG
-                ).show()
-            } catch (e: IllegalStateException) {
-                Toast.makeText(
-                    context,
-                    context.getString(R.string.import_failed) + ": " + e.message, Toast.LENGTH_LONG
-                ).show()
-            }
-        }
-    )
-    val databaseExporter = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.CreateDocument("text/comma-separated-values"),
-        onResult = { uri ->
-            val folder = context.getExternalFilesDir(null) ?: context.filesDir
-            uri?.let { context.contentResolver.openOutputStream(it) }?.let {
-                File(folder, "database.csv")
-                    .inputStream().copyTo(it)
-            }
-        }
-    )
-    val archiveImporter = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.OpenDocument(),
-        onResult = { uri ->
-            try {
-                uri?.let { context.contentResolver.openInputStream(it) }?.use { inputStream ->
-                    viewModel.archiveImportCSV(context, inputStream)
-                }
-                Toast.makeText(
-                    context, context.getString(R.string.archive) + ": " + context.getString(R.string.import_successful), Toast.LENGTH_LONG
-                ).show()
-            } catch (e: IllegalStateException) {
-                Toast.makeText(
-                    context,
-                    context.getString(R.string.import_failed) + ": " + e.message, Toast.LENGTH_LONG
-                ).show()
-            }
-        }
-    )
-    val archiveExporter = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.CreateDocument("text/comma-separated-values"),
-        onResult = { uri ->
-            val folder = context.getExternalFilesDir(null) ?: context.filesDir
-            uri?.let { context.contentResolver.openOutputStream(it) }?.let {
-                File(folder, "archive.csv")
-                    .inputStream().copyTo(it)
-            }
-        }
-    )
-    val historicalMealImporter = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.OpenDocument(),
-        onResult = { uri ->
-            try {
-                val rows = uri?.let { context.contentResolver.openInputStream(it) }?.use {
-                    csvReader().readAll(it)
-                } ?: return@rememberLauncherForActivityResult
-                viewModel.previewHistoricalMealImport(rows)
-            } catch (e: Throwable) {
-                Toast.makeText(
-                    context,
-                    "Historical meal import failed: ${e.message}",
-                    Toast.LENGTH_LONG,
-                ).show()
-            }
-        }
-    )
-
     @Composable
     fun SettingsPageContent() {
         var historicalCleanupConfirmVisible by remember { mutableStateOf(false) }
@@ -574,7 +498,7 @@ fun App(
                         SettingsSheet.ImportTools -> {
                             SheetTitle("Import tools", "Bring historical meal rows into Health Connect when you need the bigger hammer.")
                             OptionsItem("Preview historical meal CSV") {
-                                historicalMealImporter.launch(arrayOf("text/*", "text/comma-separated-values"))
+                                fileLaunchers.historicalMealImporter.launch(arrayOf("text/*", "text/comma-separated-values"))
                             }
                             uiState.historicalMealImportPreview?.let { preview ->
                                 SheetNote(
@@ -629,7 +553,7 @@ fun App(
                                 viewModel.setAlertDialogDatabaseImport(true)
                             }
                             OptionsItem(stringResource(R.string.dropdown_backup_database) + " (*.csv)") {
-                                databaseExporter.launch("database_backup.csv")
+                                fileLaunchers.databaseExporter.launch("database_backup.csv")
                             }
                             OptionsItem(stringResource(R.string.dropdown_reset_database)) {
                                 viewModel.setAlertDialogDatabaseReset(true)
@@ -639,7 +563,7 @@ fun App(
                                 viewModel.setAlertDialogArchiveImport(true)
                             }
                             OptionsItem(stringResource(R.string.dropdown_backup_archive) + " (*.csv)") {
-                                archiveExporter.launch("archive_backup.csv")
+                                fileLaunchers.archiveExporter.launch("archive_backup.csv")
                             }
                             OptionsItem(stringResource(R.string.dropdown_clear_archive)) {
                                 viewModel.setAlertDialogArchiveReset(true)
@@ -841,7 +765,7 @@ fun App(
                                     ButtonText(
                                         text = stringResource(R.string.button_continue),
                                         onClick = {
-                                            archiveImporter.launch(arrayOf("text/comma-separated-values"))
+                                            fileLaunchers.archiveImporter.launch(arrayOf("text/comma-separated-values"))
                                             viewModel.setAlertDialogArchiveImport(false)
                                         })
                                 },
@@ -862,7 +786,7 @@ fun App(
                                     ButtonText(
                                         text = stringResource(R.string.button_continue),
                                         onClick = {
-                                            databaseImporter.launch(arrayOf("text/comma-separated-values"))
+                                            fileLaunchers.databaseImporter.launch(arrayOf("text/comma-separated-values"))
                                             viewModel.setAlertDialogDatabaseImport(false)
                                         })
                                 },
