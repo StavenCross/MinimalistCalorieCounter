@@ -103,6 +103,7 @@ import com.makstuff.minimalistcaloriecounter.essentials.NavControllerListener
 import com.makstuff.minimalistcaloriecounter.essentials.NavButton
 import com.makstuff.minimalistcaloriecounter.essentials.toBodyWeight
 import com.makstuff.minimalistcaloriecounter.essentials.toFormattedString
+import com.makstuff.minimalistcaloriecounter.ui.navigation.AppRoutes
 import com.makstuff.minimalistcaloriecounter.ui.reused.ButtonGrid
 import com.makstuff.minimalistcaloriecounter.ui.reused.ButtonText
 import com.makstuff.minimalistcaloriecounter.ui.reused.DropdownMenu
@@ -126,6 +127,7 @@ import com.makstuff.minimalistcaloriecounter.ui.screens.ScreenQuickImport
 import com.makstuff.minimalistcaloriecounter.ui.screens.ScreenShowFoodAll
 import com.makstuff.minimalistcaloriecounter.ui.screens.ScreenShowFoodSelection
 import com.makstuff.minimalistcaloriecounter.ui.screens.ScreenWithHoverCard
+import com.makstuff.minimalistcaloriecounter.ui.settings.SettingsSheet
 import com.makstuff.minimalistcaloriecounter.ui.theme.AppTheme
 import com.makstuff.minimalistcaloriecounter.health.HealthConnectManager
 import androidx.health.connect.client.HealthConnectClient
@@ -201,7 +203,7 @@ fun App(
         )
         viewModel.updateDatabaseEntryEditCustomWeights(uiState.database[index].customWeights.inputString)
         viewModel.updateDatabaseEntryEditQuickselect(uiState.database[index].quickselect)
-        navTo("database_edit_entry/$index")
+        navTo(AppRoutes.databaseEditEntry(index))
     }
 
     fun setNav(string: String, button: NavButton) {
@@ -494,7 +496,7 @@ fun App(
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     when (sheet) {
-                        "health_data" -> {
+                        SettingsSheet.HealthData -> {
                             SheetTitle("Manage Health Connect data", "Sync, import, and clean up nutrition records written by this app.")
                             OptionsItem(stringResource(R.string.dropdown_export_archive_health_connect)) {
                                 viewModel.updateActiveSettingsSheet(null)
@@ -539,7 +541,7 @@ fun App(
                                 SheetNote(message, isError = false)
                             }
                         }
-                        "import_tools" -> {
+                        SettingsSheet.ImportTools -> {
                             SheetTitle("Import tools", "Bring historical meal rows into Health Connect when you need the bigger hammer.")
                             OptionsItem("Preview historical meal CSV") {
                                 historicalMealImporter.launch(arrayOf("text/*", "text/comma-separated-values"))
@@ -566,7 +568,7 @@ fun App(
                                 }
                             }
                         }
-                        "theme" -> {
+                        SettingsSheet.Theme -> {
                             SheetTitle("Appearance", "Pick the theme that feels best for daily logging.")
                             SelectableOptionsItem(
                                 text = stringArrayResource(R.array.dark_mode_options)[0],
@@ -590,7 +592,7 @@ fun App(
                                 viewModel.updateActiveSettingsSheet(null)
                             }
                         }
-                        "language" -> {
+                        SettingsSheet.Language -> {
                             SheetTitle("Language", "Choose the app language.")
                             SelectableOptionsItem(
                                 text = stringResource(R.string.always_english),
@@ -641,7 +643,7 @@ fun App(
                                 viewModel.updateActiveSettingsSheet(null)
                             }
                         }
-                        "maintenance" -> {
+                        SettingsSheet.Maintenance -> {
                             SheetTitle("Troubleshooting tools", "Database and archive utilities live here so they stay out of the daily workflow.")
                             OptionsSectionHeader("Database tools")
                             OptionsItem(stringResource(R.string.dropdown_import_database) + " (*.csv)") {
@@ -664,7 +666,7 @@ fun App(
                                 viewModel.setAlertDialogArchiveReset(true)
                             }
                         }
-                        "support" -> {
+                        SettingsSheet.Support -> {
                             SheetTitle("Support", "Project links and original app resources.")
                             OptionsItem(stringResource(R.string.dropdown_github)) {
                                 uriHandler.openUri("https://github.com/Makstuff/MinimalistCalorieCounter")
@@ -745,7 +747,7 @@ fun App(
                         onClick = { handleHCInteraction { viewModel.toggleHealthConnectToastsEnabled(context) } },
                     )
                     OptionsItem("Manage Health Connect data") {
-                        viewModel.updateActiveSettingsSheet("health_data")
+                        viewModel.updateActiveSettingsSheet(SettingsSheet.HealthData)
                     }
                 }
             }
@@ -756,7 +758,7 @@ fun App(
                     meta = uiState.historicalMealImportPreview?.let { "${it.validRows} foods ready" } ?: "No CSV loaded",
                 ) {
                     OptionsItem("Open import tools") {
-                        viewModel.updateActiveSettingsSheet("import_tools")
+                        viewModel.updateActiveSettingsSheet(SettingsSheet.ImportTools)
                     }
                 }
             }
@@ -769,12 +771,12 @@ fun App(
                     OptionsItem(
                         text = stringResource(R.string.dark_mode),
                         trailingText = currentThemeLabel,
-                        onClick = { viewModel.updateActiveSettingsSheet("theme") },
+                        onClick = { viewModel.updateActiveSettingsSheet(SettingsSheet.Theme) },
                     )
                     OptionsItem(
                         text = stringResource(R.string.choose_language),
                         trailingText = currentLanguageLabel,
-                        onClick = { viewModel.updateActiveSettingsSheet("language") },
+                        onClick = { viewModel.updateActiveSettingsSheet(SettingsSheet.Language) },
                     )
                 }
             }
@@ -785,10 +787,10 @@ fun App(
                     meta = "Advanced",
                 ) {
                     OptionsItem("Database and archive tools") {
-                        viewModel.updateActiveSettingsSheet("maintenance")
+                        viewModel.updateActiveSettingsSheet(SettingsSheet.Maintenance)
                     }
                     OptionsItem(stringResource(R.string.support)) {
-                        viewModel.updateActiveSettingsSheet("support")
+                        viewModel.updateActiveSettingsSheet(SettingsSheet.Support)
                     }
                 }
             }
@@ -828,7 +830,7 @@ fun App(
                     actionIconContentColor = MaterialTheme.colorScheme.onSurface,
                 ),
                 actions = {
-                    if (currentRoute == "quick_import") {
+                    if (currentRoute == AppRoutes.QUICK_IMPORT) {
                         IconButton(onClick = { viewModel.updateQuickImportSettingsVisible(true) }) {
                             Icon(
                                 imageVector = Icons.Default.MoreVert,
@@ -837,7 +839,7 @@ fun App(
                             )
                         }
                     }
-                    if (currentRoute == "goals_home") {
+                    if (currentRoute == AppRoutes.GOALS_HOME) {
                         IconButton(onClick = { viewModel.updateGoalsSettingsVisible(true) }) {
                             Icon(
                                 imageVector = Icons.Default.MoreVert,
@@ -1093,7 +1095,7 @@ fun App(
                                                     uiState.indexArchiveDelete,
                                                     context
                                                 )
-                                                navTo("archive_home")
+                                                navTo(AppRoutes.ARCHIVE_HOME)
                                             }
                                             viewModel.setAlertDialogArchiveDelete(false)
                                         })
@@ -1560,13 +1562,13 @@ fun App(
                 items = listOf(
                     NavigationBarItemData(
                         "Meals", R.drawable.archive, uiState.navigationBarHighlight == NAV_ARCHIVE, AccentMealsNav
-                    ) { navTo("health_connect_nutrition") },
+                    ) { navTo(AppRoutes.HEALTH_CONNECT_NUTRITION) },
                     NavigationBarItemData(
                         "Add Meal", R.drawable.plus, uiState.navigationBarHighlight == NAV_DAY, AccentQuickAddNav
-                    ) { navTo("quick_import") },
+                    ) { navTo(AppRoutes.QUICK_IMPORT) },
                     NavigationBarItemData(
                         "Goals", R.drawable.goals, uiState.navigationBarHighlight == NAV_GOALS, AccentGoalsNav
-                    ) { navTo("goals_home") },
+                    ) { navTo(AppRoutes.GOALS_HOME) },
                 ).map {
                     {
                         NavigationBarItem(
@@ -1588,15 +1590,15 @@ fun App(
                 .consumeWindowInsets(innerPadding)
                 .padding(4.dp),
             navController = navController,
-            startDestination = "quick_import",
+            startDestination = AppRoutes.QUICK_IMPORT,
         ) {
-            composable("day_content") {
+            composable(AppRoutes.DAY_CONTENT) {
                 ScreenWithHoverCard(
                     contentAbove = {},
                     nutrients = uiState.day.overallNutrients,
                     listOfTextButtons = listOf(
                         Pair(stringResource(R.string.button_reset_day)) { viewModel.setAlertDialogDayReset(true) },
-                        Pair(stringResource(R.string.button_add_food)) { navTo("day_home") },
+                        Pair(stringResource(R.string.button_add_food)) { navTo(AppRoutes.DAY_HOME) },
                         Pair(stringResource(R.string.button_turn_to_archive_entry)) {
                             try {
                                 viewModel.updateArchiveEntryDate(
@@ -1608,7 +1610,7 @@ fun App(
                                         true
                                     ).toMutableStateList()
                                 )
-                                navTo("archive_create_entry_from_day")
+                                navTo(AppRoutes.ARCHIVE_CREATE_ENTRY_FROM_DAY)
                             } catch (e: IllegalStateException) {
                                 Toast.makeText(
                                     context, e.message, Toast.LENGTH_LONG
@@ -1629,7 +1631,7 @@ fun App(
                                                 )
                                             )
                                             viewModel.setNameFoodDayEdit(component.second.name)
-                                            navTo("day_edit_weight/$index")
+                                            navTo(AppRoutes.dayEditWeight(index))
                                         },
                                     )
                                 }
@@ -1639,14 +1641,14 @@ fun App(
                     context=context
                 )
             }
-            composable("archive_home") {
+            composable(AppRoutes.ARCHIVE_HOME) {
                     ScreenWithHoverCard(
                         nutrients = uiState.archive.averageNutrients,
                         contentAbove = { },
                         listOfTextButtons = listOf(
                             Pair(stringResource(R.string.button_create_entry_manually)) {
                                 viewModel.resetArchiveEntryAllInput()
-                                navTo("archive_create_entry_manually")},
+                                navTo(AppRoutes.ARCHIVE_CREATE_ENTRY_MANUALLY)},
                         ),
                         content = {
                             Column {
@@ -1663,7 +1665,7 @@ fun App(
                                                         true
                                                     ).toMutableList()
                                                 )
-                                                navTo("archive_edit_entry/$index")
+                                                navTo(AppRoutes.archiveEditEntry(index))
                                             },
                                         )
                                     }
@@ -1674,7 +1676,7 @@ fun App(
                     )
                 }
 
-            composable("health_connect_nutrition") {
+            composable(AppRoutes.HEALTH_CONNECT_NUTRITION) {
                 ScreenHealthConnectNutrition(
                     uiState = uiState,
                     onDateChange = { viewModel.updateHealthConnectViewerDate(it) },
@@ -1683,7 +1685,7 @@ fun App(
                 )
             }
 
-            composable("goals_home") {
+            composable(AppRoutes.GOALS_HOME) {
                 ScreenGoals(
                     uiState = uiState,
                     onSettingsDismiss = { viewModel.updateGoalsSettingsVisible(false) },
@@ -1702,13 +1704,13 @@ fun App(
                 )
             }
 
-            composable("settings_home") {
+            composable(AppRoutes.SETTINGS_HOME) {
                 SettingsPageContent()
             }
             
 
 
-            composable("archive_create_entry_manually") {
+            composable(AppRoutes.ARCHIVE_CREATE_ENTRY_MANUALLY) {
                 fun onConfirm() {
                     keyboardController?.hide()
                     try {
@@ -1718,7 +1720,7 @@ fun App(
                             nutrients = Nutrients.fromStrings(uiState.inputArchiveEntryNutrients,context),
                             context = context
                         )
-                        navTo("archive_home")
+                        navTo(AppRoutes.ARCHIVE_HOME)
                     } catch (e: IllegalStateException) {
                         Toast.makeText(context, e.message, Toast.LENGTH_LONG).show()
                     }
@@ -1738,13 +1740,13 @@ fun App(
                     },
                     onConfirm = { onConfirm() },
                     listOfTextButtons = listOf(
-                        Pair(stringResource(R.string.button_cancel)) { navTo("archive_home") },
+                        Pair(stringResource(R.string.button_cancel)) { navTo(AppRoutes.ARCHIVE_HOME) },
                         Pair(stringResource(R.string.button_create_new_archive_entry)) { onConfirm() }
                     )
                 )
             }
 
-            composable("archive_create_entry_from_day") {
+            composable(AppRoutes.ARCHIVE_CREATE_ENTRY_FROM_DAY) {
                 fun onConfirm() {
                     keyboardController?.hide()
                     try {
@@ -1755,7 +1757,7 @@ fun App(
                             context = context
                         )
                         viewModel.dayReset(context)
-                        navTo("archive_home")
+                        navTo(AppRoutes.ARCHIVE_HOME)
                     } catch (e: IllegalStateException) {
                         Toast.makeText(context, e.message, Toast.LENGTH_LONG).show()
                     }
@@ -1775,7 +1777,7 @@ fun App(
                     },
                     onConfirm = { onConfirm() },
                     listOfTextButtons = listOf(
-                        Pair(stringResource(R.string.button_cancel)) { navTo("day_home") },
+                        Pair(stringResource(R.string.button_cancel)) { navTo(AppRoutes.DAY_HOME) },
                         Pair(stringResource(R.string.button_turn_day_to_archive_entry)) { onConfirm() }
                     )
                 )
@@ -1783,7 +1785,7 @@ fun App(
 
 
 
-            composable("archive_edit_entry/{index}") {
+            composable(AppRoutes.ARCHIVE_EDIT_ENTRY) {
                 val index = it.arguments?.getString("index")?.toIntOrNull()
                 if (index != null) {
                     if(index < uiState.archive.entries.size){
@@ -1797,7 +1799,7 @@ fun App(
                                     nutrients = Nutrients.fromStrings(uiState.inputArchiveEntryNutrients,context),
                                     context = context
                                 )
-                                navTo("archive_home")
+                                navTo(AppRoutes.ARCHIVE_HOME)
                             } catch (e: IllegalStateException) {
                                 Toast.makeText(context, e.message, Toast.LENGTH_LONG).show()
                             }
@@ -1818,7 +1820,7 @@ fun App(
                             onConfirm = { onConfirm() },
                             listOfTextButtons = listOf(
                                 Pair(stringResource(R.string.button_cancel)) {
-                                    navTo("archive_home")
+                                    navTo(AppRoutes.ARCHIVE_HOME)
                                 },
                                 Pair(stringResource(R.string.button_delete)) {
                                     viewModel.setAlertDialogArchiveDelete(true, index)
@@ -1829,12 +1831,12 @@ fun App(
                     }
                 }}
 
-            composable("create_home") {
+            composable(AppRoutes.CREATE_HOME) {
                 fun onCreateFood() {
                     keyboardController?.hide()
                     try {
                         viewModel.databaseCreateEntryFromInput(context)
-                        navTo("day_home")
+                        navTo(AppRoutes.DAY_HOME)
                     } catch (e: IllegalStateException) {
                         Toast.makeText(context, e.message, Toast.LENGTH_LONG).show()
                     }
@@ -1858,7 +1860,7 @@ fun App(
                     listOfTextButtons = listOf(
                         Pair(stringResource(R.string.button_cancel)) {
                             viewModel.resetDatabaseEntryCreateAllInput()
-                            navTo("day_home")
+                            navTo(AppRoutes.DAY_HOME)
                         },
                         Pair(stringResource(R.string.button_clear_input)) { viewModel.resetDatabaseEntryCreateAllInput() },
                         Pair(stringResource(R.string.button_create)) { onCreateFood() }
@@ -1867,7 +1869,7 @@ fun App(
                 )
             }
 
-            composable("database_edit_entry/{index}") {
+            composable(AppRoutes.DATABASE_EDIT_ENTRY) {
                 val index = it.arguments?.getString("index")?.toIntOrNull()
                 if (index != null) {
                     if(index < uiState.database.size){
@@ -1912,22 +1914,22 @@ fun App(
                     }
                 }}
 
-            composable("day_add_food") {
+            composable(AppRoutes.DAY_ADD_FOOD) {
                 ScreenShowFoodSelection(
                     indexList = uiState.databaseLetter,
                     database = uiState.database,
                     onFoodClicked = { index ->
                         viewModel.updateCurrentComboComponentWeight("")
                         viewModel.setNameFoodDayAdd(uiState.database[index].name)
-                        navTo("day_add_weight/$index")
+                        navTo(AppRoutes.dayAddWeight(index))
                     },
                     onFoodLongClicked = { index -> editDatabaseEntry(index) },
-                    onBack = {navTo("day_home")}
+                    onBack = {navTo(AppRoutes.DAY_HOME)}
                 )
             }
 
 
-            composable("database_home") {
+            composable(AppRoutes.DATABASE_HOME) {
                 ScreenShowFoodAll(
                     database = uiState.database,
                     onFoodClicked = { index ->
@@ -1937,13 +1939,13 @@ fun App(
                 )
             }
 
-            composable("day_home") {
+            composable(AppRoutes.DAY_HOME) {
                 ScreenWithHoverCard(
                     contentAbove = {},
                     nutrients = uiState.day.overallNutrients,
                     listOfTextButtons = listOf(
                         Pair(stringResource(R.string.button_reset_day)) { viewModel.setAlertDialogDayReset(true) },
-                        Pair(stringResource(R.string.button_edit)) { navTo("day_content") },
+                        Pair(stringResource(R.string.button_edit)) { navTo(AppRoutes.DAY_CONTENT) },
                         Pair(stringResource(R.string.button_turn_to_archive_entry)) {
                             viewModel.updateArchiveEntryDate(
                                 LocalDateTime.now().minusHours(12).toLocalDate()
@@ -1954,7 +1956,7 @@ fun App(
                                     true
                                 ).toMutableStateList()
                             )
-                            navTo("archive_create_entry_from_day")
+                            navTo(AppRoutes.ARCHIVE_CREATE_ENTRY_FROM_DAY)
                         },
                     ),
                     content = {
@@ -1969,7 +1971,7 @@ fun App(
                                         text = it.toString(),
                                         onClick = {
                                             viewModel.databaseLetterFilter(it)
-                                            navTo("day_add_food") }
+                                            navTo(AppRoutes.DAY_ADD_FOOD) }
                                     )
                                 }
                             }.reversed() + uiState.databaseQuickselect.map {
@@ -1979,7 +1981,7 @@ fun App(
                                         onClick = {
                                             viewModel.setNameFoodDayAdd(it.second.name)
                                             viewModel.updateCurrentComboComponentWeight("")
-                                            navTo("day_add_weight/${it.first}")
+                                            navTo(AppRoutes.dayAddWeight(it.first))
                                         },
                                         onLongClick = {
                                             editDatabaseEntry(it.first)
@@ -1993,7 +1995,7 @@ fun App(
                 )
             }
 
-            composable("quick_import") {
+            composable(AppRoutes.QUICK_IMPORT) {
                 ScreenQuickImport(
                     uiState = uiState,
                     onTextChange = { viewModel.updateQuickImportText(it) },
@@ -2008,7 +2010,7 @@ fun App(
                 )
             }
 
-            composable("day_add_weight/{index}") {
+            composable(AppRoutes.DAY_ADD_WEIGHT) {
                 val index = it.arguments?.getString("index")?.toIntOrNull()
                 if (index != null) {
                     if(index < uiState.database.size){
@@ -2020,7 +2022,7 @@ fun App(
                                     uiState.database[index],
                                     context
                                 )
-                                navTo("day_home")
+                                navTo(AppRoutes.DAY_HOME)
                             } catch (e: IllegalStateException) {
                                 Toast.makeText(
                                     context, e.message, Toast.LENGTH_LONG
@@ -2034,7 +2036,7 @@ fun App(
                             },
                             onConfirm = { onConfirm() },
                             listOfTextButtons = listOf(
-                                Pair(stringResource(R.string.button_cancel)) { navTo("day_home") },
+                                Pair(stringResource(R.string.button_cancel)) { navTo(AppRoutes.DAY_HOME) },
                                 Pair(stringResource(R.string.button_add_to_day)) {
                                     onConfirm()
                                 }
@@ -2050,7 +2052,7 @@ fun App(
                                                 uiState.database[index],
                                                 context
                                             )
-                                            navTo("day_home")
+                                            navTo(AppRoutes.DAY_HOME)
                                         },
                                     )
                                 }
@@ -2066,7 +2068,7 @@ fun App(
                                                 uiState.database[index],
                                                 context
                                             )
-                                            navTo("day_home")
+                                            navTo(AppRoutes.DAY_HOME)
                                         }
                                     )
                                 }
@@ -2075,7 +2077,7 @@ fun App(
                     }
                 }}
 
-            composable("day_edit_weight/{index}") {
+            composable(AppRoutes.DAY_EDIT_WEIGHT) {
                 val index = it.arguments?.getString("index")?.toIntOrNull()
                 if (index != null) {
                     if(index < uiState.day.components.size){
@@ -2087,7 +2089,7 @@ fun App(
                                     index,
                                     context
                                 )
-                                navTo("day_content")
+                                navTo(AppRoutes.DAY_CONTENT)
                             } catch (e: IllegalStateException) {
                                 Toast.makeText(
                                     context, e.message, Toast.LENGTH_LONG
@@ -2102,10 +2104,10 @@ fun App(
                             },
                             onConfirm = { onConfirm() },
                             listOfTextButtons = listOf(
-                                Pair(stringResource(R.string.button_cancel)) { navTo("day_content") },
+                                Pair(stringResource(R.string.button_cancel)) { navTo(AppRoutes.DAY_CONTENT) },
                                 Pair(stringResource(R.string.button_delete)) {
                                     viewModel.dayDeleteFood(index, context)
-                                    navTo("day_content")
+                                    navTo(AppRoutes.DAY_CONTENT)
                                 },
                                 Pair(stringResource(R.string.button_save_new_weight)) {
                                     onConfirm()
@@ -2119,7 +2121,7 @@ fun App(
                                             onClick = {
                                                 keyboardController?.hide()
                                                 viewModel.dayEditFoodWeight(list.first, index, context)
-                                                navTo("day_home")
+                                                navTo(AppRoutes.DAY_HOME)
                                             },
                                         )
                                     }
@@ -2137,7 +2139,7 @@ fun App(
                                                     index,
                                                     context
                                                 )
-                                                navTo("day_home")
+                                                navTo(AppRoutes.DAY_HOME)
                                             }
                                         )
                                     }
@@ -2176,12 +2178,12 @@ fun App(
                 )
                 DrawerNavItem(stringResource(R.string.database_navbar)) {
                     mainMenuExpanded = false
-                    navTo("database_home")
+                    navTo(AppRoutes.DATABASE_HOME)
                 }
                 HorizontalDivider(Modifier.padding(vertical = 8.dp))
                 DrawerNavItem(stringResource(R.string.options)) {
                     mainMenuExpanded = false
-                    navTo("settings_home")
+                    navTo(AppRoutes.SETTINGS_HOME)
                 }
             }
         }

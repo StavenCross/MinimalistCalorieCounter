@@ -61,21 +61,24 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.health.connect.client.records.MealType
 import com.makstuff.minimalistcaloriecounter.AppUiState
-import com.makstuff.minimalistcaloriecounter.classes.GoalCalculator
 import com.makstuff.minimalistcaloriecounter.classes.MacroTargets
-import com.makstuff.minimalistcaloriecounter.classes.QuickImportNutrients
 import com.makstuff.minimalistcaloriecounter.essentials.toFormattedString
 import com.makstuff.minimalistcaloriecounter.health.HealthConnectNutritionMeal
+import com.makstuff.minimalistcaloriecounter.ui.model.NutritionMealGroup
+import com.makstuff.minimalistcaloriecounter.ui.model.NutritionStatItem
+import com.makstuff.minimalistcaloriecounter.ui.model.healthGroupDetailItems
+import com.makstuff.minimalistcaloriecounter.ui.model.healthMealDetailItems
+import com.makstuff.minimalistcaloriecounter.ui.model.macroProgressArc
+import com.makstuff.minimalistcaloriecounter.ui.model.macroSummaryItems
+import com.makstuff.minimalistcaloriecounter.ui.model.mealGroups
+import com.makstuff.minimalistcaloriecounter.ui.model.nutritionDaySummary
+import com.makstuff.minimalistcaloriecounter.ui.model.supportsMacroHint
 import com.makstuff.minimalistcaloriecounter.ui.reused.MacroHintBox
-import java.time.DayOfWeek
 import java.time.Instant
 import java.time.LocalDate
-import java.time.YearMonth
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
@@ -94,7 +97,7 @@ fun ScreenHealthConnectNutrition(
     val selectedDate = uiState.healthConnectViewerDate
     val meals = uiState.healthConnectViewerMeals
     var selectedFood by remember { mutableStateOf<HealthConnectNutritionMeal?>(null) }
-    var selectedMealGroup by remember { mutableStateOf<MealGroup?>(null) }
+    var selectedMealGroup by remember { mutableStateOf<NutritionMealGroup?>(null) }
     var datePickerVisible by remember { mutableStateOf(false) }
 
     selectedFood?.let { food ->
@@ -314,76 +317,6 @@ private fun DatePickerSheet(
 }
 
 @Composable
-private fun CalendarWeekLabels() {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
-    ) {
-        listOf("S", "M", "T", "W", "T", "F", "S").forEach { label ->
-            Text(
-                text = label,
-                modifier = Modifier.weight(1f),
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center,
-            )
-        }
-    }
-}
-
-@Composable
-private fun CalendarDayCell(
-    date: LocalDate?,
-    selectedDate: LocalDate,
-    onDateChange: (LocalDate) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val today = LocalDate.now()
-    val selected = date == selectedDate
-    val isToday = date == today
-    val shape = RoundedCornerShape(8.dp)
-
-    Box(
-        modifier = modifier
-            .height(42.dp)
-            .clip(shape)
-            .background(
-                when {
-                    selected -> MaterialTheme.colorScheme.primary
-                    isToday -> AccentGold.copy(alpha = 0.16f)
-                    else -> MaterialTheme.colorScheme.surfaceContainerHighest
-                }
-            )
-            .border(
-                BorderStroke(
-                    1.dp,
-                    when {
-                        selected -> MaterialTheme.colorScheme.primary
-                        isToday -> AccentGold.copy(alpha = 0.65f)
-                        else -> MaterialTheme.colorScheme.outline.copy(alpha = 0.18f)
-                    },
-                ),
-                shape,
-            )
-            .clickable(enabled = date != null) {
-                date?.let(onDateChange)
-            },
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(
-            text = date?.dayOfMonth?.toString().orEmpty(),
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = if (selected || isToday) FontWeight.Bold else FontWeight.Normal,
-            color = if (selected) {
-                MaterialTheme.colorScheme.onPrimary
-            } else {
-                MaterialTheme.colorScheme.onSurface
-            },
-        )
-    }
-}
-
-@Composable
 private fun DaySummaryCard(
     date: LocalDate,
     meals: List<HealthConnectNutritionMeal>,
@@ -391,23 +324,8 @@ private fun DaySummaryCard(
     isLoading: Boolean,
     message: String?,
 ) {
-    val calories = meals.sumOf { it.energy }
-    val protein = meals.sumOf { it.protein }
-    val carbs = meals.sumOf { it.totalCarbohydrate }
-    val fat = meals.sumOf { it.totalFat }
-    val fiber = meals.sumOf { it.dietaryFiber }
-    val progress = GoalCalculator.progress(
-        nutrients = QuickImportNutrients(
-            energy = calories,
-            carbohydrate = carbs,
-            sugar = meals.sumOf { it.sugar },
-            protein = protein,
-            fat = fat,
-            saturatedFat = meals.sumOf { it.saturatedFat },
-            fiber = fiber,
-        ),
-        targets = targets,
-    )
+    val summary = nutritionDaySummary(meals, targets)
+    val totals = summary.totals
 
     Box(
         modifier = Modifier
@@ -433,7 +351,7 @@ private fun DaySummaryCard(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     Text(
-                        text = if (isLoading) "Loading" else "${calories.toFormattedString(true)} kcal",
+                        text = if (isLoading) "Loading" else "${totals.energy.toFormattedString(true)} kcal",
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold,
                     )
@@ -458,7 +376,7 @@ private fun DaySummaryCard(
                                 modifier = Modifier.size(18.dp),
                             )
                             Text(
-                                text = "${meals.size} foods",
+                                text = "${summary.foodCount} foods",
                                 style = MaterialTheme.typography.labelLarge,
                                 color = MaterialTheme.colorScheme.onSurface,
                             )
@@ -474,14 +392,9 @@ private fun DaySummaryCard(
                 )
             }
             MacroGrid(
-                items = listOf(
-                    "Carbs" to "${carbs.toFormattedString(true)}g",
-                    "Protein" to "${protein.toFormattedString(true)}g",
-                    "Fat" to "${fat.toFormattedString(true)}g",
-                    "Fiber" to "${fiber.toFormattedString(true)}g",
-                )
+                items = macroSummaryItems(totals)
             )
-            GoalProgressRow(progress)
+            GoalProgressRow(summary.progress)
         }
     }
 }
@@ -509,13 +422,8 @@ private fun GoalArcTile(
     label: String,
     modifier: Modifier = Modifier,
 ) {
-    val isOver = value != null && value > 100.0
-    val progress = when {
-        value == null -> 0f
-        isOver -> ((value - 100.0).coerceIn(0.0, 100.0) / 100.0).toFloat()
-        else -> (value.coerceIn(0.0, 100.0) / 100.0).toFloat()
-    }
-    val progressColor = if (isOver) GoalOverage else color
+    val arc = macroProgressArc(value)
+    val progressColor = if (arc.isOverTarget) GoalOverage else color
     MacroHintBox(label = label, modifier = modifier) {
         BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
             val arcCanvasHeight = (maxWidth * 0.52f).coerceIn(30.dp, 62.dp)
@@ -555,11 +463,11 @@ private fun GoalArcTile(
                         size = arcSize,
                         style = Stroke(width = strokeWidth, cap = StrokeCap.Round),
                     )
-                    if (progress > 0f) {
+                    if (arc.progress > 0f) {
                         drawArc(
                             color = progressColor,
                             startAngle = 180f,
-                            sweepAngle = 180f * progress,
+                            sweepAngle = 180f * arc.progress,
                             useCenter = false,
                             topLeft = androidx.compose.ui.geometry.Offset(horizontalInset, top),
                             size = arcSize,
@@ -583,7 +491,7 @@ private fun GoalArcTile(
 
 @Composable
 private fun MealCard(
-    group: MealGroup,
+    group: NutritionMealGroup,
     onMealClick: () -> Unit,
     onFoodClick: (HealthConnectNutritionMeal) -> Unit,
 ) {
@@ -616,7 +524,7 @@ private fun MealCard(
 
 @Composable
 private fun MealSummaryRow(
-    group: MealGroup,
+    group: NutritionMealGroup,
     calories: Double,
     carbs: Double,
     protein: Double,
@@ -699,9 +607,10 @@ private fun MealCaloriesChip(calories: Double) {
 
 @Composable
 private fun MealTitle(
-    group: MealGroup,
+    group: NutritionMealGroup,
     modifier: Modifier = Modifier,
 ) {
+    val color = groupColor(group)
     Row(
         modifier = modifier,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -710,14 +619,14 @@ private fun MealTitle(
         Box(
             modifier = Modifier
                 .size(34.dp)
-            .clip(CircleShape)
-            .background(group.color.copy(alpha = 0.16f)),
+                .clip(CircleShape)
+                .background(color.copy(alpha = 0.16f)),
             contentAlignment = Alignment.Center,
         ) {
             Icon(
                 imageVector = Icons.Default.Restaurant,
                 contentDescription = null,
-                tint = group.color,
+                tint = color,
                 modifier = Modifier.size(18.dp),
             )
         }
@@ -821,7 +730,7 @@ private fun CompactFoodRow(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun MealDetailDialog(
-    group: MealGroup,
+    group: NutritionMealGroup,
     onDismiss: () -> Unit,
     onFoodClick: (HealthConnectNutritionMeal) -> Unit,
 ) {
@@ -830,9 +739,6 @@ private fun MealDetailDialog(
     val carbs = group.foods.sumOf { it.totalCarbohydrate }
     val fat = group.foods.sumOf { it.totalFat }
     val fiber = group.foods.sumOf { it.dietaryFiber }
-    val sugar = group.foods.sumOf { it.sugar }
-    val saturatedFat = group.foods.sumOf { it.saturatedFat }
-
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
@@ -878,15 +784,7 @@ private fun MealDetailDialog(
                     MacroSummaryChip("Fiber", Icons.Default.Grass, fiber, MacroFiber)
                 }
                 MacroGrid(
-                    items = listOf(
-                        "Calories" to "${calories.toFormattedString(true)} kcal",
-                        "Carbs" to "${carbs.toFormattedString(true)}g",
-                        "Protein" to "${protein.toFormattedString(true)}g",
-                        "Fat" to "${fat.toFormattedString(true)}g",
-                        "Fiber" to "${fiber.toFormattedString(true)}g",
-                        "Sugar" to "${sugar.toFormattedString(true)}g",
-                        "Sat fat" to "${saturatedFat.toFormattedString(true)}g",
-                    )
+                    items = healthGroupDetailItems(group)
                 )
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     group.foods.forEach { food ->
@@ -940,16 +838,7 @@ private fun FoodDetailDialog(
             }
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 MacroGrid(
-                    items = listOf(
-                        "Calories" to "${meal.energy.toFormattedString(true)} kcal",
-                        "Carbs" to "${meal.totalCarbohydrate.toFormattedString(true)}g",
-                        "Protein" to "${meal.protein.toFormattedString(true)}g",
-                        "Fat" to "${meal.totalFat.toFormattedString(true)}g",
-                        "Fiber" to "${meal.dietaryFiber.toFormattedString(true)}g",
-                        "Sugar" to "${meal.sugar.toFormattedString(true)}g",
-                        "Sat fat" to "${meal.saturatedFat.toFormattedString(true)}g",
-                        "Fat kcal" to meal.energyFromFat?.let { "${it.toFormattedString(true)} kcal" }.orEmpty(),
-                    )
+                    items = healthMealDetailItems(meal)
                 )
             }
             Row(
@@ -983,7 +872,7 @@ private fun FoodDetailDialog(
 }
 
 @Composable
-private fun MacroGrid(items: List<Pair<String, String>>) {
+private fun MacroGrid(items: List<NutritionStatItem>) {
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
         items.chunked(2).forEach { row ->
             Row(
@@ -991,7 +880,7 @@ private fun MacroGrid(items: List<Pair<String, String>>) {
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
             ) {
                 row.forEach { item ->
-                    StatPill(item.first, item.second, Modifier.weight(1f))
+                    StatPill(item.label, item.value, Modifier.weight(1f))
                 }
                 if (row.size == 1) {
                     Spacer(modifier = Modifier.weight(1f))
@@ -1007,7 +896,7 @@ private fun StatPill(
     value: String,
     modifier: Modifier = Modifier,
 ) {
-    if (label.supportsMacroHint()) {
+    if (supportsMacroHint(label)) {
         MacroHintBox(label = label, modifier = modifier) {
             StatPillContent(label = label, value = value, modifier = Modifier.fillMaxWidth())
         }
@@ -1044,10 +933,6 @@ private fun StatPillContent(
             fontWeight = FontWeight.SemiBold,
         )
     }
-}
-
-private fun String.supportsMacroHint(): Boolean {
-    return this in setOf("Calories", "Carbs", "Protein", "Fat", "Fiber")
 }
 
 @Composable
@@ -1096,40 +981,7 @@ private fun SurfacePanel(
     }
 }
 
-private data class MealGroup(
-    val mealType: Int,
-    val label: String,
-    val color: Color,
-    val foods: List<HealthConnectNutritionMeal>,
-)
-
-private fun mealGroups(meals: List<HealthConnectNutritionMeal>): List<MealGroup> {
-    return listOf(
-        groupFor(MealType.MEAL_TYPE_BREAKFAST, "Breakfast", Color(0xFF4285F4), meals),
-        groupFor(MealType.MEAL_TYPE_LUNCH, "Lunch", Color(0xFF00BCD4), meals),
-        groupFor(MealType.MEAL_TYPE_DINNER, "Dinner", Color(0xFFE8710A), meals),
-        groupFor(MealType.MEAL_TYPE_SNACK, "Snack", Color(0xFF9C27B0), meals),
-        groupFor(MealType.MEAL_TYPE_UNKNOWN, "Other", Color(0xFF607D8B), meals),
-    ).filter { it.foods.isNotEmpty() }
-}
-
-private fun groupFor(
-    mealType: Int,
-    label: String,
-    color: Color,
-    meals: List<HealthConnectNutritionMeal>,
-): MealGroup {
-    return MealGroup(
-        mealType = mealType,
-        label = label,
-        color = color,
-        foods = meals.filter { it.mealType == mealType }.sortedBy { it.startTime },
-    )
-}
-
-private fun dayOffset(dayOfWeek: DayOfWeek): Int {
-    return dayOfWeek.value % 7
-}
+private fun groupColor(group: NutritionMealGroup): Color = Color(group.colorArgb)
 
 private val AccentGold = Color(0xFFFBBC04)
 private val MacroCarbs = Color(0xFFFFB74D)

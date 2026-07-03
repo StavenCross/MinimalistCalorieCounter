@@ -7,6 +7,7 @@ import androidx.compose.runtime.getValue
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import com.makstuff.minimalistcaloriecounter.R
+import com.makstuff.minimalistcaloriecounter.ui.navigation.AppRoutes
 
 @Composable
 fun NavControllerListener(
@@ -21,52 +22,52 @@ fun NavControllerListener(
 
     LaunchedEffect(currentRoute, nameFoodDayAdd, nameFoodDayEdit) {
         when (currentRoute) {
-            "day_home" ->
+            AppRoutes.DAY_HOME ->
                 setNav(context.getString(R.string.title_add_food_to_day), NAV_DAY)
 
-            "day_content" ->
+            AppRoutes.DAY_CONTENT ->
                 setNav(context.getString(R.string.title_edit_food_in_day), NAV_DAY)
 
-            "quick_import" ->
+            AppRoutes.QUICK_IMPORT ->
                 setNav("Add Meal", NAV_DAY)
 
-            "day_add_food" ->
+            AppRoutes.DAY_ADD_FOOD ->
                 setNav(context.getString(R.string.title_pick_food), NAV_DAY)
 
-            "day_add_weight/{index}" ->
+            AppRoutes.DAY_ADD_WEIGHT ->
                 setNav(context.getString(R.string.title_enter_weight_of) + " " + nameFoodDayAdd, NAV_DAY)
 
-            "day_edit_weight/{index}" ->
+            AppRoutes.DAY_EDIT_WEIGHT ->
                 setNav(context.getString(R.string.title_edit_weight_of) + " " + nameFoodDayEdit, NAV_DAY)
 
-            "archive_home" ->
+            AppRoutes.ARCHIVE_HOME ->
                 setNav(context.getString(R.string.archive), NAV_ARCHIVE)
 
-            "health_connect_nutrition" ->
+            AppRoutes.HEALTH_CONNECT_NUTRITION ->
                 setNav("Meals", NAV_ARCHIVE)
 
-            "goals_home" ->
+            AppRoutes.GOALS_HOME ->
                 setNav("Goals", NAV_GOALS)
 
-            "settings_home" ->
+            AppRoutes.SETTINGS_HOME ->
                 setNav(context.getString(R.string.options), NAV_DAY)
 
-            "archive_create_entry_manually" ->
+            AppRoutes.ARCHIVE_CREATE_ENTRY_MANUALLY ->
                 setNav(context.getString(R.string.title_create_new_archive_entry), NAV_ARCHIVE)
 
-            "archive_create_entry_from_day" ->
+            AppRoutes.ARCHIVE_CREATE_ENTRY_FROM_DAY ->
                 setNav(context.getString(R.string.title_enter_body_weight), NAV_ARCHIVE)
 
-            "archive_edit_entry/{index}" ->
+            AppRoutes.ARCHIVE_EDIT_ENTRY ->
                 setNav(context.getString(R.string.title_edit_archive_entry), NAV_ARCHIVE)
 
-            "database_home" ->
+            AppRoutes.DATABASE_HOME ->
                 setNav(context.getString(R.string.database), NAV_DATABASE)
 
-            "database_edit_entry/{index}" ->
+            AppRoutes.DATABASE_EDIT_ENTRY ->
                 setNav(context.getString(R.string.title_edit_database_entry), NAV_DATABASE)
 
-            "create_home" ->
+            AppRoutes.CREATE_HOME ->
                 setNav(context.getString(R.string.title_create_new_database_entry), NAV_CREATE)
 
         }

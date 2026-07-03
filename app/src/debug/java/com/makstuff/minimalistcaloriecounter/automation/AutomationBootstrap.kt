@@ -11,6 +11,7 @@ import com.makstuff.minimalistcaloriecounter.classes.GoalMacro
 import com.makstuff.minimalistcaloriecounter.classes.GoalSex
 import com.makstuff.minimalistcaloriecounter.classes.QuickImportMealType
 import com.makstuff.minimalistcaloriecounter.classes.WeeklyWeightLossTarget
+import com.makstuff.minimalistcaloriecounter.ui.settings.SettingsSheet
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.BufferedReader
@@ -96,9 +97,9 @@ object AutomationBootstrap {
                     JSONObject().put("route", route)
                 })
                 "POST" to "/settings/open" -> ok(runOnMain {
-                    val sheet = body.optString("sheet").ifBlank { null }
+                    val sheet = SettingsSheet.fromKey(body.optString("sheet").ifBlank { null })
                     viewModel.updateActiveSettingsSheet(sheet)
-                    JSONObject().put("sheet", sheet)
+                    JSONObject().put("sheet", sheet?.key)
                 })
                 "POST" to "/quick-import/preview" -> ok(runOnMain {
                     applyQuickImportBody(body)
@@ -218,7 +219,7 @@ object AutomationBootstrap {
                 .put("topBarTitle", state.topBarTitle)
                 .put("navigation", state.navigationBarHighlight.name)
                 .put("automationRouteRequest", state.automationRouteRequest)
-                .put("activeSettingsSheet", state.activeSettingsSheet)
+                .put("activeSettingsSheet", state.activeSettingsSheet?.key)
                 .put("quickImportSettingsVisible", state.quickImportSettingsVisible)
                 .put("healthConnectPermissionsGranted", state.healthConnectPermissionsGranted)
                 .put("healthConnectExportPermissionsGranted", state.healthConnectExportPermissionsGranted)

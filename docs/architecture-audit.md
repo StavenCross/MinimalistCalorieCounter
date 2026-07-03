@@ -8,17 +8,17 @@ Generated output, Gradle build folders, `node_modules`, and IDE metadata are exc
 
 | File | Approx. lines | Type | Cleanup priority |
 | --- | ---: | --- | --- |
-| `app/src/main/java/com/makstuff/minimalistcaloriecounter/App.kt` | 2469 | App shell / route wiring / UI | High |
-| `app/src/main/java/com/makstuff/minimalistcaloriecounter/ui/screens/ScreenQuickImport.kt` | 1672 | Compose screen and components | Medium, UI-file exception applies |
-| `app/src/main/java/com/makstuff/minimalistcaloriecounter/ui/screens/ScreenHealthConnectNutrition.kt` | 1139 | Compose screen and components | Medium, UI-file exception applies |
+| `app/src/main/java/com/makstuff/minimalistcaloriecounter/App.kt` | 2471 | App shell / route wiring / UI | High |
+| `app/src/main/java/com/makstuff/minimalistcaloriecounter/ui/screens/ScreenQuickImport.kt` | 1584 | Compose screen and components | Medium, UI-file exception applies |
+| `app/src/main/java/com/makstuff/minimalistcaloriecounter/ui/screens/ScreenHealthConnectNutrition.kt` | 991 | Compose screen and components | Medium, UI-file exception applies |
 | `app/src/main/java/com/makstuff/minimalistcaloriecounter/ui/screens/ScreenGoals.kt` | 866 | Compose screen and components | Medium, UI-file exception applies |
 
 All non-UI files touched in this cleanup are now under the 300-line cap:
 
 - `HealthConnectManager.kt`: 268 lines after extracting export, nutrition, archive sync, mapper, and goal-profile reader services.
-- `AutomationBootstrap.kt`: 297 lines after extracting HTTP helpers, JSON serializers, and route aliases.
+- `AutomationBootstrap.kt`: 298 lines after extracting HTTP helpers, JSON serializers, and route aliases.
 - `tools/mcc-mcp/src/server.ts`: 23 lines after splitting tool registration groups.
-- `AppViewModel.kt`: 285 lines after extracting feature action classes for Health Connect, Goals, Add Meal, persistence, database, archive/day, and UI chrome.
+- `AppViewModel.kt`: 286 lines after extracting feature action classes for Health Connect, Goals, Add Meal, persistence, database, archive/day, and UI chrome.
 - `AppViewModelQuickImportActions.kt`: 288 lines after moving commit helpers into `AppViewModelQuickImportHelpers.kt`.
 
 ## Cleanup Completed In This Pass
@@ -39,6 +39,13 @@ All non-UI files touched in this cleanup are now under the 300-line cap:
   - `AppViewModelDatabaseActions.kt`
   - `AppViewModelArchiveDayActions.kt`
   - `AppViewModelUiActions.kt`
+- Extracted shared nutrition UI models from Add Meal and Meals:
+  - `ui/model/NutritionUiModels.kt`
+  - shared meal grouping, day totals, macro progress, detail rows, and macro hint support.
+- Extracted navigation and settings sheet contracts from app-level UI code:
+  - `ui/navigation/AppRoutes.kt`
+  - `ui/settings/SettingsSheet.kt`
+  - debug automation now serializes settings sheets by stable key.
 
 ## Recommended Extraction Order
 

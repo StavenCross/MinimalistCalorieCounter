@@ -97,7 +97,15 @@ import com.makstuff.minimalistcaloriecounter.classes.QuickImportMeal
 import com.makstuff.minimalistcaloriecounter.classes.QuickImportMealType
 import com.makstuff.minimalistcaloriecounter.classes.QuickImportNutrients
 import com.makstuff.minimalistcaloriecounter.essentials.toFormattedString
-import com.makstuff.minimalistcaloriecounter.health.HealthConnectNutritionMeal
+import com.makstuff.minimalistcaloriecounter.quickImportResultText
+import com.makstuff.minimalistcaloriecounter.ui.model.consumedMealsForQuickImportDate
+import com.makstuff.minimalistcaloriecounter.ui.model.currentDayFoodCountForQuickImportDate
+import com.makstuff.minimalistcaloriecounter.ui.model.currentDayTotalsForQuickImportDate
+import com.makstuff.minimalistcaloriecounter.ui.model.macroPercent
+import com.makstuff.minimalistcaloriecounter.ui.model.macroProgressArc
+import com.makstuff.minimalistcaloriecounter.ui.model.macroSummaryItems
+import com.makstuff.minimalistcaloriecounter.ui.model.quickNutrientDetailItems
+import com.makstuff.minimalistcaloriecounter.ui.model.supportsMacroHint
 import com.makstuff.minimalistcaloriecounter.ui.reused.MacroHintBox
 import kotlinx.coroutines.delay
 import java.time.LocalDateTime
@@ -986,21 +994,19 @@ private fun QuickFoodCountChip(foodCount: Int) {
 @Composable
 private fun QuickDayMacroGrid(totals: QuickImportNutrients) {
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            QuickDayMacroPill("Carbs", "${totals.carbohydrate.toFormattedString(true)}g", Modifier.weight(1f))
-            QuickDayMacroPill("Protein", "${totals.protein.toFormattedString(true)}g", Modifier.weight(1f))
-        }
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            QuickDayMacroPill("Fat", "${totals.fat.toFormattedString(true)}g", Modifier.weight(1f))
-            QuickDayMacroPill("Fiber", "${totals.fiber.toFormattedString(true)}g", Modifier.weight(1f))
+        macroSummaryItems(totals).chunked(2).forEach { rowItems ->
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                rowItems.forEach { item ->
+                    QuickDayMacroPill(item.label, item.value, Modifier.weight(1f))
+                }
+                if (rowItems.size == 1) {
+                    Box(modifier = Modifier.weight(1f))
+                }
+            }
         }
     }
 }
@@ -1350,11 +1356,11 @@ private fun QuickMealTargetProgressRow(
         horizontalArrangement = Arrangement.spacedBy(6.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        QuickGoalArcTile(Icons.Default.LocalFireDepartment, percent(totals.energy, allocation.calories), AccentSend, "Calories", "meal target", Modifier.weight(1f))
-        QuickGoalArcTile(Icons.Default.EggAlt, percent(totals.protein, allocation.protein), AccentClear, "Protein", "meal target", Modifier.weight(1f))
-        QuickGoalArcTile(Icons.Default.BakeryDining, percent(totals.carbohydrate, allocation.carbs), AccentDay, "Carbs", "meal target", Modifier.weight(1f))
-        QuickGoalArcTile(Icons.Default.OilBarrel, percent(totals.fat, allocation.fat), AccentFood, "Fat", "meal target", Modifier.weight(1f))
-        QuickGoalArcTile(Icons.Default.Grass, percent(totals.fiber, allocation.fiber), AccentHealth, "Fiber", "meal target", Modifier.weight(1f))
+        QuickGoalArcTile(Icons.Default.LocalFireDepartment, macroPercent(totals.energy, allocation.calories), AccentSend, "Calories", "meal target", Modifier.weight(1f))
+        QuickGoalArcTile(Icons.Default.EggAlt, macroPercent(totals.protein, allocation.protein), AccentClear, "Protein", "meal target", Modifier.weight(1f))
+        QuickGoalArcTile(Icons.Default.BakeryDining, macroPercent(totals.carbohydrate, allocation.carbs), AccentDay, "Carbs", "meal target", Modifier.weight(1f))
+        QuickGoalArcTile(Icons.Default.OilBarrel, macroPercent(totals.fat, allocation.fat), AccentFood, "Fat", "meal target", Modifier.weight(1f))
+        QuickGoalArcTile(Icons.Default.Grass, macroPercent(totals.fiber, allocation.fiber), AccentHealth, "Fiber", "meal target", Modifier.weight(1f))
     }
 }
 
@@ -1367,13 +1373,8 @@ private fun QuickGoalArcTile(
     descriptionSuffix: String,
     modifier: Modifier = Modifier,
 ) {
-    val isOver = value != null && value > 100.0
-    val progress = when {
-        value == null -> 0f
-        isOver -> ((value - 100.0).coerceIn(0.0, 100.0) / 100.0).toFloat()
-        else -> (value.coerceIn(0.0, 100.0) / 100.0).toFloat()
-    }
-    val progressColor = if (isOver) GoalOverage else color
+    val arc = macroProgressArc(value)
+    val progressColor = if (arc.isOverTarget) GoalOverage else color
     MacroHintBox(label = label, modifier = modifier) {
         BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
             val arcCanvasHeight = (maxWidth * 0.52f).coerceIn(30.dp, 62.dp)
@@ -1414,11 +1415,11 @@ private fun QuickGoalArcTile(
                         size = arcSize,
                         style = Stroke(width = strokeWidth, cap = StrokeCap.Round),
                     )
-                    if (progress > 0f) {
+                    if (arc.progress > 0f) {
                         drawArc(
                             color = progressColor,
                             startAngle = 180f,
-                            sweepAngle = 180f * progress,
+                            sweepAngle = 180f * arc.progress,
                             useCenter = false,
                             topLeft = androidx.compose.ui.geometry.Offset(horizontalInset, top),
                             size = arcSize,
@@ -1439,66 +1440,6 @@ private fun QuickGoalArcTile(
         }
     }
 }
-
-private fun percent(value: Double, target: Double?): Double? {
-    if (target == null || target <= 0.0) return null
-    return value / target * 100.0
-}
-
-private fun consumedMealsForQuickImportDate(uiState: AppUiState): List<Pair<QuickImportMealType, QuickImportNutrients>> {
-    if (uiState.healthConnectViewerDate != uiState.inputQuickImportDateTime.toLocalDate()) return emptyList()
-    return uiState.healthConnectViewerMeals
-        .filter { it.startTime.isBefore(uiState.inputQuickImportDateTime) }
-        .groupBy { mealTypeFromHealthConnect(it) }
-        .map { (mealType, foods) ->
-            mealType to sumHealthConnectFoods(foods)
-        }
-}
-
-private fun currentDayTotalsForQuickImportDate(uiState: AppUiState): QuickImportNutrients {
-    if (uiState.healthConnectViewerDate != uiState.inputQuickImportDateTime.toLocalDate()) return emptyQuickImportNutrients()
-    return sumHealthConnectFoods(uiState.healthConnectViewerMeals)
-}
-
-private fun currentDayFoodCountForQuickImportDate(uiState: AppUiState): Int {
-    if (uiState.healthConnectViewerDate != uiState.inputQuickImportDateTime.toLocalDate()) return 0
-    return uiState.healthConnectViewerMeals.size
-}
-
-private fun sumHealthConnectFoods(foods: List<HealthConnectNutritionMeal>): QuickImportNutrients {
-    return QuickImportNutrients(
-        energy = foods.sumOf { it.energy },
-        carbohydrate = foods.sumOf { it.totalCarbohydrate },
-        sugar = foods.sumOf { it.sugar },
-        protein = foods.sumOf { it.protein },
-        fat = foods.sumOf { it.totalFat },
-        saturatedFat = foods.sumOf { it.saturatedFat },
-        fiber = foods.sumOf { it.dietaryFiber },
-    )
-}
-
-private fun emptyQuickImportNutrients(): QuickImportNutrients {
-    return QuickImportNutrients(
-        energy = 0.0,
-        carbohydrate = 0.0,
-        sugar = 0.0,
-        protein = 0.0,
-        fat = 0.0,
-        saturatedFat = 0.0,
-        fiber = 0.0,
-    )
-}
-
-private fun mealTypeFromHealthConnect(meal: HealthConnectNutritionMeal): QuickImportMealType {
-    return when (meal.mealType) {
-        androidx.health.connect.client.records.MealType.MEAL_TYPE_BREAKFAST -> QuickImportMealType.Breakfast
-        androidx.health.connect.client.records.MealType.MEAL_TYPE_LUNCH -> QuickImportMealType.Lunch
-        androidx.health.connect.client.records.MealType.MEAL_TYPE_DINNER -> QuickImportMealType.Dinner
-        androidx.health.connect.client.records.MealType.MEAL_TYPE_SNACK -> QuickImportMealType.Snack
-        else -> QuickImportMealType.inferFrom(meal.startTime)
-    }
-}
-
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -1549,26 +1490,17 @@ private fun QuickNutrientDetailGrid(
     nutrients: QuickImportNutrients,
     includeAmount: String?,
 ) {
-    val items = buildList {
-        if (includeAmount != null) add("Amount" to includeAmount)
-        add("Calories" to "${nutrients.energy.toFormattedString(true)} kcal")
-        add("Carbs" to "${nutrients.carbohydrate.toFormattedString(true)}g")
-        add("Protein" to "${nutrients.protein.toFormattedString(true)}g")
-        add("Fat" to "${nutrients.fat.toFormattedString(true)}g")
-        add("Fiber" to "${nutrients.fiber.toFormattedString(true)}g")
-        add("Sugar" to "${nutrients.sugar.toFormattedString(true)}g")
-        add("Sat fat" to "${nutrients.saturatedFat.toFormattedString(true)}g")
-    }
+    val items = quickNutrientDetailItems(nutrients, includeAmount)
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
         items.chunked(2).forEach { rowItems ->
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
             ) {
-                rowItems.forEach { (label, value) ->
+                rowItems.forEach { item ->
                     QuickNutrientDetailPill(
-                        label = label,
-                        value = value,
+                        label = item.label,
+                        value = item.value,
                         modifier = Modifier.weight(1f),
                     )
                 }
@@ -1586,7 +1518,7 @@ private fun QuickNutrientDetailPill(
     value: String,
     modifier: Modifier = Modifier,
 ) {
-    if (label.supportsMacroHint()) {
+    if (supportsMacroHint(label)) {
         MacroHintBox(label = label, modifier = modifier) {
             QuickNutrientDetailPillContent(label = label, value = value)
         }
@@ -1628,10 +1560,6 @@ private fun QuickNutrientDetailPillContent(
     }
 }
 
-private fun String.supportsMacroHint(): Boolean {
-    return this in setOf("Calories", "Carbs", "Protein", "Fat", "Fiber")
-}
-
 @Composable
 private fun SurfacePanel(
     modifier: Modifier = Modifier,
@@ -1653,20 +1581,4 @@ private fun SurfacePanel(
             content = content,
         )
     }
-}
-
-private fun quickImportResultText(
-    databaseEntriesAdded: Int,
-    dayFoodsAdded: Int,
-    healthWriteResult: QuickImportHealthWriteResult?,
-): String {
-    val localText = "Added $databaseEntriesAdded database foods and $dayFoodsAdded day foods."
-    val healthText = when (healthWriteResult) {
-        null -> "Health Connect skipped."
-        QuickImportHealthWriteResult.Success -> "Health Connect write succeeded."
-        QuickImportHealthWriteResult.HealthConnectUnavailable -> "Health Connect is unavailable."
-        QuickImportHealthWriteResult.PermissionsMissing -> "Health Connect permissions are missing."
-        is QuickImportHealthWriteResult.Failed -> "Health Connect failed: ${healthWriteResult.message}"
-    }
-    return "$localText $healthText"
 }

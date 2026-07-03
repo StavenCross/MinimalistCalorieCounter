@@ -17,6 +17,7 @@ import com.makstuff.minimalistcaloriecounter.classes.QuickImportResult
 import com.makstuff.minimalistcaloriecounter.health.HealthConnectNutritionMeal
 import com.makstuff.minimalistcaloriecounter.essentials.NAV_DAY
 import com.makstuff.minimalistcaloriecounter.essentials.NavButton
+import com.makstuff.minimalistcaloriecounter.ui.settings.SettingsSheet
 import com.makstuff.minimalistcaloriecounter.ui.theme.AppTheme
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -48,7 +49,7 @@ data class AppUiState(
     val dropdownMenuVisible: Boolean = false,
     val optionsSheetVisible: Boolean = false,
     val optionsSheetPage: String = "main", // "main" or "language"
-    val activeSettingsSheet: String? = null,
+    val activeSettingsSheet: SettingsSheet? = null,
     val quickImportSettingsVisible: Boolean = false,
     /*
     CAREFUL! The list below MUST contain the correct number of empty nutrient value strings.

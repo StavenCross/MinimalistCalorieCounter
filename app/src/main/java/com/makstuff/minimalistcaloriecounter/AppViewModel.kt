@@ -17,6 +17,7 @@ import com.makstuff.minimalistcaloriecounter.classes.WeeklyWeightLossTarget
 import com.makstuff.minimalistcaloriecounter.health.HealthConnectManager
 import com.makstuff.minimalistcaloriecounter.essentials.NavButton
 import com.makstuff.minimalistcaloriecounter.persistence.AppCsvStore
+import com.makstuff.minimalistcaloriecounter.ui.settings.SettingsSheet
 import com.makstuff.minimalistcaloriecounter.ui.theme.AppTheme
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -66,7 +67,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     fun clearNavigationRequest(route: String? = null) = uiActions.clearNavigation(route)
 
-    fun updateActiveSettingsSheet(sheet: String?) = uiActions.updateActiveSettingsSheet(sheet)
+    fun updateActiveSettingsSheet(sheet: SettingsSheet?) = uiActions.updateActiveSettingsSheet(sheet)
 
     fun updateQuickImportSettingsVisible(visible: Boolean) = uiActions.updateQuickImportSettingsVisible(visible)
 
