@@ -99,7 +99,8 @@ All non-UI files touched in this cleanup are now under the 300-line cap:
 - Wired the first Phase 6 Room runtime surfaces:
   - Goals reads Room first, falls back to CSV, and seeds Room during migration.
   - Add Meal outbox reads Room first, falls back to CSV, and seeds Room during migration.
-  - Goals and Add Meal outbox writes are mirrored to CSV while Room migration continues.
+  - App preferences read Room first, fall back to CSV, and seed Room during migration.
+  - Goals, Add Meal outbox, and app preference writes are mirrored to CSV while Room migration continues.
   - Added a real instrumentation round-trip test for `AppRoomStore`.
 
 ## Recommended Extraction Order
