@@ -61,6 +61,8 @@ The Settings page can remove app-owned Health Connect Nutrition records by inclu
 
 The Meals page can delete a selected meal by forwarding that meal group's visible app-owned Nutrition record ids to Health Connect. This is narrower than Settings cleanup and does not delete by date range.
 
+Repeating a meal from the Meals page does not write directly to Health Connect. It prepares Add Meal with copied nutrition values, then the normal Add Meal commit flow performs local backup, outbox tracking, duplicate prevention, and Health Connect write.
+
 Cleanup modes are:
 
 - Historical imports only

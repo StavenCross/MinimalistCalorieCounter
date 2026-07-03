@@ -1193,6 +1193,13 @@ fun App(
                     onRefresh = { viewModel.readHealthConnectNutritionMeals() },
                     onDeleteMeal = { viewModel.deleteHealthConnectNutritionMeal(it) },
                     onDeleteMealGroup = { viewModel.deleteHealthConnectNutritionMeals(it) },
+                    onRepeatMealGroup = {
+                        viewModel.prepareQuickImportRepeat(it)
+                        navController.navigate(AppRoutes.QUICK_IMPORT) {
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    },
                 )
             }
 

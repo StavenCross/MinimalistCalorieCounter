@@ -102,6 +102,7 @@ fun ScreenHealthConnectNutrition(
     onRefresh: () -> Unit,
     onDeleteMeal: (String) -> Unit,
     onDeleteMealGroup: (List<String>) -> Unit,
+    onRepeatMealGroup: (List<HealthConnectNutritionMeal>) -> Unit,
 ) {
     LaunchedEffect(Unit) {
         onRefresh()
@@ -149,6 +150,10 @@ fun ScreenHealthConnectNutrition(
             onDelete = {
                 selectedMealGroup = null
                 onDeleteMealGroup(group.foods.map { it.recordId })
+            },
+            onRepeat = {
+                selectedMealGroup = null
+                onRepeatMealGroup(group.foods)
             },
             onFoodClick = {
                 selectedMealGroup = null
@@ -833,6 +838,7 @@ private fun MealDetailDialog(
     onDismiss: () -> Unit,
     onCopy: () -> Unit,
     onDelete: () -> Unit,
+    onRepeat: () -> Unit,
     onFoodClick: (HealthConnectNutritionMeal) -> Unit,
 ) {
     val calories = group.foods.sumOf { it.energy }
@@ -910,6 +916,19 @@ private fun MealDetailDialog(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
             ) {
+                TextButton(
+                    onClick = onRepeat,
+                    modifier = Modifier
+                        .weight(1f)
+                        .testTag("meals_repeat_meal_group"),
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.ContentCopy,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp),
+                    )
+                    Text("Repeat")
+                }
                 TextButton(
                     onClick = onDelete,
                     modifier = Modifier

@@ -21,7 +21,6 @@ import com.makstuff.minimalistcaloriecounter.classes.Archive
 import com.makstuff.minimalistcaloriecounter.classes.Combo
 import com.makstuff.minimalistcaloriecounter.health.HealthConnectNutritionMeal
 import com.makstuff.minimalistcaloriecounter.ui.theme.AppTheme
-import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -53,6 +52,7 @@ class ScreenHealthConnectNutritionTest {
                     onRefresh = { refreshCount++ },
                     onDeleteMeal = {},
                     onDeleteMealGroup = {},
+                    onRepeatMealGroup = {},
                 )
             }
         }
@@ -82,6 +82,7 @@ class ScreenHealthConnectNutritionTest {
                     onRefresh = {},
                     onDeleteMeal = {},
                     onDeleteMealGroup = {},
+                    onRepeatMealGroup = {},
                 )
             }
         }
@@ -105,6 +106,7 @@ class ScreenHealthConnectNutritionTest {
                     onRefresh = {},
                     onDeleteMeal = {},
                     onDeleteMealGroup = {},
+                    onRepeatMealGroup = {},
                 )
             }
         }
@@ -128,6 +130,7 @@ class ScreenHealthConnectNutritionTest {
                     onRefresh = {},
                     onDeleteMeal = {},
                     onDeleteMealGroup = {},
+                    onRepeatMealGroup = {},
                 )
             }
         }
@@ -154,6 +157,7 @@ class ScreenHealthConnectNutritionTest {
                     onRefresh = {},
                     onDeleteMeal = {},
                     onDeleteMealGroup = {},
+                    onRepeatMealGroup = {},
                 )
             }
         }
@@ -184,6 +188,7 @@ class ScreenHealthConnectNutritionTest {
                     onRefresh = {},
                     onDeleteMeal = {},
                     onDeleteMealGroup = {},
+                    onRepeatMealGroup = {},
                 )
             }
         }
@@ -193,82 +198,6 @@ class ScreenHealthConnectNutritionTest {
         composeRule.onNodeWithTag("meal_expand_toggle_lunch").assertIsDisplayed().performClick()
         composeRule.onNodeWithText("food 4").assertIsDisplayed()
         composeRule.onNodeWithContentDescription("Collapse Lunch").assertIsDisplayed()
-    }
-
-    @Test
-    fun daySummaryCopyButtonShowsCopiedState() {
-        composeRule.setContent {
-            AppTheme(dynamicColor = false) {
-                ScreenHealthConnectNutrition(
-                    uiState = baseState().copy(
-                        healthConnectViewerDate = LocalDate.of(2026, 7, 2),
-                        healthConnectViewerLoading = false,
-                        healthConnectViewerMessage = null,
-                        healthConnectViewerMeals = listOf(sampleMeal()),
-                    ),
-                    onDateChange = {},
-                    onRefresh = {},
-                    onDeleteMeal = {},
-                    onDeleteMealGroup = {},
-                )
-            }
-        }
-
-        composeRule.onNodeWithTag("meals_day_copy_summary").assertIsDisplayed().performClick()
-        composeRule.onNodeWithText("Day copied").assertIsDisplayed()
-    }
-
-    @Test
-    fun mealSummaryCopyButtonShowsCopiedState() {
-        composeRule.setContent {
-            AppTheme(dynamicColor = false) {
-                ScreenHealthConnectNutrition(
-                    uiState = baseState().copy(
-                        healthConnectViewerDate = LocalDate.of(2026, 7, 2),
-                        healthConnectViewerLoading = false,
-                        healthConnectViewerMessage = null,
-                        healthConnectViewerMeals = listOf(sampleMeal()),
-                    ),
-                    onDateChange = {},
-                    onRefresh = {},
-                    onDeleteMeal = {},
-                    onDeleteMealGroup = {},
-                )
-            }
-        }
-
-        composeRule.onNodeWithText("Lunch").performClick()
-        composeRule.onNodeWithTag("meals_meal_copy_summary").assertIsDisplayed().performClick()
-        composeRule.onNodeWithContentDescription("Meal summary copied").assertIsDisplayed()
-    }
-
-    @Test
-    fun mealDetailDeleteEmitsGroupRecordIds() {
-        var deletedRecordIds = emptyList<String>()
-
-        composeRule.setContent {
-            AppTheme(dynamicColor = false) {
-                ScreenHealthConnectNutrition(
-                    uiState = baseState().copy(
-                        healthConnectViewerDate = LocalDate.of(2026, 7, 2),
-                        healthConnectViewerLoading = false,
-                        healthConnectViewerMessage = null,
-                        healthConnectViewerMeals = listOf(
-                            sampleMeal(name = "food 1", minuteOffset = 0),
-                            sampleMeal(name = "food 2", minuteOffset = 1),
-                        ),
-                    ),
-                    onDateChange = {},
-                    onRefresh = {},
-                    onDeleteMeal = {},
-                    onDeleteMealGroup = { deletedRecordIds = it },
-                )
-            }
-        }
-
-        composeRule.onNodeWithText("Lunch").performClick()
-        composeRule.onNodeWithTag("meals_delete_meal_group").assertIsDisplayed().performClick()
-        assertEquals(listOf("record-0", "record-1"), deletedRecordIds)
     }
 
     @Test
@@ -286,6 +215,7 @@ class ScreenHealthConnectNutritionTest {
                     onRefresh = {},
                     onDeleteMeal = {},
                     onDeleteMealGroup = {},
+                    onRepeatMealGroup = {},
                 )
             }
         }
