@@ -131,8 +131,6 @@ import kotlinx.coroutines.delay
 import java.io.File
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
-import android.view.WindowManager
-import androidx.compose.runtime.DisposableEffect
 import com.github.doyaaaaaken.kotlincsv.dsl.csvReader
 
 private val AccentMenu = Color(0xFF90CAF9)
@@ -1655,78 +1653,12 @@ fun App(
         if (mainMenuExpanded) AppMainDrawer(onDismiss = { mainMenuExpanded = false }, onNavigate = { navTo(it) })
     }
 
-    if (uiState.healthConnectSyncProgress != null) {
-        val window = context.findActivity()?.window
-        DisposableEffect(Unit) {
-            window?.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-            onDispose {
-                window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-            }
-        }
-
-        AlertDialog(
-            onDismissRequest = { },
-            properties = DialogProperties(
-                dismissOnBackPress = false,
-                dismissOnClickOutside = false
-            ),
-            title = {
-                Text(
-                    text = stringResource(R.string.please_wait),
-                    style = MaterialTheme.typography.headlineSmall
-                )
-            },
-            text = {
-                Column {
-                    Text(
-                        text = stringResource(
-                            R.string.syncing_health_connect,
-                            uiState.healthConnectSyncCurrentCount,
-                            uiState.healthConnectSyncTotalCount
-                        ),
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                    Spacer(modifier = Modifier.height(24.dp))
-                    LinearProgressIndicator(
-                        progress = { uiState.healthConnectSyncProgress },
-                        modifier = Modifier.fillMaxWidth(),
-                        strokeCap = androidx.compose.ui.graphics.StrokeCap.Round
-                    )
-                }
-            },
-            confirmButton = {
-                if (uiState.healthConnectSyncProgress >= 1f) {
-                    ButtonText(
-                        text = stringResource(R.string.button_finish),
-                        onClick = { viewModel.finishHealthConnectSync() }
-                    )
-                } else {
-                    ButtonText(
-                        text = stringResource(R.string.button_cancel),
-                        onClick = { viewModel.cancelHealthConnectSync() }
-                    )
-                }
-            }
-        )
-    }
-
-    if (uiState.healthConnectSyncMessage != null) {
-        AlertDialog(
-            onDismissRequest = { viewModel.dismissHealthConnectSyncError() },
-            properties = DialogProperties(
-                dismissOnClickOutside = false,
-                dismissOnBackPress = false
-            ),
-            confirmButton = {
-                ButtonText(
-                    text = stringResource(R.string.button_understood),
-                    onClick = { viewModel.dismissHealthConnectSyncError() }
-                )
-            },
-            title = { Text(stringResource(R.string.confirmation)) },
-            text = { Text(stringResource(R.string.health_connect_sync_error, uiState.healthConnectSyncMessage)) }
-        )
-    }
+    HealthConnectSyncDialogs(
+        uiState = uiState,
+        onFinish = { viewModel.finishHealthConnectSync() },
+        onCancel = { viewModel.cancelHealthConnectSync() },
+        onDismissError = { viewModel.dismissHealthConnectSyncError() },
+    )
 }
 
 @Composable
