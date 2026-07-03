@@ -81,6 +81,7 @@ All non-UI files touched in this cleanup are now under the 300-line cap:
 - Split Health Connect export code into exporter orchestration, CSV schema/redaction, row mapping, mode definitions, and record-type permission lists.
 - Added Health Connect cleanup preview and mode classification so Settings can preview destructive deletes before removing app-owned Nutrition records.
 - Added Add Meal today check-in summary generation as a testable UI model helper; the screen only handles clipboard copy state.
+- Added Meals review day/meal summary generation as testable UI model helpers; the screen owns only clipboard copy state.
 
 ## Recommended Extraction Order
 

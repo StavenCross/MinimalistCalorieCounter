@@ -158,6 +158,51 @@ class ScreenHealthConnectNutritionTest {
     }
 
     @Test
+    fun daySummaryCopyButtonShowsCopiedState() {
+        composeRule.setContent {
+            AppTheme(dynamicColor = false) {
+                ScreenHealthConnectNutrition(
+                    uiState = baseState().copy(
+                        healthConnectViewerDate = LocalDate.of(2026, 7, 2),
+                        healthConnectViewerLoading = false,
+                        healthConnectViewerMessage = null,
+                        healthConnectViewerMeals = listOf(sampleMeal()),
+                    ),
+                    onDateChange = {},
+                    onRefresh = {},
+                    onDeleteMeal = {},
+                )
+            }
+        }
+
+        composeRule.onNodeWithTag("meals_day_copy_summary").assertIsDisplayed().performClick()
+        composeRule.onNodeWithText("Day copied").assertIsDisplayed()
+    }
+
+    @Test
+    fun mealSummaryCopyButtonShowsCopiedState() {
+        composeRule.setContent {
+            AppTheme(dynamicColor = false) {
+                ScreenHealthConnectNutrition(
+                    uiState = baseState().copy(
+                        healthConnectViewerDate = LocalDate.of(2026, 7, 2),
+                        healthConnectViewerLoading = false,
+                        healthConnectViewerMessage = null,
+                        healthConnectViewerMeals = listOf(sampleMeal()),
+                    ),
+                    onDateChange = {},
+                    onRefresh = {},
+                    onDeleteMeal = {},
+                )
+            }
+        }
+
+        composeRule.onNodeWithText("Lunch").performClick()
+        composeRule.onNodeWithTag("meals_meal_copy_summary").assertIsDisplayed().performClick()
+        composeRule.onNodeWithContentDescription("Meal summary copied").assertIsDisplayed()
+    }
+
+    @Test
     fun tappingMacroProgressShowsTemporaryDescription() {
         composeRule.setContent {
             AppTheme(dynamicColor = false) {
