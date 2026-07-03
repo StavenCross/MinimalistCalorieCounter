@@ -40,6 +40,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     )
     private val goalsActions = AppViewModelGoalsActions(environment)
     private val quickImportActions = AppViewModelQuickImportActions(environment, this)
+    private val quickImportRetryActions = AppViewModelQuickImportRetryActions(environment, this)
     private val persistenceActions = AppViewModelPersistenceActions(environment, this)
     private val healthConnectActions = AppViewModelHealthConnectActions(environment, this)
     private val healthConnectMealActions = AppViewModelHealthConnectMealActions(environment, this)
@@ -215,6 +216,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     fun updateQuickImportWriteHealthConnect(enabled: Boolean) = quickImportActions.updateWriteHealthConnect(enabled)
 
     fun quickImportCommit(context: Context) = quickImportActions.commit(context)
+
+    fun quickImportRetryHealthConnect(context: Context, outboxId: String) = quickImportRetryActions.retry(context, outboxId)
 
     fun archiveAddEntry(date: LocalDate, bodyWeight: String, nutrients: Nutrients, context: Context) =
         archiveDayActions.addArchiveEntry(date, bodyWeight, nutrients, context)

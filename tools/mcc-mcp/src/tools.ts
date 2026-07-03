@@ -68,6 +68,10 @@ export async function quickImportCommit(
   return ctx.bridgeFor(hostPort).post("/quick-import/commit", input);
 }
 
+export async function quickImportRetry(ctx: ToolContext, id: string, hostPort = DEFAULT_HOST_PORT) {
+  return ctx.bridgeFor(hostPort).post("/quick-import/retry", { id });
+}
+
 export async function selectMealsDate(ctx: ToolContext, date: string, hostPort = DEFAULT_HOST_PORT) {
   return ctx.bridgeFor(hostPort).post("/meals/select-date", { date });
 }

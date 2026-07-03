@@ -6,6 +6,7 @@ import {
   ToolContext,
   quickImportCommit,
   quickImportPreview,
+  quickImportRetry,
   selectMealsDate,
 } from "./tools.js";
 
@@ -30,6 +31,20 @@ export function registerQuickImportTools(server: McpServer, ctx: ToolContext) {
       annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
     },
     async ({ hostPort, ...input }) => result(await quickImportCommit(ctx, input, hostPort)),
+  );
+
+  server.registerTool(
+    "mcc_quick_import_retry",
+    {
+      title: "Retry Add Meal Health Connect write",
+      description: "Retry a failed or pending Add Meal Health Connect write from its outbox id.",
+      inputSchema: {
+        id: z.string().describe("Add Meal outbox id from the debug bridge state."),
+        hostPort: HostPortInput,
+      },
+      annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
+    },
+    async ({ id, hostPort }) => result(await quickImportRetry(ctx, id, hostPort)),
   );
 
   server.registerTool(

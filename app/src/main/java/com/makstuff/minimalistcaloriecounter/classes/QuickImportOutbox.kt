@@ -22,6 +22,7 @@ data class QuickImportOutboxItem(
     val attemptCount: Int,
     val lastAttemptAt: LocalDateTime?,
     val lastErrorMessage: String?,
+    val healthPayloads: List<QuickImportHealthPayload> = emptyList(),
 ) {
     val needsAttention: Boolean
         get() = state == QuickImportOutboxState.PendingHealthConnect ||
@@ -37,6 +38,7 @@ object QuickImportOutbox {
         meal: QuickImportMeal,
         intendedDateTime: LocalDateTime,
         mealType: QuickImportMealType,
+        healthPayloads: List<QuickImportHealthPayload>,
         createdAt: LocalDateTime,
     ): QuickImportOutboxItem {
         val sourceTextHash = sha256(sourceText.trim())
@@ -62,6 +64,7 @@ object QuickImportOutbox {
             attemptCount = 0,
             lastAttemptAt = null,
             lastErrorMessage = null,
+            healthPayloads = withClientRecordIds(healthPayloads, id),
         )
     }
 
@@ -69,9 +72,14 @@ object QuickImportOutbox {
         payloads: List<QuickImportHealthPayload>,
         item: QuickImportOutboxItem,
     ): List<QuickImportHealthPayload> {
-        return payloads.mapIndexed { index, payload ->
-            payload.copy(clientRecordId = clientRecordId(item.id, index))
-        }
+        return withClientRecordIds(payloads, item.id)
+    }
+
+    private fun withClientRecordIds(
+        payloads: List<QuickImportHealthPayload>,
+        itemId: String,
+    ): List<QuickImportHealthPayload> = payloads.mapIndexed { index, payload ->
+        payload.copy(clientRecordId = clientRecordId(itemId, index))
     }
 
     fun markAttempting(item: QuickImportOutboxItem, attemptedAt: LocalDateTime): QuickImportOutboxItem {
@@ -124,4 +132,3 @@ object QuickImportOutbox {
         return digest.joinToString("") { "%02x".format(it) }
     }
 }
-

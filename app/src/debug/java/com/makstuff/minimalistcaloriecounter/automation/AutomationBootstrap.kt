@@ -106,9 +106,12 @@ object AutomationBootstrap {
                 "POST" to "/quick-import/commit" -> ok(runOnMain {
                     applyQuickImportBody(body)
                     viewModel.quickImportCommit(context)
-                    JSONObject()
-                        .put("started", true)
-                        .put("quickImport", quickImportJson())
+                    JSONObject().put("started", true).put("quickImport", quickImportJson())
+                })
+                "POST" to "/quick-import/retry" -> ok(runOnMain {
+                    val outboxId = body.requireString("id")
+                    viewModel.quickImportRetryHealthConnect(context, outboxId)
+                    JSONObject().put("started", true).put("id", outboxId).put("quickImport", quickImportJson())
                 })
                 "POST" to "/meals/select-date" -> ok(runOnMain {
                     val date = LocalDate.parse(body.requireString("date"))
@@ -118,8 +121,7 @@ object AutomationBootstrap {
                 "POST" to "/health-connect/read-day" -> ok(runOnMain {
                     val date = LocalDate.parse(body.requireString("date"))
                     viewModel.updateHealthConnectViewerDate(date)
-                    JSONObject()
-                        .put("date", date.toString())
+                    JSONObject().put("date", date.toString())
                         .put("started", true)
                 })
                 "POST" to "/health-connect/delete-range" -> ok(runOnMain {

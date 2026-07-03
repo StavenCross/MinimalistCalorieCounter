@@ -139,6 +139,7 @@ fun ScreenQuickImport(
     onMealTypeChange: (QuickImportMealType) -> Unit,
     onImport: () -> Unit,
     onClear: () -> Unit,
+    onRetryOutbox: (String) -> Unit = {},
 ) {
     val meal = uiState.quickImportMeal
     val hasDestination = uiState.quickImportAddFoodsToDatabase ||
@@ -237,10 +238,15 @@ fun ScreenQuickImport(
                 }
             }
 
-            val outboxAttentionCount = uiState.quickImportOutbox.count { it.needsAttention }
+            val outboxAttention = uiState.quickImportOutbox.filter { it.needsAttention }
+            val outboxAttentionCount = outboxAttention.size
             if (outboxAttentionCount > 0) {
                 item {
-                    QuickImportOutboxStatusCard(outboxAttentionCount)
+                    QuickImportOutboxStatusCard(
+                        count = outboxAttentionCount,
+                        retryId = outboxAttention.firstOrNull { it.healthPayloads.isNotEmpty() }?.id,
+                        onRetry = onRetryOutbox,
+                    )
                 }
             }
 
@@ -489,7 +495,11 @@ private fun CapturePanel(
 }
 
 @Composable
-private fun QuickImportOutboxStatusCard(count: Int) {
+private fun QuickImportOutboxStatusCard(
+    count: Int,
+    retryId: String?,
+    onRetry: (String) -> Unit,
+) {
     SurfacePanel(
         borderColor = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.5f),
         backgroundColor = MaterialTheme.colorScheme.surfaceContainerHigh,
@@ -513,7 +523,16 @@ private fun QuickImportOutboxStatusCard(count: Int) {
                 },
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.weight(1f),
             )
+            if (retryId != null) {
+                TextButton(
+                    onClick = { onRetry(retryId) },
+                    modifier = Modifier.testTag("quick_import_outbox_retry"),
+                ) {
+                    Text("Retry")
+                }
+            }
         }
     }
 }

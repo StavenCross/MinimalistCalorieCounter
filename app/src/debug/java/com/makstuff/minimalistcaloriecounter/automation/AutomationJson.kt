@@ -94,6 +94,8 @@ internal fun QuickImportOutboxItem.toJson(): JSONObject = JSONObject()
     .put("attemptCount", attemptCount)
     .put("lastAttemptAt", lastAttemptAt?.toString())
     .put("lastErrorMessage", lastErrorMessage)
+    .put("healthPayloadCount", healthPayloads.size)
+    .put("canRetry", needsAttention && healthPayloads.isNotEmpty())
     .put("needsAttention", needsAttention)
 
 internal fun QuickImportHealthWriteResult?.toJson(): JSONObject? {

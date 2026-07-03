@@ -74,8 +74,9 @@ All non-UI files touched in this cleanup are now under the 300-line cap:
 - Added the first Add Meal Health Connect outbox slice:
   - `classes/QuickImportOutbox.kt`
   - `classes/QuickImportOutboxCsv.kt`
-  - Add Meal writes now use deterministic client record ids and persist pending/synced/failed write state.
-  - debug automation state exposes outbox rows for MCP-driven verification.
+  - `AppViewModelQuickImportRetryActions.kt`
+  - Add Meal writes now use deterministic client record ids and persist pending/synced/failed write state plus retry payloads.
+  - debug automation and MCP expose outbox rows and retry actions for verification.
 
 ## Recommended Extraction Order
 

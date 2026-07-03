@@ -16,6 +16,7 @@ class QuickImportOutboxTest {
             meal = meal,
             intendedDateTime = dateTime,
             mealType = QuickImportMealType.Lunch,
+            healthPayloads = samplePayloads(meal, dateTime),
             createdAt = LocalDateTime.of(2026, 7, 3, 12, 1),
         )
         val second = QuickImportOutbox.buildItem(
@@ -23,12 +24,14 @@ class QuickImportOutboxTest {
             meal = meal,
             intendedDateTime = dateTime,
             mealType = QuickImportMealType.Lunch,
+            healthPayloads = samplePayloads(meal, dateTime),
             createdAt = LocalDateTime.of(2026, 7, 3, 12, 5),
         )
 
         assertEquals(first.id, second.id)
         assertEquals(QuickImportOutboxState.PendingHealthConnect, first.state)
         assertEquals("1 foods, 389 kcal", first.mealSummary)
+        assertEquals("mcc-add-meal-${first.id}-0", first.healthPayloads.single().clientRecordId)
     }
 
     @Test
@@ -38,6 +41,7 @@ class QuickImportOutboxTest {
             meal = sampleMeal(),
             intendedDateTime = LocalDateTime.of(2026, 7, 3, 12, 0),
             mealType = QuickImportMealType.Lunch,
+            healthPayloads = samplePayloads(sampleMeal(), LocalDateTime.of(2026, 7, 3, 12, 0)),
             createdAt = LocalDateTime.of(2026, 7, 3, 12, 1),
         )
 
@@ -60,6 +64,7 @@ class QuickImportOutboxTest {
             meal = sampleMeal(),
             intendedDateTime = LocalDateTime.of(2026, 7, 3, 12, 0),
             mealType = QuickImportMealType.Lunch,
+            healthPayloads = samplePayloads(sampleMeal(), LocalDateTime.of(2026, 7, 3, 12, 0)),
             createdAt = LocalDateTime.of(2026, 7, 3, 12, 1),
         )
 
@@ -80,6 +85,7 @@ class QuickImportOutboxTest {
             meal = sampleMeal(),
             intendedDateTime = LocalDateTime.of(2026, 7, 3, 12, 0),
             mealType = QuickImportMealType.Lunch,
+            healthPayloads = samplePayloads(sampleMeal(), LocalDateTime.of(2026, 7, 3, 12, 0)),
             createdAt = LocalDateTime.of(2026, 7, 3, 12, 1),
         )
         val synced = QuickImportOutbox.markResult(item, QuickImportHealthWriteResult.Success)
@@ -92,9 +98,12 @@ class QuickImportOutboxTest {
 
     private fun sampleMeal(): QuickImportMeal = QuickImportParser.parse(SAMPLE_TEXT)
 
+    private fun samplePayloads(meal: QuickImportMeal, dateTime: LocalDateTime): List<QuickImportHealthPayload> {
+        return QuickImportMapper.toHealthPayloads(meal, dateTime, QuickImportMealType.Lunch)
+    }
+
     private companion object {
         const val SAMPLE_TEXT =
             "100g test oats; Calories 389, Fat 6.9g, Sat Fat 1.2g, Trans Fat 0g, Cholesterol 0mg, Sodium 2mg, Carbs 66.3g, Fiber 10.6g, Sugar 0.9g, Added Sugar 0g, Protein 16.9g. Meal totals; Calories 389, Fat 6.9g, Sat Fat 1.2g, Trans Fat 0g, Cholesterol 0mg, Sodium 2mg, Carbs 66.3g, Fiber 10.6g, Sugar 0.9g, Added Sugar 0g, Protein 16.9g."
     }
 }
-
