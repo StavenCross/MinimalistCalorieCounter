@@ -37,6 +37,26 @@ class AppRoutesTest {
     }
 
     @Test
+    fun bottomBarDestinationsStayOrdered() {
+        assertEquals(
+            listOf(
+                AppRoutes.HEALTH_CONNECT_NUTRITION,
+                AppRoutes.QUICK_IMPORT,
+                AppRoutes.GOALS_HOME,
+            ),
+            AppDestinations.bottomBar.map { it.route },
+        )
+    }
+
+    @Test
+    fun drawerDestinationsStayScopedToTroubleshootingAndSettings() {
+        assertEquals(
+            listOf(AppRoutes.DATABASE_HOME, AppRoutes.SETTINGS_HOME),
+            AppDestinations.drawer.map { it.route },
+        )
+    }
+
+    @Test
     fun unknownAutomationRoutesFailLoudly() {
         assertThrows(IllegalStateException::class.java) {
             AppRoutes.automationRouteFor("unknown")
