@@ -41,6 +41,7 @@ import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.CloudDone
+import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.EggAlt
 import androidx.compose.material.icons.filled.Event
@@ -84,6 +85,8 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -106,6 +109,7 @@ import com.makstuff.minimalistcaloriecounter.ui.model.macroProgressArc
 import com.makstuff.minimalistcaloriecounter.ui.model.macroSummaryItems
 import com.makstuff.minimalistcaloriecounter.ui.model.quickNutrientDetailItems
 import com.makstuff.minimalistcaloriecounter.ui.model.supportsMacroHint
+import com.makstuff.minimalistcaloriecounter.ui.model.todayCheckInSummary
 import com.makstuff.minimalistcaloriecounter.ui.reused.MacroHintBox
 import com.makstuff.minimalistcaloriecounter.ui.reused.SheetTitle
 import com.makstuff.minimalistcaloriecounter.ui.reused.SurfacePanel
@@ -159,6 +163,23 @@ fun ScreenQuickImport(
         dailyTotals,
         uiState.goals.activeTargetsFor(uiState.inputQuickImportDateTime.toLocalDate()),
     )
+    val activeTargets = uiState.goals.activeTargetsFor(uiState.inputQuickImportDateTime.toLocalDate())
+    val checkInMeals = if (uiState.healthConnectViewerDate == uiState.inputQuickImportDateTime.toLocalDate()) {
+        uiState.healthConnectViewerMeals
+    } else {
+        emptyList()
+    }
+    val clipboard = LocalClipboardManager.current
+    var checkInCopied by remember { mutableStateOf(false) }
+    val checkInText = todayCheckInSummary(
+        date = uiState.inputQuickImportDateTime.toLocalDate(),
+        meals = checkInMeals,
+        targets = activeTargets,
+        profile = uiState.goals.profile,
+    )
+    LaunchedEffect(checkInText) {
+        checkInCopied = false
+    }
     var successAnimationVisible by remember { mutableStateOf(false) }
     LaunchedEffect(uiState.quickImportSuccessToken) {
         if (uiState.quickImportSuccessToken > 0L) {
@@ -220,6 +241,11 @@ fun ScreenQuickImport(
                     totals = dailyTotals,
                     foodCount = dailyFoodCount,
                     progress = dailyGoalProgress,
+                    checkInCopied = checkInCopied,
+                    onCopyCheckIn = {
+                        clipboard.setText(AnnotatedString(checkInText))
+                        checkInCopied = true
+                    },
                 )
             }
 
@@ -969,6 +995,8 @@ private fun QuickDaySummaryCard(
     totals: QuickImportNutrients,
     foodCount: Int,
     progress: MacroTargets,
+    checkInCopied: Boolean,
+    onCopyCheckIn: () -> Unit,
 ) {
     SurfacePanel(
         borderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.16f),
@@ -1000,6 +1028,19 @@ private fun QuickDaySummaryCard(
 
             QuickDayMacroGrid(totals)
             QuickGoalProgressRow(progress)
+            TextButton(
+                onClick = onCopyCheckIn,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("quick_import_check_in_copy"),
+            ) {
+                Icon(
+                    imageVector = if (checkInCopied) Icons.Default.Check else Icons.Default.ContentCopy,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp),
+                )
+                Text(if (checkInCopied) "Check-in copied" else "Copy today check-in")
+            }
         }
     }
 }
