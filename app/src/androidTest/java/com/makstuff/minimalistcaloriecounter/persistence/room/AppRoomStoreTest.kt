@@ -101,4 +101,31 @@ class AppRoomStoreTest {
             store.readOptions(),
         )
     }
+
+    @Test
+    fun roundTripsLocalMealBackups() = runBlocking {
+        val loggedAt = LocalDateTime.of(2026, 7, 3, 12, 0)
+        val entity = LocalMealBackupEntity(
+            id = "backup-test",
+            loggedDate = loggedAt.toLocalDate(),
+            loggedAt = loggedAt,
+            mealType = QuickImportMealType.Lunch.name,
+            foodName = "Lunch bowl",
+            amountText = "400g",
+            grams = 400.0,
+            calories = 500.0,
+            carbs = 55.0,
+            protein = 35.0,
+            fat = 10.0,
+            fiber = 8.0,
+            sugar = 4.0,
+            saturatedFat = 2.0,
+            clientRecordId = "mcc-add-meal-backup-test-0",
+            createdAt = loggedAt.plusMinutes(1),
+        )
+
+        store.writeLocalMealBackups(listOf(entity))
+
+        assertEquals(listOf(entity), store.localMealBackupsForDate(loggedAt.toLocalDate()))
+    }
 }

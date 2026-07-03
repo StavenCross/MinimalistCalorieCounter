@@ -29,7 +29,6 @@ internal class AppViewModelQuickImportActions(
             ).withoutQuickImportOutcome()
         }
     }
-
     fun reset() {
         env.state.update { currentState ->
             currentState.copy(
@@ -225,11 +224,13 @@ internal class AppViewModelQuickImportActions(
                         attemptedAt = LocalDateTime.now(),
                     )
                     env.writeQuickImportOutboxItem(context, outboxItem)
+                    env.writeLocalMealBackup(meal, state.inputQuickImportDateTime, state.quickImportMealType, outboxItem.healthPayloads.map { it.clientRecordId })
                     val result = env.healthConnectManager.insertQuickMealNutrition(outboxItem.healthPayloads)
                     outboxItem = QuickImportOutbox.markResult(outboxItem, result)
                     env.writeQuickImportOutboxItem(context, outboxItem)
                     result
                 } else {
+                    env.writeLocalMealBackup(meal, state.inputQuickImportDateTime, state.quickImportMealType)
                     null
                 }
                 val result = QuickImportResult(
