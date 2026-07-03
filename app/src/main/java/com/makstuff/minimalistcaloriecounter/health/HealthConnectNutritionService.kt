@@ -64,6 +64,22 @@ internal class HealthConnectNutritionService(
         }
     }
 
+    suspend fun previewNutritionRecordsInRange(
+        startDate: LocalDate,
+        endDate: LocalDate,
+        mode: HealthConnectCleanupMode,
+        onProgress: (Float?, Int, Int) -> Unit,
+    ): HealthConnectCleanupPreviewResult {
+        return try {
+            val categories = cleanupCategoriesInRange(startDate, endDate, mode, onProgress)
+            HealthConnectCleanupPreviewResult.Success(categories.toCleanupPreview())
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
+        } catch (e: Throwable) {
+            HealthConnectCleanupPreviewResult.Failed(e.message ?: "Unknown Health Connect cleanup preview error")
+        }
+    }
+
     suspend fun writeHistoricalMealFoods(
         foods: List<HistoricalMealFood>,
         onProgress: (Float?, Int, Int) -> Unit,
@@ -147,18 +163,15 @@ internal class HealthConnectNutritionService(
     suspend fun deleteNutritionRecordsInRange(
         startDate: LocalDate,
         endDate: LocalDate,
+        mode: HealthConnectCleanupMode,
         onProgress: (Float?, Int, Int) -> Unit,
     ): HistoricalMealHealthConnectResult {
         return try {
-            val firstDate = minOf(startDate, endDate)
-            val lastDate = maxOf(startDate, endDate)
-            val dates = generateSequence(firstDate) { current ->
-                current.plusDays(1).takeIf { it <= lastDate }
-            }.toList()
-
             val idsToDelete = mutableListOf<String>()
+            val dates = cleanupDates(startDate, endDate)
             dates.forEachIndexed { index, date ->
                 idsToDelete += readNutritionRecords(date)
+                    .filter { it.cleanupCategory().matches(mode) }
                     .map { it.metadata.id }
                     .filter { it.isNotBlank() }
                 withContext(Dispatchers.Main) {
@@ -182,6 +195,33 @@ internal class HealthConnectNutritionService(
         } catch (e: Throwable) {
             HistoricalMealHealthConnectResult.Failed(e.message ?: "Unknown Health Connect nutrition cleanup error")
         }
+    }
+
+    private suspend fun cleanupCategoriesInRange(
+        startDate: LocalDate,
+        endDate: LocalDate,
+        mode: HealthConnectCleanupMode,
+        onProgress: (Float?, Int, Int) -> Unit,
+    ): List<HealthConnectCleanupCategory> {
+        val dates = cleanupDates(startDate, endDate)
+        val categories = mutableListOf<HealthConnectCleanupCategory>()
+        dates.forEachIndexed { index, date ->
+            categories += readNutritionRecords(date)
+                .map { it.cleanupCategory() }
+                .filter { it.matches(mode) }
+            withContext(Dispatchers.Main) {
+                onProgress((index + 1).toFloat() / dates.size, index + 1, dates.size)
+            }
+        }
+        return categories
+    }
+
+    private fun cleanupDates(startDate: LocalDate, endDate: LocalDate): List<LocalDate> {
+        val firstDate = minOf(startDate, endDate)
+        val lastDate = maxOf(startDate, endDate)
+        return generateSequence(firstDate) { current ->
+            current.plusDays(1).takeIf { it <= lastDate }
+        }.toList()
     }
 
     private suspend fun readNutritionRecords(date: LocalDate): List<NutritionRecord> {

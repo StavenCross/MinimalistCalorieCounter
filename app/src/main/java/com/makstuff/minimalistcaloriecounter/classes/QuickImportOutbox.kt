@@ -31,7 +31,7 @@ data class QuickImportOutboxItem(
 }
 
 object QuickImportOutbox {
-    private const val CLIENT_RECORD_PREFIX = "mcc-add-meal"
+    const val CLIENT_RECORD_PREFIX = "mcc-add-meal"
 
     fun buildItem(
         sourceText: String,

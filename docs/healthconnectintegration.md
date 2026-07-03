@@ -59,6 +59,14 @@ Historical import writes one Nutrition record per food row. Duplicate detection 
 
 The Settings page can remove app-owned Health Connect Nutrition records by inclusive date range. Spreadsheet import does not auto-clear Health Connect data.
 
+Cleanup modes are:
+
+- Historical imports only
+- Add Meal records only
+- All app-owned nutrition
+
+Cleanup must be previewed before deletion. Preview scans the selected date range and reports total matching records plus split counts for historical import records, Add Meal records, and legacy Daily Total records. Delete uses the same classifier as preview so the confirmation count and actual deletion target stay aligned.
+
 ## Export
 
 Settings can export Health Connect CSV files to Downloads. Export modes are:
