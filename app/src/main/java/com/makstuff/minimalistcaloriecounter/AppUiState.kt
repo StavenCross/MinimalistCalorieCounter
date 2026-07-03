@@ -47,8 +47,6 @@ data class AppUiState(
     val topBarTitle: String = "",
     val automationRouteRequest: String? = null,
     val dropdownMenuVisible: Boolean = false,
-    val optionsSheetVisible: Boolean = false,
-    val optionsSheetPage: String = "main", // "main" or "language"
     val activeSettingsSheet: SettingsSheet? = null,
     val quickImportSettingsVisible: Boolean = false,
     /*

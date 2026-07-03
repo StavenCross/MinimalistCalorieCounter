@@ -21,18 +21,35 @@ object QuickImportMapper {
         val displayName = listOf(food.amountText, food.name)
             .filter { it.isNotBlank() }
             .joinToString(" ")
+        return toHealthPayload(
+            dateTime = dateTime,
+            mealType = mealType,
+            nutrients = food.nutrients,
+            name = displayName.ifBlank { food.name },
+        )
+    }
+
+    fun toHealthPayload(
+        dateTime: LocalDateTime,
+        mealType: QuickImportMealType,
+        nutrients: QuickImportNutrients,
+        name: String,
+        clientRecordId: String? = null,
+    ): QuickImportHealthPayload {
+        // Health Connect records need total carbs and energy-from-fat, so all meal import paths share this mapping.
         return QuickImportHealthPayload(
             dateTime = dateTime,
             mealType = mealType.healthConnectValue,
-            energy = food.nutrients.energy,
-            energyFromFat = food.nutrients.fat * 9.0,
-            totalCarbohydrate = food.nutrients.carbohydrate,
-            sugar = food.nutrients.sugar,
-            protein = food.nutrients.protein,
-            totalFat = food.nutrients.fat,
-            saturatedFat = food.nutrients.saturatedFat,
-            dietaryFiber = food.nutrients.fiber,
-            name = displayName.ifBlank { food.name },
+            energy = nutrients.energy,
+            energyFromFat = nutrients.fat * 9.0,
+            totalCarbohydrate = nutrients.carbohydrate,
+            sugar = nutrients.sugar,
+            protein = nutrients.protein,
+            totalFat = nutrients.fat,
+            saturatedFat = nutrients.saturatedFat,
+            dietaryFiber = nutrients.fiber,
+            name = name,
+            clientRecordId = clientRecordId,
         )
     }
 }

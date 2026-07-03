@@ -23,9 +23,7 @@ internal class AppViewModelQuickImportActions(
                 inputQuickImportText = text,
                 quickImportMeal = parsed.getOrNull(),
                 quickImportError = if (text.isBlank()) null else parsed.exceptionOrNull()?.message,
-                quickImportResult = null,
-                quickImportSuccessMessage = null,
-            )
+            ).withoutQuickImportOutcome()
         }
     }
 
@@ -54,9 +52,7 @@ internal class AppViewModelQuickImportActions(
                 inputQuickImportDateTime = LocalDateTime.now(),
                 quickImportSnackOverride = false,
                 quickImportMealTypeOverride = null,
-                quickImportResult = null,
-                quickImportSuccessMessage = null,
-            )
+            ).withoutQuickImportOutcome()
         }
     }
 
@@ -66,9 +62,7 @@ internal class AppViewModelQuickImportActions(
                 inputQuickImportDateTime = dateTime,
                 quickImportSnackOverride = false,
                 quickImportMealTypeOverride = null,
-                quickImportResult = null,
-                quickImportSuccessMessage = null,
-            )
+            ).withoutQuickImportOutcome()
         }
     }
 
@@ -81,9 +75,7 @@ internal class AppViewModelQuickImportActions(
                 } else {
                     null
                 },
-                quickImportResult = null,
-                quickImportSuccessMessage = null,
-            )
+            ).withoutQuickImportOutcome()
         }
     }
 
@@ -96,9 +88,7 @@ internal class AppViewModelQuickImportActions(
                 } else {
                     null
                 },
-                quickImportResult = null,
-                quickImportSuccessMessage = null,
-            )
+            ).withoutQuickImportOutcome()
         }
     }
 
@@ -108,9 +98,7 @@ internal class AppViewModelQuickImportActions(
                 inputQuickImportDateTime = mealType.applyDefaultTime(currentState.inputQuickImportDateTime),
                 quickImportMealTypeOverride = mealType,
                 quickImportSnackOverride = mealType == QuickImportMealType.Snack,
-                quickImportResult = null,
-                quickImportSuccessMessage = null,
-            )
+            ).withoutQuickImportOutcome()
         }
     }
 
@@ -118,9 +106,7 @@ internal class AppViewModelQuickImportActions(
         env.state.update { currentState ->
             currentState.copy(
                 quickImportAddFoodsToDatabase = !currentState.quickImportAddFoodsToDatabase,
-                quickImportResult = null,
-                quickImportSuccessMessage = null,
-            )
+            ).withoutQuickImportOutcome()
         }
     }
 
@@ -128,9 +114,7 @@ internal class AppViewModelQuickImportActions(
         env.state.update { currentState ->
             currentState.copy(
                 quickImportAddFoodsToDatabase = enabled,
-                quickImportResult = null,
-                quickImportSuccessMessage = null,
-            )
+            ).withoutQuickImportOutcome()
         }
     }
 
@@ -138,9 +122,7 @@ internal class AppViewModelQuickImportActions(
         env.state.update { currentState ->
             currentState.copy(
                 quickImportAddFoodsToDay = !currentState.quickImportAddFoodsToDay,
-                quickImportResult = null,
-                quickImportSuccessMessage = null,
-            )
+            ).withoutQuickImportOutcome()
         }
     }
 
@@ -148,9 +130,7 @@ internal class AppViewModelQuickImportActions(
         env.state.update { currentState ->
             currentState.copy(
                 quickImportAddFoodsToDay = enabled,
-                quickImportResult = null,
-                quickImportSuccessMessage = null,
-            )
+            ).withoutQuickImportOutcome()
         }
     }
 
@@ -158,9 +138,7 @@ internal class AppViewModelQuickImportActions(
         env.state.update { currentState ->
             currentState.copy(
                 quickImportWriteHealthConnect = !currentState.quickImportWriteHealthConnect,
-                quickImportResult = null,
-                quickImportSuccessMessage = null,
-            )
+            ).withoutQuickImportOutcome()
         }
     }
 
@@ -168,9 +146,7 @@ internal class AppViewModelQuickImportActions(
         env.state.update { currentState ->
             currentState.copy(
                 quickImportWriteHealthConnect = enabled,
-                quickImportResult = null,
-                quickImportSuccessMessage = null,
-            )
+            ).withoutQuickImportOutcome()
         }
     }
 
@@ -286,3 +262,9 @@ internal class AppViewModelQuickImportActions(
         }
     }
 }
+
+// Any Add Meal input change should invalidate the previous commit result without disturbing the parsed meal.
+private fun AppUiState.withoutQuickImportOutcome(): AppUiState = copy(
+    quickImportResult = null,
+    quickImportSuccessMessage = null,
+)

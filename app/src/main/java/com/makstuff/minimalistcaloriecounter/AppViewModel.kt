@@ -254,10 +254,6 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     fun databaseQuickselectUpdate() = databaseActions.updateQuickselect()
 
 
-    fun updateOptionsSheetVisible(boolean: Boolean) = uiActions.updateOptionsSheetVisible(boolean)
-
-
-
     fun databaseUpdateFromCSV(context: Context) = persistenceActions.updateDatabaseFromCsv(context)
 
     fun databaseResetCSV(overwriteIfExists: Boolean, context: Context) = persistenceActions.resetDatabaseCsv(overwriteIfExists, context)

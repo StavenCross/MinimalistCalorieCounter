@@ -33,6 +33,49 @@ class QuickImportMapperTest {
     }
 
     @Test
+    fun sharedHealthPayloadMapperKeepsQuickAndHistoricalFieldsAligned() {
+        val nutrients = QuickImportNutrients(
+            energy = 410.0,
+            carbohydrate = 44.0,
+            sugar = 6.0,
+            protein = 38.0,
+            fat = 12.0,
+            saturatedFat = 3.0,
+            fiber = 8.0,
+        )
+        val dateTime = LocalDateTime.of(2026, 7, 3, 12, 0)
+        val quickPayload = QuickImportMapper.toHealthPayload(
+            dateTime = dateTime,
+            mealType = QuickImportMealType.Lunch,
+            nutrients = nutrients,
+            name = "quick food",
+        )
+        val historicalFood = HistoricalMealFood(
+            sourceRowNumber = 2,
+            logId = "log-1",
+            dateTime = dateTime,
+            mealName = "Lunch",
+            itemDescription = "quick food",
+            mealType = QuickImportMealType.Lunch,
+            nutrients = nutrients,
+            clientRecordId = "mcc-historical-meal:test",
+            fingerprint = "fingerprint",
+        )
+        val historicalPayload = historicalFood.toHealthPayload()
+
+        assertClose(quickPayload.energy, historicalPayload.energy)
+        assertClose(quickPayload.energyFromFat, historicalPayload.energyFromFat)
+        assertClose(quickPayload.totalCarbohydrate, historicalPayload.totalCarbohydrate)
+        assertClose(quickPayload.dietaryFiber, historicalPayload.dietaryFiber)
+        assertClose(quickPayload.protein, historicalPayload.protein)
+        assertClose(quickPayload.totalFat, historicalPayload.totalFat)
+        assertClose(quickPayload.saturatedFat, historicalPayload.saturatedFat)
+        assertClose(quickPayload.sugar, historicalPayload.sugar)
+        org.junit.Assert.assertEquals(quickPayload.mealType, historicalPayload.mealType)
+        org.junit.Assert.assertEquals("mcc-historical-meal:test", historicalPayload.clientRecordId)
+    }
+
+    @Test
     fun healthPayloadsStaggerTimestampsToAvoidUiCollapsingRows() {
         val meal = QuickImportParser.parse(
             "100g rice; Calories 130, Fat 0.3g, Sat Fat 0.1g, Trans Fat 0g, Cholesterol 0mg, Sodium 1mg, Carbs 28g, Fiber 1g, Sugar 0.1g, Added Sugar 0g, Protein 2.7g. " +

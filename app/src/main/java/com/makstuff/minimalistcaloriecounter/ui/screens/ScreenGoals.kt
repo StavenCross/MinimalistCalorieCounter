@@ -81,6 +81,7 @@ import com.makstuff.minimalistcaloriecounter.classes.MacroTargets
 import com.makstuff.minimalistcaloriecounter.classes.WeeklyWeightLossTarget
 import com.makstuff.minimalistcaloriecounter.essentials.toFormattedString
 import com.makstuff.minimalistcaloriecounter.ui.reused.MacroHintBox
+import com.makstuff.minimalistcaloriecounter.ui.reused.SheetTitle
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -806,14 +807,6 @@ private fun SettingsGroup(
             Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
         }
         content()
-    }
-}
-
-@Composable
-private fun SheetTitle(title: String, subtitle: String) {
-    Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
-        Text(title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-        Text(subtitle, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
 

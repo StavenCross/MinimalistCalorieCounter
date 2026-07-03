@@ -127,15 +127,6 @@ internal class AppViewModelUiActions(
         }
     }
 
-    fun updateOptionsSheetVisible(visible: Boolean) {
-        env.state.update { currentState ->
-            currentState.copy(
-                optionsSheetVisible = visible,
-                optionsSheetPage = "main",
-            )
-        }
-    }
-
     fun setNameFoodDayAdd(name: String) {
         env.state.update { currentState ->
             currentState.copy(nameFoodDayAdd = name)

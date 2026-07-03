@@ -27,17 +27,10 @@ data class HistoricalMealFood(
     val fingerprint: String,
 ) {
     fun toHealthPayload(): QuickImportHealthPayload {
-        return QuickImportHealthPayload(
+        return QuickImportMapper.toHealthPayload(
             dateTime = dateTime,
-            mealType = mealType.healthConnectValue,
-            energy = nutrients.energy,
-            energyFromFat = nutrients.fat * 9.0,
-            totalCarbohydrate = nutrients.carbohydrate,
-            sugar = nutrients.sugar,
-            protein = nutrients.protein,
-            totalFat = nutrients.fat,
-            saturatedFat = nutrients.saturatedFat,
-            dietaryFiber = nutrients.fiber,
+            mealType = mealType,
+            nutrients = nutrients,
             name = itemDescription.ifBlank { mealName.ifBlank { "Historical meal food" } },
             clientRecordId = clientRecordId,
         )

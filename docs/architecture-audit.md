@@ -8,18 +8,18 @@ Generated output, Gradle build folders, `node_modules`, and IDE metadata are exc
 
 | File | Approx. lines | Type | Cleanup priority |
 | --- | ---: | --- | --- |
-| `app/src/main/java/com/makstuff/minimalistcaloriecounter/App.kt` | 2471 | App shell / route wiring / UI | High |
-| `app/src/main/java/com/makstuff/minimalistcaloriecounter/ui/screens/ScreenQuickImport.kt` | 1584 | Compose screen and components | Medium, UI-file exception applies |
+| `app/src/main/java/com/makstuff/minimalistcaloriecounter/App.kt` | 2021 | App shell / route wiring / UI | High |
+| `app/src/main/java/com/makstuff/minimalistcaloriecounter/ui/screens/ScreenQuickImport.kt` | 1566 | Compose screen and components | Medium, UI-file exception applies |
 | `app/src/main/java/com/makstuff/minimalistcaloriecounter/ui/screens/ScreenHealthConnectNutrition.kt` | 991 | Compose screen and components | Medium, UI-file exception applies |
-| `app/src/main/java/com/makstuff/minimalistcaloriecounter/ui/screens/ScreenGoals.kt` | 866 | Compose screen and components | Medium, UI-file exception applies |
+| `app/src/main/java/com/makstuff/minimalistcaloriecounter/ui/screens/ScreenGoals.kt` | 859 | Compose screen and components | Medium, UI-file exception applies |
 
 All non-UI files touched in this cleanup are now under the 300-line cap:
 
 - `HealthConnectManager.kt`: 268 lines after extracting export, nutrition, archive sync, mapper, and goal-profile reader services.
 - `AutomationBootstrap.kt`: 298 lines after extracting HTTP helpers, JSON serializers, and route aliases.
 - `tools/mcc-mcp/src/server.ts`: 23 lines after splitting tool registration groups.
-- `AppViewModel.kt`: 286 lines after extracting feature action classes for Health Connect, Goals, Add Meal, persistence, database, archive/day, and UI chrome.
-- `AppViewModelQuickImportActions.kt`: 288 lines after moving commit helpers into `AppViewModelQuickImportHelpers.kt`.
+- `AppViewModel.kt`: 282 lines after extracting feature action classes for Health Connect, Goals, Add Meal, persistence, database, archive/day, and UI chrome.
+- `AppViewModelQuickImportActions.kt`: 269 lines after moving commit helpers into `AppViewModelQuickImportHelpers.kt` and centralizing outcome clearing.
 
 ## Cleanup Completed In This Pass
 
@@ -46,6 +46,15 @@ All non-UI files touched in this cleanup are now under the 300-line cap:
   - `ui/navigation/AppRoutes.kt`
   - `ui/settings/SettingsSheet.kt`
   - debug automation now serializes settings sheets by stable key.
+- Collapsed the legacy options-sheet entry point into the Settings page path:
+  - removed `optionsSheetVisible` / `optionsSheetPage` state and facade setters.
+  - removed the duplicate language, theme, Health Connect, archive, database, and support bottom sheet.
+- Extracted shared bottom-sheet title/note components:
+  - `ui/reused/SheetContent.kt`
+  - reused by Settings, Add Meal, and Goals drawers.
+- Consolidated Quick Import and historical import Health Connect payload mapping:
+  - `QuickImportMapper.toHealthPayload(...)`
+  - one mapping for total carbs, fiber, energy-from-fat, macro fields, names, and optional client record ids.
 
 ## Recommended Extraction Order
 
@@ -56,6 +65,7 @@ All non-UI files touched in this cleanup are now under the 300-line cap:
 5. Split `HealthConnectManager.kt` by service area: permissions/status, export, goal profile reads, nutrition meals, historical import/delete, and legacy archive sync.
 6. Split debug automation into HTTP server plumbing, endpoint handlers, request appliers, and JSON serializers.
 7. Split large Compose screens only where components can move without obscuring the workflow.
+8. Continue consolidating UI primitives: stat grids, meal summary rows, progress arcs, selectable rows, and standard bottom sheets.
 
 ## Regression Gates
 

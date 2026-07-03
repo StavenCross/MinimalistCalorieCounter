@@ -107,6 +107,7 @@ import com.makstuff.minimalistcaloriecounter.ui.model.macroSummaryItems
 import com.makstuff.minimalistcaloriecounter.ui.model.quickNutrientDetailItems
 import com.makstuff.minimalistcaloriecounter.ui.model.supportsMacroHint
 import com.makstuff.minimalistcaloriecounter.ui.reused.MacroHintBox
+import com.makstuff.minimalistcaloriecounter.ui.reused.SheetTitle
 import kotlinx.coroutines.delay
 import java.time.LocalDateTime
 import java.time.Instant
@@ -502,7 +503,7 @@ fun DestinationDialog(
                 .padding(bottom = 18.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            SheetTitleLite("Add Meal settings", "These stay on by default for your usual workflow.")
+            SheetTitle("Add Meal settings", "These stay on by default for your usual workflow.")
             DestinationToggle(
                 checked = addDatabase,
                 text = "Add foods to database",
@@ -569,7 +570,7 @@ private fun MealTimePanel(
                 verticalArrangement = Arrangement.spacedBy(10.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                SheetTitleLite("Meal time", "The time sets breakfast, lunch, dinner, or snack.")
+                SheetTitle("Meal time", "The time sets breakfast, lunch, dinner, or snack.")
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
@@ -615,7 +616,7 @@ private fun MealTimePanel(
                     .padding(bottom = 18.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                SheetTitleLite("Meal type", "Choose how this meal should be labeled in Health Connect.")
+                SheetTitle("Meal type", "Choose how this meal should be labeled in Health Connect.")
                 MealTypeWheel(
                     selectedMealType = mealType,
                     onSelect = {
@@ -640,7 +641,7 @@ private fun MealTimePanel(
                     .padding(bottom = 18.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                SheetTitleLite("Meal actions", "Adjust the logged time for this meal.")
+                SheetTitle("Meal actions", "Adjust the logged time for this meal.")
                 MealActionRow(
                     text = "Edit time",
                     iconColor = AccentEdit,
@@ -828,25 +829,6 @@ private fun MealTypeWheel(
                 }
             }
         }
-    }
-}
-
-@Composable
-private fun SheetTitleLite(title: String, subtitle: String) {
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(3.dp),
-    ) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Bold,
-        )
-        Text(
-            text = subtitle,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
     }
 }
 
