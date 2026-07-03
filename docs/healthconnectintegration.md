@@ -63,6 +63,8 @@ The Meals page can delete a selected meal by forwarding that meal group's visibl
 
 Repeating a meal from the Meals page does not write directly to Health Connect. It prepares Add Meal with copied nutrition values, then the normal Add Meal commit flow performs local backup, outbox tracking, duplicate prevention, and Health Connect write.
 
+The Meals page can also export the selected day's check-in summary as a text file in Downloads. This uses the same generated day summary as the copy action, not a raw Health Connect CSV.
+
 Cleanup modes are:
 
 - Historical imports only

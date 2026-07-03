@@ -1,14 +1,11 @@
 package com.makstuff.minimalistcaloriecounter.health
 
-import android.content.ContentValues
 import android.content.Context
-import android.os.Build
-import android.os.Environment
-import android.provider.MediaStore
 import androidx.health.connect.client.HealthConnectClient
 import androidx.health.connect.client.records.Record
 import androidx.health.connect.client.request.ReadRecordsRequest
 import androidx.health.connect.client.time.TimeRangeFilter
+import com.makstuff.minimalistcaloriecounter.io.DownloadsTextWriter
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.time.LocalDate
@@ -44,7 +41,7 @@ internal class HealthConnectExporter(
 
             val redactionToken = if (redacted) "redacted" else "raw"
             val filename = "health_connect_${mode.filenameToken}_${redactionToken}_${firstDate}_${lastDate}.csv"
-            val displayPath = writeCsvToDownloads(filename, HealthConnectExportCsv.build(rows, redacted))
+            val displayPath = DownloadsTextWriter(context).write(filename, "text/csv", HealthConnectExportCsv.build(rows, redacted))
             HealthConnectExportResult.Success(displayPath = displayPath, records = rows.size)
         } catch (e: kotlinx.coroutines.CancellationException) {
             throw e
@@ -76,26 +73,4 @@ internal class HealthConnectExporter(
         return rows
     }
 
-    private fun writeCsvToDownloads(filename: String, csv: String): String {
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            val resolver = context.contentResolver
-            val values = ContentValues().apply {
-                put(MediaStore.Downloads.DISPLAY_NAME, filename)
-                put(MediaStore.Downloads.MIME_TYPE, "text/csv")
-                put(MediaStore.Downloads.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
-            }
-            val uri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)
-                ?: error("Could not create Downloads export file.")
-            resolver.openOutputStream(uri)?.use { stream ->
-                stream.write(csv.toByteArray(Charsets.UTF_8))
-            } ?: error("Could not write Downloads export file.")
-            "Downloads/$filename"
-        } else {
-            val dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
-            dir.mkdirs()
-            val file = java.io.File(dir, filename)
-            file.writeText(csv, Charsets.UTF_8)
-            file.absolutePath
-        }
-    }
 }

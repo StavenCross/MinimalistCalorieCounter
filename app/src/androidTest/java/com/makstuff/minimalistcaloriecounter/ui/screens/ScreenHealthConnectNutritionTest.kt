@@ -53,6 +53,7 @@ class ScreenHealthConnectNutritionTest {
                     onDeleteMeal = {},
                     onDeleteMealGroup = {},
                     onRepeatMealGroup = {},
+                    onExportDaySummary = { _, _ -> },
                 )
             }
         }
@@ -83,6 +84,7 @@ class ScreenHealthConnectNutritionTest {
                     onDeleteMeal = {},
                     onDeleteMealGroup = {},
                     onRepeatMealGroup = {},
+                    onExportDaySummary = { _, _ -> },
                 )
             }
         }
@@ -107,6 +109,7 @@ class ScreenHealthConnectNutritionTest {
                     onDeleteMeal = {},
                     onDeleteMealGroup = {},
                     onRepeatMealGroup = {},
+                    onExportDaySummary = { _, _ -> },
                 )
             }
         }
@@ -131,6 +134,7 @@ class ScreenHealthConnectNutritionTest {
                     onDeleteMeal = {},
                     onDeleteMealGroup = {},
                     onRepeatMealGroup = {},
+                    onExportDaySummary = { _, _ -> },
                 )
             }
         }
@@ -158,6 +162,7 @@ class ScreenHealthConnectNutritionTest {
                     onDeleteMeal = {},
                     onDeleteMealGroup = {},
                     onRepeatMealGroup = {},
+                    onExportDaySummary = { _, _ -> },
                 )
             }
         }
@@ -189,6 +194,7 @@ class ScreenHealthConnectNutritionTest {
                     onDeleteMeal = {},
                     onDeleteMealGroup = {},
                     onRepeatMealGroup = {},
+                    onExportDaySummary = { _, _ -> },
                 )
             }
         }
@@ -216,6 +222,7 @@ class ScreenHealthConnectNutritionTest {
                     onDeleteMeal = {},
                     onDeleteMealGroup = {},
                     onRepeatMealGroup = {},
+                    onExportDaySummary = { _, _ -> },
                 )
             }
         }
