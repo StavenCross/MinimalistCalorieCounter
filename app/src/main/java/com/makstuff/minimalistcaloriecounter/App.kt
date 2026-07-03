@@ -125,6 +125,7 @@ import com.makstuff.minimalistcaloriecounter.ui.screens.ScreenWithHoverCard
 import com.makstuff.minimalistcaloriecounter.ui.settings.SettingsSheet
 import com.makstuff.minimalistcaloriecounter.ui.theme.AppTheme
 import com.makstuff.minimalistcaloriecounter.health.HealthConnectManager
+import com.makstuff.minimalistcaloriecounter.health.HealthConnectExportMode
 import androidx.health.connect.client.HealthConnectClient
 import androidx.health.connect.client.PermissionController
 import kotlin.time.Duration.Companion.milliseconds
@@ -496,17 +497,31 @@ fun App(
                             OptionsItem("Export end", trailingText = exportEndDate.format(DateTimeFormatter.ISO_LOCAL_DATE)) {
                                 exportEndPicker.show()
                             }
+                            OptionsItem("Export mode", trailingText = uiState.healthConnectExportMode.label) {
+                                val modes = HealthConnectExportMode.entries
+                                val current = modes.indexOf(uiState.healthConnectExportMode).coerceAtLeast(0)
+                                viewModel.updateHealthConnectExportMode(modes[(current + 1) % modes.size])
+                            }
+                            OptionsItem(
+                                "Redacted for ChatGPT",
+                                trailingText = if (uiState.healthConnectExportRedacted) "On" else "Off",
+                            ) {
+                                viewModel.updateHealthConnectExportRedacted(!uiState.healthConnectExportRedacted)
+                            }
                             OptionsItem(
                                 text = when {
                                     uiState.healthConnectExportInProgress -> "Exporting Health Connect CSV..."
                                     !uiState.healthConnectExportPermissionsGranted -> "Grant export read permissions"
-                                    else -> "Export all Health Connect data to CSV"
+                                    uiState.healthConnectExportRedacted -> "Export redacted ${uiState.healthConnectExportMode.label.lowercase()} CSV"
+                                    else -> "Export raw ${uiState.healthConnectExportMode.label.lowercase()} CSV"
                                 },
                             ) {
                                 if (uiState.healthConnectExportPermissionsGranted) {
                                     viewModel.exportHealthConnectRange()
                                 } else {
-                                    healthConnectExportPermissionLauncher.launch(healthConnectManager.exportPermissions)
+                                    healthConnectExportPermissionLauncher.launch(
+                                        healthConnectManager.exportPermissionsFor(uiState.healthConnectExportMode)
+                                    )
                                 }
                             }
                             uiState.healthConnectExportMessage?.let { message ->

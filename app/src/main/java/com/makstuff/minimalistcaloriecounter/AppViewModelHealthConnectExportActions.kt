@@ -1,6 +1,7 @@
 package com.makstuff.minimalistcaloriecounter
 
 import com.makstuff.minimalistcaloriecounter.health.HealthConnectExportResult
+import com.makstuff.minimalistcaloriecounter.health.HealthConnectExportMode
 import com.makstuff.minimalistcaloriecounter.health.HistoricalMealHealthConnectResult
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -46,6 +47,28 @@ internal class AppViewModelHealthConnectExportActions(
         }
     }
 
+    fun updateExportMode(mode: HealthConnectExportMode) {
+        env.scope.launch {
+            val exportGranted = env.healthConnectManager.hasExportReadPermissions(mode)
+            env.state.update {
+                it.copy(
+                    healthConnectExportMode = mode,
+                    healthConnectExportPermissionsGranted = exportGranted,
+                    healthConnectExportMessage = null,
+                )
+            }
+        }
+    }
+
+    fun updateExportRedacted(redacted: Boolean) {
+        env.state.update {
+            it.copy(
+                healthConnectExportRedacted = redacted,
+                healthConnectExportMessage = null,
+            )
+        }
+    }
+
     fun exportRange() {
         val state = env.uiState
         if (state.healthConnectExportInProgress) return
@@ -63,6 +86,8 @@ internal class AppViewModelHealthConnectExportActions(
             when (val result = env.healthConnectManager.exportHealthConnectCsv(
                 startDate = state.healthConnectExportStartDate,
                 endDate = state.healthConnectExportEndDate,
+                mode = state.healthConnectExportMode,
+                redacted = state.healthConnectExportRedacted,
                 onProgress = { progress, current, total ->
                     env.state.update {
                         it.copy(

@@ -78,6 +78,7 @@ All non-UI files touched in this cleanup are now under the 300-line cap:
   - Add Meal writes now use deterministic client record ids and persist pending/synced/failed write state plus retry payloads.
   - Add Meal Health Connect writes now pre-read app-owned Nutrition records and skip existing records by client record id or nutrition fingerprint.
   - debug automation and MCP expose outbox rows and retry actions for verification.
+- Split Health Connect export code into exporter orchestration, CSV schema/redaction, row mapping, mode definitions, and record-type permission lists.
 
 ## Recommended Extraction Order
 

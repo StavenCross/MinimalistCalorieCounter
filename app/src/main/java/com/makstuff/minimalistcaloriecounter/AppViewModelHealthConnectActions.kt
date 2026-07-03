@@ -15,7 +15,7 @@ internal class AppViewModelHealthConnectActions(
     fun updatePermissionsStatus() {
         env.scope.launch {
             val allGranted = env.healthConnectManager.hasAllPermissions()
-            val exportGranted = env.healthConnectManager.hasExportReadPermissions()
+            val exportGranted = env.healthConnectManager.hasExportReadPermissions(env.uiState.healthConnectExportMode)
             val anyGranted = env.healthConnectManager.hasAnyPermissions()
             var needsSave = false
             env.state.update { currentState ->
