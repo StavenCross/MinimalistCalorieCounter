@@ -93,16 +93,14 @@ import com.makstuff.minimalistcaloriecounter.essentials.NavControllerListener
 import com.makstuff.minimalistcaloriecounter.essentials.NavButton
 import com.makstuff.minimalistcaloriecounter.essentials.toBodyWeight
 import com.makstuff.minimalistcaloriecounter.essentials.toFormattedString
-import com.makstuff.minimalistcaloriecounter.ui.navigation.AppDestinations
+import com.makstuff.minimalistcaloriecounter.ui.navigation.AppBottomBar
+import com.makstuff.minimalistcaloriecounter.ui.navigation.AppMainDrawer
 import com.makstuff.minimalistcaloriecounter.ui.navigation.AppRoutes
 import com.makstuff.minimalistcaloriecounter.ui.navigation.navigateApp
 import com.makstuff.minimalistcaloriecounter.ui.reused.ButtonGrid
 import com.makstuff.minimalistcaloriecounter.ui.reused.ButtonText
 import com.makstuff.minimalistcaloriecounter.ui.reused.DropdownMenu
 import com.makstuff.minimalistcaloriecounter.ui.reused.Grid
-import com.makstuff.minimalistcaloriecounter.ui.reused.NavigationBar
-import com.makstuff.minimalistcaloriecounter.ui.reused.NavigationBarItem
-import com.makstuff.minimalistcaloriecounter.ui.reused.NavigationBarItemData
 import com.makstuff.minimalistcaloriecounter.ui.reused.ScrollColumn
 import com.makstuff.minimalistcaloriecounter.ui.reused.SheetNote
 import com.makstuff.minimalistcaloriecounter.ui.reused.SheetTitle
@@ -1064,25 +1062,9 @@ fun App(
             )
         },
         bottomBar = {
-            NavigationBar(
-                items = AppDestinations.bottomBar.map { destination ->
-                    NavigationBarItemData(
-                        destination.label,
-                        destination.iconId,
-                        uiState.navigationBarHighlight == destination.navButton,
-                        Color(destination.accentArgb),
-                    ) { navTo(destination.route) }
-                }.map {
-                    {
-                        NavigationBarItem(
-                            name = it.name,
-                            iconId = it.iconId,
-                            isSelected = it.isSelected,
-                            iconColor = it.iconColor,
-                            onClick = it.onClick
-                        )
-                    }
-                }
+            AppBottomBar(
+                navigationBarHighlight = uiState.navigationBarHighlight,
+                onNavigate = { navTo(it) },
             )
         },
     ) { innerPadding ->
@@ -1670,38 +1652,7 @@ fun App(
         }
     }
 
-        if (mainMenuExpanded) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color.Black.copy(alpha = 0.38f))
-                    .clickable { mainMenuExpanded = false },
-            )
-            Column(
-                modifier = Modifier
-                    .fillMaxHeight()
-                    .width(304.dp)
-                    .clip(RoundedCornerShape(topEnd = 12.dp, bottomEnd = 12.dp))
-                    .background(MaterialTheme.colorScheme.surfaceContainerHigh)
-                    .clickable { }
-                    .padding(top = 28.dp, start = 12.dp, end = 12.dp, bottom = 12.dp),
-                verticalArrangement = Arrangement.spacedBy(4.dp),
-            ) {
-                Text(
-                    text = "Menu",
-                    style = MaterialTheme.typography.titleLarge,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp),
-                )
-                AppDestinations.drawer.forEachIndexed { index, destination ->
-                    if (index > 0) HorizontalDivider(Modifier.padding(vertical = 8.dp))
-                    DrawerNavItem(destination.label) {
-                        mainMenuExpanded = false
-                        navTo(destination.route)
-                    }
-                }
-            }
-        }
+        if (mainMenuExpanded) AppMainDrawer(onDismiss = { mainMenuExpanded = false }, onNavigate = { navTo(it) })
     }
 
     if (uiState.healthConnectSyncProgress != null) {
@@ -1869,23 +1820,6 @@ fun OptionsSectionHeader(text: String, isExpanded: Boolean? = null, onToggle: ((
             )
         }
     }
-}
-
-@Composable
-fun DrawerNavItem(
-    text: String,
-    onClick: () -> Unit,
-) {
-    Text(
-        text = text,
-        style = MaterialTheme.typography.bodyLarge,
-        color = MaterialTheme.colorScheme.onSurface,
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(8.dp))
-            .clickable { onClick() }
-            .padding(horizontal = 12.dp, vertical = 12.dp),
-    )
 }
 
 @Composable

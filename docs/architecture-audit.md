@@ -71,6 +71,9 @@ All non-UI files touched in this cleanup are now under the 300-line cap:
 - Centralized first destination metadata:
   - `ui/navigation/AppDestinations.kt`
   - bottom-bar order, drawer visibility, nav highlight key, icon id, label, and accent color now share one metadata source.
+- Extracted app chrome components:
+  - `ui/navigation/AppChrome.kt`
+  - bottom navigation and hamburger drawer now live outside `App.kt` while preserving destination metadata and route behavior.
 - Added a single settings-sheet automation intent:
   - `AppViewModelUiActions.openSettingsSheet(...)`
   - `/settings/open` now navigates to Settings and opens the requested drawer as one command.
