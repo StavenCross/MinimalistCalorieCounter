@@ -1,11 +1,13 @@
 package com.makstuff.minimalistcaloriecounter.ui.screens
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -28,8 +30,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.EggAlt
 import androidx.compose.material.icons.filled.Grass
 import androidx.compose.material.icons.filled.LocalFireDepartment
-import androidx.compose.material.icons.filled.Opacity
-import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.OilBarrel
 import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material3.Button
 import androidx.compose.material3.DatePicker
@@ -43,6 +44,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -52,8 +54,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -65,6 +71,7 @@ import com.makstuff.minimalistcaloriecounter.classes.MacroTargets
 import com.makstuff.minimalistcaloriecounter.classes.QuickImportNutrients
 import com.makstuff.minimalistcaloriecounter.essentials.toFormattedString
 import com.makstuff.minimalistcaloriecounter.health.HealthConnectNutritionMeal
+import com.makstuff.minimalistcaloriecounter.ui.reused.MacroHintBox
 import java.time.DayOfWeek
 import java.time.Instant
 import java.time.LocalDate
@@ -123,66 +130,71 @@ fun ScreenHealthConnectNutrition(
         )
     }
 
-    LazyColumn(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(horizontal = 12.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp),
+    PullToRefreshBox(
+        isRefreshing = uiState.healthConnectViewerLoading,
+        onRefresh = onRefresh,
+        modifier = Modifier.fillMaxSize(),
     ) {
-        item {
-            MealsDateHeader(
-                selectedDate = selectedDate,
-                onPrevious = { onDateChange(selectedDate.minusDays(1)) },
-                onNext = { onDateChange(selectedDate.plusDays(1)) },
-                onDateClick = { datePickerVisible = true },
-                onRefresh = onRefresh,
-            )
-        }
-
-        item {
-            DaySummaryCard(
-                date = selectedDate,
-                meals = meals,
-                targets = uiState.goals.activeTargetsFor(selectedDate),
-                isLoading = uiState.healthConnectViewerLoading,
-                message = uiState.healthConnectViewerMessage,
-            )
-        }
-
-        if (uiState.healthConnectViewerLoading) {
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp),
+        ) {
             item {
-                StatusCard("Reading Health Connect")
+                MealsDateHeader(
+                    selectedDate = selectedDate,
+                    onPrevious = { onDateChange(selectedDate.minusDays(1)) },
+                    onNext = { onDateChange(selectedDate.plusDays(1)) },
+                    onDateClick = { datePickerVisible = true },
+                )
             }
-        } else if (uiState.healthConnectViewerMessage != null && meals.isEmpty()) {
-            item {
-                StatusCard(uiState.healthConnectViewerMessage)
-            }
-        }
 
-        val groups = mealGroups(meals)
-        if (!uiState.healthConnectViewerLoading && groups.isEmpty() && uiState.healthConnectViewerMessage == null) {
             item {
-                StatusCard("No foods logged for this day.")
+                DaySummaryCard(
+                    date = selectedDate,
+                    meals = meals,
+                    targets = uiState.goals.activeTargetsFor(selectedDate),
+                    isLoading = uiState.healthConnectViewerLoading,
+                    message = uiState.healthConnectViewerMessage,
+                )
             }
-        }
 
-        if (groups.isNotEmpty()) {
-            item {
-                SectionTitle("Meals")
-            }
-            groups.forEach { group ->
+            if (uiState.healthConnectViewerLoading) {
                 item {
-                    MealCard(
-                        group = group,
-                        onMealClick = { selectedMealGroup = group },
-                        onFoodClick = { selectedFood = it },
-                    )
+                    StatusCard("Reading Health Connect")
+                }
+            } else if (uiState.healthConnectViewerMessage != null && meals.isEmpty()) {
+                item {
+                    StatusCard(uiState.healthConnectViewerMessage)
                 }
             }
-        }
 
-        item {
-            Spacer(Modifier.height(8.dp))
+            val groups = mealGroups(meals)
+            if (!uiState.healthConnectViewerLoading && groups.isEmpty() && uiState.healthConnectViewerMessage == null) {
+                item {
+                    StatusCard("No foods logged for this day.")
+                }
+            }
+
+            if (groups.isNotEmpty()) {
+                item {
+                    SectionTitle("Meals")
+                }
+                groups.forEach { group ->
+                    item {
+                        MealCard(
+                            group = group,
+                            onMealClick = { selectedMealGroup = group },
+                            onFoodClick = { selectedFood = it },
+                        )
+                    }
+                }
+            }
+
+            item {
+                Spacer(Modifier.height(8.dp))
+            }
         }
     }
 }
@@ -193,7 +205,6 @@ private fun MealsDateHeader(
     onPrevious: () -> Unit,
     onNext: () -> Unit,
     onDateClick: () -> Unit,
-    onRefresh: () -> Unit,
 ) {
     SurfacePanel(
         backgroundColor = MaterialTheme.colorScheme.surfaceContainerHigh,
@@ -205,7 +216,10 @@ private fun MealsDateHeader(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            IconButton(onClick = onPrevious) {
+            IconButton(
+                onClick = onPrevious,
+                modifier = Modifier.testTag("meals_previous_day"),
+            ) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
                     contentDescription = "Previous day",
@@ -217,6 +231,7 @@ private fun MealsDateHeader(
                     .weight(1f)
                     .clip(RoundedCornerShape(12.dp))
                     .clickable(onClick = onDateClick)
+                    .testTag("meals_date_picker")
                     .padding(vertical = 6.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(1.dp),
@@ -232,14 +247,10 @@ private fun MealsDateHeader(
                     fontWeight = FontWeight.Bold,
                 )
             }
-            IconButton(onClick = onRefresh) {
-                Icon(
-                    imageVector = Icons.Default.Refresh,
-                    contentDescription = "Refresh meals",
-                    tint = Color(0xFF90CAF9),
-                )
-            }
-            IconButton(onClick = onNext) {
+            IconButton(
+                onClick = onNext,
+                modifier = Modifier.testTag("meals_next_day"),
+            ) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
                     contentDescription = "Next day",
@@ -477,47 +488,96 @@ private fun DaySummaryCard(
 
 @Composable
 private fun GoalProgressRow(progress: MacroTargets) {
-    if (listOf(progress.calories, progress.protein, progress.carbs, progress.fat, progress.fiber).all { it == null }) return
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(6.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        ProgressChip(Icons.Default.LocalFireDepartment, progress.calories, "Cal", AccentGold, Modifier.weight(1f))
-        ProgressChip(Icons.Default.EggAlt, progress.protein, "Pro", Color(0xFFFF6E7F), Modifier.weight(1f))
-        ProgressChip(Icons.Default.BakeryDining, progress.carbs, "Carb", Color(0xFFFFB74D), Modifier.weight(1f))
-        ProgressChip(Icons.Default.Opacity, progress.fat, "Fat", Color(0xFF64B5F6), Modifier.weight(1f))
-        ProgressChip(Icons.Default.Grass, progress.fiber, "Fib", Color(0xFF81C784), Modifier.weight(1f))
+        GoalArcTile(Icons.Default.LocalFireDepartment, progress.calories, AccentGold, "Calories", Modifier.weight(1f))
+        GoalArcTile(Icons.Default.EggAlt, progress.protein, MacroProtein, "Protein", Modifier.weight(1f))
+        GoalArcTile(Icons.Default.BakeryDining, progress.carbs, MacroCarbs, "Carbs", Modifier.weight(1f))
+        GoalArcTile(Icons.Default.OilBarrel, progress.fat, MacroFat, "Fat", Modifier.weight(1f))
+        GoalArcTile(Icons.Default.Grass, progress.fiber, MacroFiber, "Fiber", Modifier.weight(1f))
     }
 }
 
 @Composable
-private fun ProgressChip(
+private fun GoalArcTile(
     icon: ImageVector,
     value: Double?,
-    label: String,
     color: Color,
+    label: String,
     modifier: Modifier = Modifier,
 ) {
-    Row(
-        modifier = modifier
-            .clip(RoundedCornerShape(8.dp))
-            .background(MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.72f))
-            .border(
-                BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.14f)),
-                RoundedCornerShape(8.dp),
-            )
-            .padding(horizontal = 6.dp, vertical = 7.dp),
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(15.dp))
-        Text(
-            text = value?.let { "${it.toFormattedString(true)}%" } ?: "--",
-            style = MaterialTheme.typography.labelSmall,
-            fontWeight = FontWeight.Bold,
-            maxLines = 1,
-        )
+    val isOver = value != null && value > 100.0
+    val progress = when {
+        value == null -> 0f
+        isOver -> ((value - 100.0).coerceIn(0.0, 100.0) / 100.0).toFloat()
+        else -> (value.coerceIn(0.0, 100.0) / 100.0).toFloat()
+    }
+    val progressColor = if (isOver) GoalOverage else color
+    MacroHintBox(label = label, modifier = modifier) {
+        BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+            val arcCanvasHeight = (maxWidth * 0.52f).coerceIn(30.dp, 62.dp)
+            val iconSize = (arcCanvasHeight * 0.42f).coerceIn(18.dp, 26.dp)
+            val tileMinHeight = (arcCanvasHeight + 18.dp).coerceAtLeast(48.dp)
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.72f))
+                    .border(
+                        BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.14f)),
+                        RoundedCornerShape(8.dp),
+                    )
+                    .heightIn(min = tileMinHeight)
+                    .padding(horizontal = 5.dp, vertical = 6.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Canvas(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(arcCanvasHeight),
+                ) {
+                    val strokeWidth = 4.dp.toPx()
+                    val horizontalInset = 4.dp.toPx()
+                    val arcSize = Size(
+                        width = size.width - horizontalInset * 2,
+                        height = (size.height - strokeWidth) * 1.8f,
+                    )
+                    val top = strokeWidth / 2
+                    drawArc(
+                        color = Color.White.copy(alpha = 0.16f),
+                        startAngle = 180f,
+                        sweepAngle = 180f,
+                        useCenter = false,
+                        topLeft = androidx.compose.ui.geometry.Offset(horizontalInset, top),
+                        size = arcSize,
+                        style = Stroke(width = strokeWidth, cap = StrokeCap.Round),
+                    )
+                    if (progress > 0f) {
+                        drawArc(
+                            color = progressColor,
+                            startAngle = 180f,
+                            sweepAngle = 180f * progress,
+                            useCenter = false,
+                            topLeft = androidx.compose.ui.geometry.Offset(horizontalInset, top),
+                            size = arcSize,
+                            style = Stroke(width = strokeWidth, cap = StrokeCap.Round),
+                        )
+                    }
+                }
+                Icon(
+                    icon,
+                    contentDescription = "$label goal progress",
+                    tint = if (value == null) MaterialTheme.colorScheme.onSurfaceVariant else color,
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(bottom = 2.dp)
+                        .size(iconSize),
+                )
+            }
+        }
     }
 }
 
@@ -539,26 +599,7 @@ private fun MealCard(
         backgroundColor = MaterialTheme.colorScheme.surfaceContainerHigh,
         contentPadding = 12,
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(7.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            MealTitle(
-                group = group,
-                modifier = Modifier.weight(1f),
-            )
-            MacroSummaryChip(Icons.Default.BakeryDining, carbs)
-            MacroSummaryChip(Icons.Default.EggAlt, protein)
-            MacroSummaryChip(Icons.Default.Opacity, fat)
-            MacroSummaryChip(Icons.Default.Grass, fiber)
-            Text(
-                text = "${calories.toFormattedString(true)} kcal",
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.Bold,
-                maxLines = 1,
-            )
-        }
+        MealSummaryRow(group, calories, carbs, protein, fat, fiber)
 
         Column(
             verticalArrangement = Arrangement.spacedBy(6.dp),
@@ -569,6 +610,89 @@ private fun MealCard(
                     onClick = { onFoodClick(food) },
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun MealSummaryRow(
+    group: MealGroup,
+    calories: Double,
+    carbs: Double,
+    protein: Double,
+    fat: Double,
+    fiber: Double,
+) {
+    BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+        if (maxWidth < 520.dp) {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    MealTitle(
+                        group = group,
+                        modifier = Modifier.weight(1f),
+                    )
+                    MealCaloriesChip(calories = calories)
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    MacroSummaryChip("Carbs", Icons.Default.BakeryDining, carbs, MacroCarbs, Modifier.weight(1f), fillContainer = true)
+                    MacroSummaryChip("Protein", Icons.Default.EggAlt, protein, MacroProtein, Modifier.weight(1f), fillContainer = true)
+                    MacroSummaryChip("Fat", Icons.Default.OilBarrel, fat, MacroFat, Modifier.weight(1f), fillContainer = true)
+                    MacroSummaryChip("Fiber", Icons.Default.Grass, fiber, MacroFiber, Modifier.weight(1f), fillContainer = true)
+                }
+            }
+        } else {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(7.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                MealTitle(
+                    group = group,
+                    modifier = Modifier.weight(1f),
+                )
+                MacroSummaryChip("Carbs", Icons.Default.BakeryDining, carbs, MacroCarbs)
+                MacroSummaryChip("Protein", Icons.Default.EggAlt, protein, MacroProtein)
+                MacroSummaryChip("Fat", Icons.Default.OilBarrel, fat, MacroFat)
+                MacroSummaryChip("Fiber", Icons.Default.Grass, fiber, MacroFiber)
+                MealCaloriesChip(calories = calories)
+            }
+        }
+    }
+}
+
+@Composable
+private fun MealCaloriesChip(calories: Double) {
+    MacroHintBox(label = "Calories") {
+        Row(
+            modifier = Modifier
+                .clip(RoundedCornerShape(999.dp))
+                .background(AccentGold.copy(alpha = 0.18f))
+                .border(BorderStroke(1.dp, AccentGold.copy(alpha = 0.24f)), RoundedCornerShape(999.dp))
+                .padding(horizontal = 10.dp, vertical = 7.dp),
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                imageVector = Icons.Default.LocalFireDepartment,
+                contentDescription = null,
+                tint = AccentGold,
+                modifier = Modifier.size(17.dp),
+            )
+            Text(
+                text = "${calories.toFormattedString(true)} kcal",
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 1,
+            )
         }
     }
 }
@@ -620,35 +744,43 @@ private fun MealTitle(
 
 @Composable
 private fun MacroSummaryChip(
+    label: String,
     icon: ImageVector,
     value: Double,
+    color: Color,
+    modifier: Modifier = Modifier,
+    fillContainer: Boolean = false,
 ) {
-    Row(
-        modifier = Modifier
-            .clip(RoundedCornerShape(7.dp))
-            .background(MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.86f))
-            .border(
-                BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.18f)),
-                RoundedCornerShape(7.dp),
+    MacroHintBox(label = label, modifier = modifier) {
+        val chipModifier = if (fillContainer) Modifier.fillMaxWidth() else Modifier
+        Row(
+            modifier = chipModifier
+                .clip(RoundedCornerShape(7.dp))
+                .background(MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.86f))
+                .border(
+                    BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.18f)),
+                    RoundedCornerShape(7.dp),
+                )
+                .heightIn(min = 46.dp)
+                .padding(horizontal = 8.dp, vertical = 7.dp)
+                .testTag("meal_macro_${label.lowercase()}"),
+            horizontalArrangement = Arrangement.spacedBy(7.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = color,
+                modifier = Modifier.size(17.dp),
             )
-            .heightIn(min = 46.dp)
-            .padding(horizontal = 11.dp, vertical = 7.dp),
-        horizontalArrangement = Arrangement.spacedBy(7.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.size(17.dp),
-        )
-        Text(
-            text = "${value.toFormattedString(true)}g",
-            style = MaterialTheme.typography.labelMedium,
-            fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colorScheme.onSurface,
-            maxLines = 1,
-        )
+            Text(
+                text = "${value.toFormattedString(true)}g",
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 1,
+            )
+        }
     }
 }
 
@@ -740,10 +872,10 @@ private fun MealDetailDialog(
                     horizontalArrangement = Arrangement.spacedBy(6.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    MacroSummaryChip(Icons.Default.BakeryDining, carbs)
-                    MacroSummaryChip(Icons.Default.EggAlt, protein)
-                    MacroSummaryChip(Icons.Default.Opacity, fat)
-                    MacroSummaryChip(Icons.Default.Grass, fiber)
+                    MacroSummaryChip("Carbs", Icons.Default.BakeryDining, carbs, MacroCarbs)
+                    MacroSummaryChip("Protein", Icons.Default.EggAlt, protein, MacroProtein)
+                    MacroSummaryChip("Fat", Icons.Default.OilBarrel, fat, MacroFat)
+                    MacroSummaryChip("Fiber", Icons.Default.Grass, fiber, MacroFiber)
                 }
                 MacroGrid(
                     items = listOf(
@@ -875,6 +1007,22 @@ private fun StatPill(
     value: String,
     modifier: Modifier = Modifier,
 ) {
+    if (label.supportsMacroHint()) {
+        MacroHintBox(label = label, modifier = modifier) {
+            StatPillContent(label = label, value = value, modifier = Modifier.fillMaxWidth())
+        }
+        return
+    }
+
+    StatPillContent(label = label, value = value, modifier = modifier)
+}
+
+@Composable
+private fun StatPillContent(
+    label: String,
+    value: String,
+    modifier: Modifier = Modifier,
+) {
     Column(
         modifier = modifier
             .clip(RoundedCornerShape(8.dp))
@@ -896,6 +1044,10 @@ private fun StatPill(
             fontWeight = FontWeight.SemiBold,
         )
     }
+}
+
+private fun String.supportsMacroHint(): Boolean {
+    return this in setOf("Calories", "Carbs", "Protein", "Fat", "Fiber")
 }
 
 @Composable
@@ -930,7 +1082,7 @@ private fun SurfacePanel(
 ) {
     Surface(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
+        shape = MaterialTheme.shapes.medium,
         color = backgroundColor,
         border = BorderStroke(1.dp, borderColor),
         tonalElevation = 2.dp,
@@ -980,3 +1132,8 @@ private fun dayOffset(dayOfWeek: DayOfWeek): Int {
 }
 
 private val AccentGold = Color(0xFFFBBC04)
+private val MacroCarbs = Color(0xFFFFB74D)
+private val MacroProtein = Color(0xFFFF6E7F)
+private val MacroFat = Color(0xFF64B5F6)
+private val MacroFiber = Color(0xFF4DD0E1)
+private val GoalOverage = Color(0xFFFF5252)

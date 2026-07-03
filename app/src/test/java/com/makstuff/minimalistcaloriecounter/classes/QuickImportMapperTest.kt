@@ -87,6 +87,28 @@ class QuickImportMapperTest {
     }
 
     @Test
+    fun selectedMealTypesApplyUsefulDefaultTimes() {
+        val base = LocalDateTime.of(2026, 7, 2, 21, 45)
+
+        org.junit.Assert.assertEquals(
+            LocalDateTime.of(2026, 7, 2, 9, 0),
+            QuickImportMealType.Breakfast.applyDefaultTime(base),
+        )
+        org.junit.Assert.assertEquals(
+            LocalDateTime.of(2026, 7, 2, 12, 0),
+            QuickImportMealType.Lunch.applyDefaultTime(base),
+        )
+        org.junit.Assert.assertEquals(
+            LocalDateTime.of(2026, 7, 2, 18, 0),
+            QuickImportMealType.Dinner.applyDefaultTime(base),
+        )
+        org.junit.Assert.assertEquals(
+            base,
+            QuickImportMealType.Snack.applyDefaultTime(base),
+        )
+    }
+
+    @Test
     fun appValuesStoreCarbsWithoutFiber() {
         val nutrients = QuickImportNutrients(
             energy = 100.0,

@@ -85,8 +85,71 @@ export async function deleteHealthRange(
   return ctx.bridgeFor(hostPort).post("/health-connect/delete-range", { startDate, endDate });
 }
 
+export async function exportHealthRange(
+  ctx: ToolContext,
+  startDate: string,
+  endDate: string,
+  hostPort = DEFAULT_HOST_PORT,
+) {
+  return ctx.bridgeFor(hostPort).post("/health-connect/export-range", { startDate, endDate });
+}
+
 export async function openSettingsPanel(ctx: ToolContext, sheet: string | null, hostPort = DEFAULT_HOST_PORT) {
   return ctx.bridgeFor(hostPort).post("/settings/open", { sheet });
+}
+
+export async function goalsState(ctx: ToolContext, hostPort = DEFAULT_HOST_PORT) {
+  return ctx.bridgeFor(hostPort).get("/goals/state");
+}
+
+export async function setGoalsSettingsVisible(ctx: ToolContext, visible: boolean, hostPort = DEFAULT_HOST_PORT) {
+  return ctx.bridgeFor(hostPort).post("/goals/settings", { visible });
+}
+
+export async function setGoalsProfile(
+  ctx: ToolContext,
+  input: Record<string, unknown>,
+  hostPort = DEFAULT_HOST_PORT,
+) {
+  return ctx.bridgeFor(hostPort).post("/goals/set-profile", input);
+}
+
+export async function setGoalsMeasurement(
+  ctx: ToolContext,
+  field: string,
+  value: number | null,
+  hostPort = DEFAULT_HOST_PORT,
+) {
+  return ctx.bridgeFor(hostPort).post("/goals/set-measurement", { field, value });
+}
+
+export async function toggleGoalsMeasurementLock(ctx: ToolContext, field: string, hostPort = DEFAULT_HOST_PORT) {
+  return ctx.bridgeFor(hostPort).post("/goals/toggle-measurement-lock", { field });
+}
+
+export async function setGoalsMacro(
+  ctx: ToolContext,
+  macro: string,
+  value: number | null,
+  hostPort = DEFAULT_HOST_PORT,
+) {
+  return ctx.bridgeFor(hostPort).post("/goals/set-macro", { macro, value });
+}
+
+export async function toggleGoalsMacroLock(ctx: ToolContext, macro: string, hostPort = DEFAULT_HOST_PORT) {
+  return ctx.bridgeFor(hostPort).post("/goals/toggle-macro-lock", { macro });
+}
+
+export async function refreshGoalsHealthConnect(ctx: ToolContext, hostPort = DEFAULT_HOST_PORT) {
+  return ctx.bridgeFor(hostPort).post("/goals/refresh-health-connect", {});
+}
+
+export async function recalculateGoals(ctx: ToolContext, hostPort = DEFAULT_HOST_PORT) {
+  return ctx.bridgeFor(hostPort).post("/goals/recalculate", {});
+}
+
+export async function applyGoalsRecommendation(ctx: ToolContext, hostPort = DEFAULT_HOST_PORT) {
+  return ctx.bridgeFor(hostPort).post("/goals/apply-recommendation", {});
 }
 
 export async function screenshot(ctx: ToolContext, deviceSerial: string, outputPath?: string) {

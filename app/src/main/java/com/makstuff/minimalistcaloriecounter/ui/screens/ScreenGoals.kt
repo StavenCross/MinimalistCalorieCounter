@@ -37,10 +37,11 @@ import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.LockOpen
 import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material.icons.filled.MonitorHeart
-import androidx.compose.material.icons.filled.Opacity
+import androidx.compose.material.icons.filled.OilBarrel
 import androidx.compose.material.icons.filled.Scale
 import androidx.compose.material.icons.filled.SelfImprovement
 import androidx.compose.material3.Button
+import androidx.compose.material3.DatePicker
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -51,8 +52,10 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -62,6 +65,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
@@ -76,7 +80,10 @@ import com.makstuff.minimalistcaloriecounter.classes.GoalValueSource
 import com.makstuff.minimalistcaloriecounter.classes.MacroTargets
 import com.makstuff.minimalistcaloriecounter.classes.WeeklyWeightLossTarget
 import com.makstuff.minimalistcaloriecounter.essentials.toFormattedString
+import com.makstuff.minimalistcaloriecounter.ui.reused.MacroHintBox
+import java.time.Instant
 import java.time.LocalDate
+import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
 private val AccentGoals = Color(0xFFFFD166)
@@ -299,7 +306,7 @@ private fun MacroTargetGrid(targets: MacroTargets) {
         }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
             TargetTile(Icons.Default.BakeryDining, AccentCarbs, "Carbs", targets.carbs, "g", Modifier.weight(1f))
-            TargetTile(Icons.Default.Opacity, AccentFat, "Fat", targets.fat, "g", Modifier.weight(1f))
+            TargetTile(Icons.Default.OilBarrel, AccentFat, "Fat", targets.fat, "g", Modifier.weight(1f))
             TargetTile(Icons.Default.Grass, AccentFiber, "Fiber", targets.fiber, "g", Modifier.weight(1f))
         }
     }
@@ -307,23 +314,24 @@ private fun MacroTargetGrid(targets: MacroTargets) {
 
 @Composable
 private fun TargetTile(icon: ImageVector, color: Color, label: String, value: Double?, suffix: String, modifier: Modifier = Modifier) {
-    SurfacePanel(
-        modifier = modifier,
-        backgroundColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-        borderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.16f),
-        contentPadding = 10,
-    ) {
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-            AccentIcon(icon, color, 32)
-            Column {
-                Text(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text(
-                    value.formatTarget(suffix),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
+    MacroHintBox(label = label, modifier = modifier) {
+        SurfacePanel(
+            backgroundColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+            borderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.16f),
+            contentPadding = 10,
+        ) {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                AccentIcon(icon, color, 32)
+                Column {
+                    Text(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(
+                        value.formatTarget(suffix),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
             }
         }
     }
@@ -480,8 +488,8 @@ private fun ProfileEditor(
     onMeasurementLockToggle: (GoalFieldKey) -> Unit,
 ) {
     val profile = uiState.goals.profile
-    var birthdayText by remember(profile.birthday) { mutableStateOf(profile.birthday?.toString().orEmpty()) }
     var pickerSheet by remember { mutableStateOf<GoalPickerSheet?>(null) }
+    val zoneId = ZoneId.systemDefault()
 
     pickerSheet?.let { sheet ->
         ModalBottomSheet(
@@ -497,12 +505,32 @@ private fun ProfileEditor(
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 when (sheet) {
+                    GoalPickerSheet.Birthday -> {
+                        val initialMillis = profile.birthday
+                            ?.atStartOfDay(zoneId)
+                            ?.toInstant()
+                            ?.toEpochMilli()
+                        val datePickerState = rememberDatePickerState(initialSelectedDateMillis = initialMillis)
+                        var appliedMillis by remember(initialMillis) { mutableStateOf(initialMillis) }
+                        LaunchedEffect(datePickerState.selectedDateMillis) {
+                            val millis = datePickerState.selectedDateMillis
+                            if (millis != null && millis != appliedMillis) {
+                                appliedMillis = millis
+                                onBirthdayChange(Instant.ofEpochMilli(millis).atZone(zoneId).toLocalDate())
+                                pickerSheet = null
+                            }
+                        }
+
+                        SheetTitle("Birthday", "Tap a date to set it.")
+                        DatePicker(state = datePickerState)
+                    }
                     GoalPickerSheet.Sex -> {
                         SheetTitle("Sex", "Used by the Mifflin-St Jeor recommendation.")
                         GoalSex.entries.forEach { sex ->
                             PickerOptionRow(
                                 label = sex.label,
                                 selected = profile.sex == sex,
+                                testTag = "goals_sex_option_${sex.name}",
                                 onClick = {
                                     onSexChange(sex)
                                     pickerSheet = null
@@ -516,6 +544,7 @@ private fun ProfileEditor(
                             PickerOptionRow(
                                 label = activity.label,
                                 selected = profile.activityLevel == activity,
+                                testTag = "goals_activity_option_${activity.name}",
                                 onClick = {
                                     onActivityLevelChange(activity)
                                     pickerSheet = null
@@ -529,6 +558,7 @@ private fun ProfileEditor(
                             PickerOptionRow(
                                 label = target.label,
                                 selected = profile.weightLossTarget == target,
+                                testTag = "goals_weight_loss_option_${target.name}",
                                 onClick = {
                                     onWeightLossTargetChange(target)
                                     pickerSheet = null
@@ -542,22 +572,18 @@ private fun ProfileEditor(
     }
 
     SettingsGroup("Profile", Icons.Default.Event, AccentProfile) {
-        OutlinedTextField(
-            value = birthdayText,
-            onValueChange = {
-                birthdayText = it
-                onBirthdayChange(runCatching { LocalDate.parse(it) }.getOrNull())
-            },
-            label = { Text("Birthday") },
-            placeholder = { Text("yyyy-mm-dd") },
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth(),
-            colors = fieldColors(),
+        PickerField(
+            label = "Birthday",
+            value = profile.birthday?.format(DateTimeFormatter.ISO_LOCAL_DATE) ?: "Required",
+            isMissing = profile.birthday == null,
+            testTag = "goals_birthday_picker",
+            onClick = { pickerSheet = GoalPickerSheet.Birthday },
         )
         PickerField(
             label = "Sex",
             value = profile.sex?.label ?: "Required",
             isMissing = profile.sex == null,
+            testTag = "goals_sex_picker",
             onClick = { pickerSheet = GoalPickerSheet.Sex },
         )
         MeasurementField("Height", GoalFieldKey.HeightCm, profile.heightCm, "cm", onMeasurementChange, onMeasurementLockToggle)
@@ -567,11 +593,13 @@ private fun ProfileEditor(
         PickerField(
             label = "Lifestyle",
             value = profile.activityLevel.label,
+            testTag = "goals_activity_picker",
             onClick = { pickerSheet = GoalPickerSheet.Activity },
         )
         PickerField(
             label = "Weekly pace",
             value = profile.weightLossTarget.label,
+            testTag = "goals_weight_loss_picker",
             onClick = { pickerSheet = GoalPickerSheet.WeightLoss },
         )
     }
@@ -615,7 +643,9 @@ private fun MeasurementField(
         trailingIcon = {
             LockButton(locked = measurement.locked, onClick = { onMeasurementLockToggle(field) })
         },
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .testTag("goals_measurement_${field.name}"),
         colors = fieldColors(),
     )
 }
@@ -643,7 +673,9 @@ private fun MacroInput(
         singleLine = true,
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
         trailingIcon = { LockButton(locked = locked, onClick = { onMacroLockToggle(macro) }) },
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .testTag("goals_macro_${macro.name}"),
         colors = fieldColors(),
     )
 }
@@ -664,6 +696,7 @@ private fun PickerField(
     label: String,
     value: String,
     isMissing: Boolean = false,
+    testTag: String,
     onClick: () -> Unit,
 ) {
     Row(
@@ -680,6 +713,7 @@ private fun PickerField(
                 RoundedCornerShape(12.dp),
             )
             .clickable(onClick = onClick)
+            .testTag(testTag)
             .padding(horizontal = 12.dp),
         horizontalArrangement = Arrangement.spacedBy(10.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -711,6 +745,7 @@ private fun PickerField(
 private fun PickerOptionRow(
     label: String,
     selected: Boolean,
+    testTag: String,
     onClick: () -> Unit,
 ) {
     Row(
@@ -731,6 +766,7 @@ private fun PickerOptionRow(
                 RoundedCornerShape(16.dp),
             )
             .clickable(onClick = onClick)
+            .testTag(testTag)
             .padding(horizontal = 16.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
@@ -747,6 +783,7 @@ private fun PickerOptionRow(
 }
 
 private enum class GoalPickerSheet {
+    Birthday,
     Sex,
     Activity,
     WeightLoss,
@@ -811,7 +848,7 @@ private fun SurfacePanel(
 ) {
     Surface(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(8.dp),
+        shape = MaterialTheme.shapes.medium,
         color = backgroundColor,
         border = BorderStroke(1.dp, borderColor),
         tonalElevation = 0.dp,

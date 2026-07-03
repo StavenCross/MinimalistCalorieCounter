@@ -8,10 +8,14 @@
         <include domain="external" path="archive.csv"/>
         <include domain="external" path="database.csv"/>
         <include domain="external" path="day.csv"/>
+        <include domain="external" path="goals.csv"/>
+        <include domain="external" path="options.csv"/>
     </cloud-backup>
     <device-transfer>
         <include domain="external" path="archive.csv"/>
         <include domain="external" path="database.csv"/>
         <include domain="external" path="day.csv"/>
+        <include domain="external" path="goals.csv"/>
+        <include domain="external" path="options.csv"/>
     </device-transfer>
 </data-extraction-rules>

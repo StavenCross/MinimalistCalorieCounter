@@ -76,7 +76,7 @@
     <string name="options">Options</string>
     <string name="overall_weight">Overall Weight</string>
     <string name="quickselect_value_">\"Quickselect\" value can only be \"y\" or \"n\".</string>
-    <string name="quick_import">Quick Import</string>
+    <string name="quick_import">Add Meal</string>
     <string name="sum_if_empty">Sum if empty</string>
     <string name="system_default">System Default</string>
     <string name="title_add_food_to_day">Add Food to Day</string>

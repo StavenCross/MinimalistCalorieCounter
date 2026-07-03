@@ -4,6 +4,10 @@ import { AdbClient, CommandRunner } from "../adb.js";
 import {
   ConnectInput,
   createToolContext,
+  exportHealthRange,
+  setGoalsMacro,
+  setGoalsProfile,
+  toggleGoalsMeasurementLock,
   listDevices,
   navigate,
 } from "../tools.js";
@@ -54,5 +58,51 @@ test("listDevices uses injected runner", async () => {
 
   assert.deepEqual(await listDevices(ctx), [
     { serial: "emulator-5554", state: "device", isEmulator: true },
+  ]);
+});
+
+test("goals tools post to the bridge", async () => {
+  const calls: Array<{ path: string; body: Record<string, unknown> }> = [];
+  const ctx = {
+    ...createToolContext(async () => ({ stdout: "", stderr: "" })),
+    bridgeFor: () => ({
+      post: async (path: string, body: Record<string, unknown>) => {
+        calls.push({ path, body });
+        return { ok: true };
+      },
+      get: async () => ({ ok: true }),
+    }),
+  };
+
+  await setGoalsProfile(ctx, { sex: "Male", heightCm: 180 }, 18765);
+  await setGoalsMacro(ctx, "Calories", 2100, 18765);
+  await toggleGoalsMeasurementLock(ctx, "WeightKg", 18765);
+
+  assert.deepEqual(calls, [
+    { path: "/goals/set-profile", body: { sex: "Male", heightCm: 180 } },
+    { path: "/goals/set-macro", body: { macro: "Calories", value: 2100 } },
+    { path: "/goals/toggle-measurement-lock", body: { field: "WeightKg" } },
+  ]);
+});
+
+test("health export posts date range to the bridge", async () => {
+  const calls: Array<{ path: string; body: Record<string, unknown> }> = [];
+  const ctx = {
+    ...createToolContext(async () => ({ stdout: "", stderr: "" })),
+    bridgeFor: () => ({
+      post: async (path: string, body: Record<string, unknown>) => {
+        calls.push({ path, body });
+        return { ok: true };
+      },
+      get: async () => ({ ok: true }),
+    }),
+  };
+
+  assert.deepEqual(await exportHealthRange(ctx, "2026-07-01", "2026-07-02", 18765), { ok: true });
+  assert.deepEqual(calls, [
+    {
+      path: "/health-connect/export-range",
+      body: { startDate: "2026-07-01", endDate: "2026-07-02" },
+    },
   ]);
 });

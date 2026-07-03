@@ -56,6 +56,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.KeyboardArrowDown
@@ -142,6 +143,7 @@ private val AccentMenu = Color(0xFF90CAF9)
 private val AccentSettings = Color(0xFFFFD166)
 private val AccentMealsNav = Color(0xFFFFB74D)
 private val AccentQuickAddNav = Color(0xFF4FC3F7)
+private val AccentGoalsNav = Color(0xFFFF6E7F)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -162,6 +164,12 @@ fun App(
     var mainMenuExpanded by remember { mutableStateOf(false) }
 
     val healthConnectRequestPermissionLauncher = rememberLauncherForActivityResult(
+        contract = PermissionController.createRequestPermissionResultContract(),
+        onResult = { _ ->
+            viewModel.updateHealthConnectPermissionsStatus()
+        }
+    )
+    val healthConnectExportPermissionLauncher = rememberLauncherForActivityResult(
         contract = PermissionController.createRequestPermissionResultContract(),
         onResult = { _ ->
             viewModel.updateHealthConnectPermissionsStatus()
@@ -350,6 +358,8 @@ fun App(
         val settingsSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
         val cleanupStartDate = uiState.healthConnectNutritionCleanupStartDate
         val cleanupEndDate = uiState.healthConnectNutritionCleanupEndDate
+        val exportStartDate = uiState.healthConnectExportStartDate
+        val exportEndDate = uiState.healthConnectExportEndDate
         val cleanupStartPicker = remember(cleanupStartDate) {
             DatePickerDialog(
                 context,
@@ -370,6 +380,28 @@ fun App(
                 cleanupEndDate.year,
                 cleanupEndDate.monthValue - 1,
                 cleanupEndDate.dayOfMonth,
+            )
+        }
+        val exportStartPicker = remember(exportStartDate) {
+            DatePickerDialog(
+                context,
+                { _, year, month, day ->
+                    viewModel.updateHealthConnectExportStartDate(java.time.LocalDate.of(year, month + 1, day))
+                },
+                exportStartDate.year,
+                exportStartDate.monthValue - 1,
+                exportStartDate.dayOfMonth,
+            )
+        }
+        val exportEndPicker = remember(exportEndDate) {
+            DatePickerDialog(
+                context,
+                { _, year, month, day ->
+                    viewModel.updateHealthConnectExportEndDate(java.time.LocalDate.of(year, month + 1, day))
+                },
+                exportEndDate.year,
+                exportEndDate.monthValue - 1,
+                exportEndDate.dayOfMonth,
             )
         }
 
@@ -428,7 +460,7 @@ fun App(
                     )
                 },
                 title = { Text(stringResource(R.string.confirmation)) },
-                text = { Text("Remove all meal and nutrition records written by this app from ${cleanupStartDate} through ${cleanupEndDate}? This includes Quick add, historical imports, and legacy Daily Total nutrition rows in that range.") },
+                text = { Text("Remove all meal and nutrition records written by this app from ${cleanupStartDate} through ${cleanupEndDate}? This includes Add Meal, historical imports, and legacy Daily Total nutrition rows in that range.") },
             )
         }
 
@@ -468,6 +500,30 @@ fun App(
                                 viewModel.updateActiveSettingsSheet(null)
                                 handleHCInteraction { viewModel.setAlertDialogHealthConnectSync(true) }
                             }
+                            OptionsSectionHeader("Export from Health Connect")
+                            OptionsItem("Export start", trailingText = exportStartDate.format(DateTimeFormatter.ISO_LOCAL_DATE)) {
+                                exportStartPicker.show()
+                            }
+                            OptionsItem("Export end", trailingText = exportEndDate.format(DateTimeFormatter.ISO_LOCAL_DATE)) {
+                                exportEndPicker.show()
+                            }
+                            OptionsItem(
+                                text = when {
+                                    uiState.healthConnectExportInProgress -> "Exporting Health Connect CSV..."
+                                    !uiState.healthConnectExportPermissionsGranted -> "Grant export read permissions"
+                                    else -> "Export all Health Connect data to CSV"
+                                },
+                            ) {
+                                if (uiState.healthConnectExportPermissionsGranted) {
+                                    viewModel.exportHealthConnectRange()
+                                } else {
+                                    healthConnectExportPermissionLauncher.launch(healthConnectManager.exportPermissions)
+                                }
+                            }
+                            uiState.healthConnectExportMessage?.let { message ->
+                                SheetNote(message, isError = message.contains("failed", ignoreCase = true) || message.contains("missing", ignoreCase = true))
+                            }
+                            OptionsSectionHeader("Remove Health Connect meals")
                             OptionsItem("Start date", trailingText = cleanupStartDate.format(DateTimeFormatter.ISO_LOCAL_DATE)) {
                                 cleanupStartPicker.show()
                             }
@@ -512,47 +568,74 @@ fun App(
                         }
                         "theme" -> {
                             SheetTitle("Appearance", "Pick the theme that feels best for daily logging.")
-                            OptionsItem(stringArrayResource(R.array.dark_mode_options)[0]) {
+                            SelectableOptionsItem(
+                                text = stringArrayResource(R.array.dark_mode_options)[0],
+                                selected = uiState.themeUserSetting == AppTheme.MODE_AUTO,
+                            ) {
                                 viewModel.setTheme(AppTheme.MODE_AUTO, context)
                                 viewModel.updateActiveSettingsSheet(null)
                             }
-                            OptionsItem(stringArrayResource(R.array.dark_mode_options)[1]) {
+                            SelectableOptionsItem(
+                                text = stringArrayResource(R.array.dark_mode_options)[1],
+                                selected = uiState.themeUserSetting == AppTheme.MODE_DAY,
+                            ) {
                                 viewModel.setTheme(AppTheme.MODE_DAY, context)
                                 viewModel.updateActiveSettingsSheet(null)
                             }
-                            OptionsItem(stringArrayResource(R.array.dark_mode_options)[2]) {
+                            SelectableOptionsItem(
+                                text = stringArrayResource(R.array.dark_mode_options)[2],
+                                selected = uiState.themeUserSetting == AppTheme.MODE_NIGHT,
+                            ) {
                                 viewModel.setTheme(AppTheme.MODE_NIGHT, context)
                                 viewModel.updateActiveSettingsSheet(null)
                             }
                         }
                         "language" -> {
                             SheetTitle("Language", "Choose the app language.")
-                            OptionsItem(stringResource(R.string.always_english)) {
+                            SelectableOptionsItem(
+                                text = stringResource(R.string.always_english),
+                                selected = currentLocale.contains("en"),
+                            ) {
                                 AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags("en"))
                                 viewModel.setDialogLanguageInfo(bool = true)
                                 viewModel.updateActiveSettingsSheet(null)
                             }
-                            OptionsItem(stringResource(R.string.always_german)) {
+                            SelectableOptionsItem(
+                                text = stringResource(R.string.always_german),
+                                selected = currentLocale.contains("de"),
+                            ) {
                                 AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags("de"))
                                 viewModel.setDialogLanguageInfo(bool = true)
                                 viewModel.updateActiveSettingsSheet(null)
                             }
-                            OptionsItem(stringResource(R.string.always_french)) {
+                            SelectableOptionsItem(
+                                text = stringResource(R.string.always_french),
+                                selected = currentLocale.contains("fr"),
+                            ) {
                                 AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags("fr"))
                                 viewModel.setDialogLanguageInfo(bool = true)
                                 viewModel.updateActiveSettingsSheet(null)
                             }
-                            OptionsItem(stringResource(R.string.always_italian)) {
+                            SelectableOptionsItem(
+                                text = stringResource(R.string.always_italian),
+                                selected = currentLocale.contains("it"),
+                            ) {
                                 AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags("it"))
                                 viewModel.setDialogLanguageInfo(bool = true)
                                 viewModel.updateActiveSettingsSheet(null)
                             }
-                            OptionsItem(stringResource(R.string.always_spanish)) {
+                            SelectableOptionsItem(
+                                text = stringResource(R.string.always_spanish),
+                                selected = currentLocale.contains("es"),
+                            ) {
                                 AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags("es"))
                                 viewModel.setDialogLanguageInfo(bool = true)
                                 viewModel.updateActiveSettingsSheet(null)
                             }
-                            OptionsItem(stringResource(R.string.system_default)) {
+                            SelectableOptionsItem(
+                                text = stringResource(R.string.system_default),
+                                selected = currentLocale.isBlank(),
+                            ) {
                                 AppCompatDelegate.setApplicationLocales(LocaleListCompat.getEmptyLocaleList())
                                 viewModel.setDialogLanguageInfo(bool = true)
                                 viewModel.updateActiveSettingsSheet(null)
@@ -749,7 +832,7 @@ fun App(
                         IconButton(onClick = { viewModel.updateQuickImportSettingsVisible(true) }) {
                             Icon(
                                 imageVector = Icons.Default.MoreVert,
-                                contentDescription = "Quick Import settings",
+                                contentDescription = "Add Meal settings",
                                 tint = AccentSettings,
                             )
                         }
@@ -1479,10 +1562,10 @@ fun App(
                         "Meals", R.drawable.archive, uiState.navigationBarHighlight == NAV_ARCHIVE, AccentMealsNav
                     ) { navTo("health_connect_nutrition") },
                     NavigationBarItemData(
-                        "Quick add", R.drawable.plus, uiState.navigationBarHighlight == NAV_DAY, AccentQuickAddNav
+                        "Add Meal", R.drawable.plus, uiState.navigationBarHighlight == NAV_DAY, AccentQuickAddNav
                     ) { navTo("quick_import") },
                     NavigationBarItemData(
-                        "Goals", R.drawable.goals, uiState.navigationBarHighlight == NAV_GOALS, AccentSettings
+                        "Goals", R.drawable.goals, uiState.navigationBarHighlight == NAV_GOALS, AccentGoalsNav
                     ) { navTo("goals_home") },
                 ).map {
                     {
@@ -2359,5 +2442,28 @@ fun OptionsItem(
             )
             .clickable { onClick() },
         colors = ListItemDefaults.colors(containerColor = Color.Transparent)
+    )
+}
+
+@Composable
+fun SelectableOptionsItem(
+    text: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+) {
+    OptionsItem(
+        text = text,
+        trailingContent = if (selected) {
+            {
+                Icon(
+                    imageVector = Icons.Default.Check,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                )
+            }
+        } else {
+            null
+        },
+        onClick = onClick,
     )
 }

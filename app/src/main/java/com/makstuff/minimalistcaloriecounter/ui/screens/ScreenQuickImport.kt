@@ -1,11 +1,23 @@
 package com.makstuff.minimalistcaloriecounter.ui.screens
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
@@ -26,6 +38,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.BakeryDining
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.CloudDone
 import androidx.compose.material.icons.filled.Edit
@@ -34,12 +47,13 @@ import androidx.compose.material.icons.filled.Event
 import androidx.compose.material.icons.filled.Grass
 import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.Opacity
+import androidx.compose.material.icons.filled.OilBarrel
 import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -56,6 +70,7 @@ import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -63,7 +78,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
@@ -71,6 +89,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.makstuff.minimalistcaloriecounter.AppUiState
 import com.makstuff.minimalistcaloriecounter.classes.GoalCalculator
+import com.makstuff.minimalistcaloriecounter.classes.MacroTargets
 import com.makstuff.minimalistcaloriecounter.classes.MealTargetAllocation
 import com.makstuff.minimalistcaloriecounter.classes.QuickImportFood
 import com.makstuff.minimalistcaloriecounter.classes.QuickImportHealthWriteResult
@@ -79,6 +98,8 @@ import com.makstuff.minimalistcaloriecounter.classes.QuickImportMealType
 import com.makstuff.minimalistcaloriecounter.classes.QuickImportNutrients
 import com.makstuff.minimalistcaloriecounter.essentials.toFormattedString
 import com.makstuff.minimalistcaloriecounter.health.HealthConnectNutritionMeal
+import com.makstuff.minimalistcaloriecounter.ui.reused.MacroHintBox
+import kotlinx.coroutines.delay
 import java.time.LocalDateTime
 import java.time.Instant
 import java.time.ZoneId
@@ -94,6 +115,7 @@ private val AccentNow = Color(0xFF7BDFF2)
 private val AccentDatabase = Color(0xFFCE93D8)
 private val AccentDay = Color(0xFFFFB74D)
 private val AccentHealth = Color(0xFF4DD0E1)
+private val GoalOverage = Color(0xFFFF5252)
 
 @Composable
 fun ScreenQuickImport(
@@ -120,6 +142,20 @@ fun ScreenQuickImport(
         targets = uiState.goals.activeTargetsFor(uiState.inputQuickImportDateTime.toLocalDate()),
         consumedMeals = consumedMealsForQuickImportDate(uiState),
     )
+    val dailyTotals = currentDayTotalsForQuickImportDate(uiState)
+    val dailyFoodCount = currentDayFoodCountForQuickImportDate(uiState)
+    val dailyGoalProgress = GoalCalculator.progress(
+        dailyTotals,
+        uiState.goals.activeTargetsFor(uiState.inputQuickImportDateTime.toLocalDate()),
+    )
+    var successAnimationVisible by remember { mutableStateOf(false) }
+    LaunchedEffect(uiState.quickImportSuccessToken) {
+        if (uiState.quickImportSuccessToken > 0L) {
+            successAnimationVisible = true
+            delay(1_500)
+            successAnimationVisible = false
+        }
+    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         selectedPreviewMeal?.let { previewMeal ->
@@ -164,6 +200,15 @@ fun ScreenQuickImport(
                     onDateTimeChange = onDateTimeChange,
                     onRefreshDateTime = onRefreshDateTime,
                     onMealTypeChange = onMealTypeChange,
+                )
+            }
+
+            item {
+                QuickDaySummaryCard(
+                    dateTime = uiState.inputQuickImportDateTime,
+                    totals = dailyTotals,
+                    foodCount = dailyFoodCount,
+                    progress = dailyGoalProgress,
                 )
             }
 
@@ -225,36 +270,124 @@ fun ScreenQuickImport(
             }
         }
 
+        AnimatedVisibility(
+            visible = successAnimationVisible,
+            enter = fadeIn(animationSpec = tween(140)) + slideInVertically(initialOffsetY = { it / 2 }) + scaleIn(initialScale = 0.94f),
+            exit = fadeOut(animationSpec = tween(220)) + slideOutVertically(targetOffsetY = { it / 3 }) + scaleOut(targetScale = 0.96f),
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 96.dp)
+                .testTag("quick_import_success_pill"),
+        ) {
+            QuickImportSuccessPill()
+        }
+
+        val buttonIsSuccess = successAnimationVisible && !uiState.quickImportInProgress
+        val buttonEnabled = canImport && !buttonIsSuccess
+        val buttonColor by animateColorAsState(
+            targetValue = when {
+                buttonIsSuccess -> AccentHealth.copy(alpha = 0.30f)
+                canImport -> AccentSend.copy(alpha = 0.28f)
+                else -> AccentSend.copy(alpha = 0.14f)
+            },
+            animationSpec = tween(180),
+            label = "quickImportButtonColor",
+        )
+        val buttonContentColor by animateColorAsState(
+            targetValue = when {
+                buttonIsSuccess -> AccentHealth
+                canImport -> AccentSend
+                else -> AccentSend.copy(alpha = 0.46f)
+            },
+            animationSpec = tween(180),
+            label = "quickImportButtonContentColor",
+        )
+        val buttonBorderColor by animateColorAsState(
+            targetValue = when {
+                buttonIsSuccess -> AccentHealth.copy(alpha = 0.72f)
+                canImport -> AccentSend.copy(alpha = 0.70f)
+                else -> AccentSend.copy(alpha = 0.32f)
+            },
+            animationSpec = tween(180),
+            label = "quickImportButtonBorderColor",
+        )
+        val buttonSize by animateDpAsState(
+            targetValue = if (buttonIsSuccess) 70.dp else 64.dp,
+            animationSpec = tween(180),
+            label = "quickImportButtonSize",
+        )
         Surface(
-            onClick = { if (canImport) onImport() },
-            enabled = canImport,
+            onClick = { if (buttonEnabled) onImport() },
+            enabled = buttonEnabled,
             shape = RoundedCornerShape(18.dp),
-            color = if (canImport) {
-                AccentSend.copy(alpha = 0.28f)
-            } else {
-                AccentSend.copy(alpha = 0.14f)
-            },
-            contentColor = if (canImport) {
-                AccentSend
-            } else {
-                AccentSend.copy(alpha = 0.46f)
-            },
-            border = BorderStroke(2.dp, AccentSend.copy(alpha = if (canImport) 0.70f else 0.32f)),
+            color = buttonColor,
+            contentColor = buttonContentColor,
+            border = BorderStroke(2.dp, buttonBorderColor),
             tonalElevation = 8.dp,
             shadowElevation = 8.dp,
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .padding(18.dp)
-                .size(64.dp)
+                .size(buttonSize)
                 .testTag("quick_import_import_button"),
         ) {
             Box(contentAlignment = Alignment.Center) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.Send,
-                    contentDescription = if (uiState.quickImportInProgress) "Importing meal" else "Import meal",
-                    modifier = Modifier.size(30.dp),
-                )
+                when {
+                    uiState.quickImportInProgress -> {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(28.dp),
+                            strokeWidth = 3.dp,
+                            color = AccentSend,
+                            trackColor = AccentSend.copy(alpha = 0.18f),
+                        )
+                    }
+                    buttonIsSuccess -> {
+                        Icon(
+                            imageVector = Icons.Default.Check,
+                            contentDescription = "Meal added",
+                            modifier = Modifier.size(32.dp),
+                        )
+                    }
+                    else -> {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.Send,
+                            contentDescription = "Import meal",
+                            modifier = Modifier.size(30.dp),
+                        )
+                    }
+                }
             }
+        }
+    }
+}
+
+@Composable
+private fun QuickImportSuccessPill() {
+    Surface(
+        shape = RoundedCornerShape(999.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerHighest,
+        border = BorderStroke(1.dp, AccentHealth.copy(alpha = 0.42f)),
+        tonalElevation = 6.dp,
+        shadowElevation = 8.dp,
+        modifier = Modifier.testTag("quick_import_success_animation"),
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 13.dp, vertical = 9.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                imageVector = Icons.Default.Check,
+                contentDescription = null,
+                tint = AccentHealth,
+                modifier = Modifier.size(18.dp),
+            )
+            Text(
+                text = "Meal added",
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
         }
     }
 }
@@ -298,7 +431,7 @@ private fun CapturePanel(
                 }
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "Quick capture",
+                        text = "Meal Capture",
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
                     )
@@ -361,7 +494,7 @@ fun DestinationDialog(
                 .padding(bottom = 18.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            SheetTitleLite("Quick Import settings", "These stay on by default for your usual workflow.")
+            SheetTitleLite("Add Meal settings", "These stay on by default for your usual workflow.")
             DestinationToggle(
                 checked = addDatabase,
                 text = "Add foods to database",
@@ -383,12 +516,6 @@ fun DestinationDialog(
                 onClick = onToggleHealthConnect,
                 modifier = Modifier.testTag("quick_import_toggle_health"),
             )
-            Button(
-                onClick = onDismiss,
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Text("Done")
-            }
         }
     }
 }
@@ -683,6 +810,14 @@ private fun MealTypeWheel(
                     },
                     modifier = Modifier.weight(1f),
                 )
+                if (selected) {
+                    Icon(
+                        imageVector = Icons.Default.Check,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(22.dp),
+                    )
+                }
             }
         }
     }
@@ -767,29 +902,7 @@ private fun ParsedMealPreviewCard(
         backgroundColor = MaterialTheme.colorScheme.surfaceContainerHigh,
         contentPadding = 12,
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(7.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            ParsedMealTitle(
-                mealType = mealType,
-                foodCount = meal.foods.size,
-                modifier = Modifier.weight(1f),
-            )
-            QuickMacroSummaryChip(Icons.Default.BakeryDining, meal.totals.carbohydrate, AccentDay)
-            QuickMacroSummaryChip(Icons.Default.EggAlt, meal.totals.protein, AccentClear)
-            QuickMacroSummaryChip(Icons.Default.Opacity, meal.totals.fat, AccentFood)
-            QuickMacroSummaryChip(Icons.Default.Grass, meal.totals.fiber, AccentHealth)
-            Text(
-                text = "${meal.totals.energy.toFormattedString(true)} kcal",
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.Bold,
-                maxLines = 1,
-            )
-        }
-
-        GoalAllocationRow(targetAllocation)
+        ParsedMealSummaryRow(meal, mealType)
 
         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
             meal.foods.forEach { food ->
@@ -799,6 +912,206 @@ private fun ParsedMealPreviewCard(
                     onClick = { onFoodClick(food) },
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun QuickDaySummaryCard(
+    dateTime: LocalDateTime,
+    totals: QuickImportNutrients,
+    foodCount: Int,
+    progress: MacroTargets,
+) {
+    SurfacePanel(
+        borderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.16f),
+        backgroundColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+        contentPadding = 12,
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(end = 112.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Top,
+            ) {
+                Column(verticalArrangement = Arrangement.spacedBy(1.dp)) {
+                    Text(
+                        text = dateTime.format(DateTimeFormatter.ofPattern("EEEE, MMM d")),
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Text(
+                        text = "${totals.energy.toFormattedString(true)} kcal",
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold,
+                    )
+                }
+                QuickFoodCountChip(foodCount)
+            }
+
+            QuickDayMacroGrid(totals)
+            QuickGoalProgressRow(progress)
+        }
+    }
+}
+
+@Composable
+private fun QuickFoodCountChip(foodCount: Int) {
+    Surface(
+        shape = RoundedCornerShape(999.dp),
+        color = AccentSend.copy(alpha = 0.16f),
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 7.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(5.dp),
+        ) {
+            Icon(
+                imageVector = Icons.Default.LocalFireDepartment,
+                contentDescription = null,
+                tint = AccentSend,
+                modifier = Modifier.size(18.dp),
+            )
+            Text(
+                text = "$foodCount foods",
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+        }
+    }
+}
+
+@Composable
+private fun QuickDayMacroGrid(totals: QuickImportNutrients) {
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            QuickDayMacroPill("Carbs", "${totals.carbohydrate.toFormattedString(true)}g", Modifier.weight(1f))
+            QuickDayMacroPill("Protein", "${totals.protein.toFormattedString(true)}g", Modifier.weight(1f))
+        }
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            QuickDayMacroPill("Fat", "${totals.fat.toFormattedString(true)}g", Modifier.weight(1f))
+            QuickDayMacroPill("Fiber", "${totals.fiber.toFormattedString(true)}g", Modifier.weight(1f))
+        }
+    }
+}
+
+@Composable
+private fun QuickDayMacroPill(
+    label: String,
+    value: String,
+    modifier: Modifier = Modifier,
+) {
+    MacroHintBox(label = label, modifier = modifier) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(8.dp))
+                .background(MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.78f))
+                .border(
+                    BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.18f)),
+                    RoundedCornerShape(8.dp),
+                )
+                .padding(horizontal = 8.dp, vertical = 6.dp),
+        ) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Text(
+                text = value,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 1,
+            )
+        }
+    }
+}
+
+@Composable
+private fun ParsedMealSummaryRow(
+    meal: QuickImportMeal,
+    mealType: QuickImportMealType,
+) {
+    BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+        if (maxWidth < 520.dp) {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                ParsedMealTitle(
+                    mealType = mealType,
+                    foodCount = meal.foods.size,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    QuickMacroSummaryChip("Carbs", Icons.Default.BakeryDining, meal.totals.carbohydrate, AccentDay, Modifier.weight(1f), fillContainer = true)
+                    QuickMacroSummaryChip("Protein", Icons.Default.EggAlt, meal.totals.protein, AccentClear, Modifier.weight(1f), fillContainer = true)
+                    QuickMacroSummaryChip("Fat", Icons.Default.OilBarrel, meal.totals.fat, AccentFood, Modifier.weight(1f), fillContainer = true)
+                    QuickMacroSummaryChip("Fiber", Icons.Default.Grass, meal.totals.fiber, AccentHealth, Modifier.weight(1f), fillContainer = true)
+                }
+                QuickCaloriesChip(meal.totals.energy, Modifier.align(Alignment.End))
+            }
+        } else {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(7.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                ParsedMealTitle(
+                    mealType = mealType,
+                    foodCount = meal.foods.size,
+                    modifier = Modifier.weight(1f),
+                )
+                QuickMacroSummaryChip("Carbs", Icons.Default.BakeryDining, meal.totals.carbohydrate, AccentDay)
+                QuickMacroSummaryChip("Protein", Icons.Default.EggAlt, meal.totals.protein, AccentClear)
+                QuickMacroSummaryChip("Fat", Icons.Default.OilBarrel, meal.totals.fat, AccentFood)
+                QuickMacroSummaryChip("Fiber", Icons.Default.Grass, meal.totals.fiber, AccentHealth)
+                QuickCaloriesChip(meal.totals.energy)
+            }
+        }
+    }
+}
+
+@Composable
+private fun QuickCaloriesChip(
+    calories: Double,
+    modifier: Modifier = Modifier,
+) {
+    MacroHintBox(label = "Calories", modifier = modifier) {
+        Row(
+            modifier = Modifier
+                .clip(RoundedCornerShape(999.dp))
+                .background(AccentSend.copy(alpha = 0.18f))
+                .border(BorderStroke(1.dp, AccentSend.copy(alpha = 0.24f)), RoundedCornerShape(999.dp))
+                .padding(horizontal = 10.dp, vertical = 7.dp),
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                imageVector = Icons.Default.LocalFireDepartment,
+                contentDescription = null,
+                tint = AccentSend,
+                modifier = Modifier.size(17.dp),
+            )
+            Text(
+                text = "${calories.toFormattedString(true)} kcal",
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 1,
+            )
         }
     }
 }
@@ -851,36 +1164,43 @@ private fun ParsedMealTitle(
 
 @Composable
 private fun QuickMacroSummaryChip(
+    label: String,
     icon: ImageVector,
     value: Double,
     color: Color,
+    modifier: Modifier = Modifier,
+    fillContainer: Boolean = false,
 ) {
-    Row(
-        modifier = Modifier
-            .clip(RoundedCornerShape(7.dp))
-            .background(MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.86f))
-            .border(
-                BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.18f)),
-                RoundedCornerShape(7.dp),
+    MacroHintBox(label = label, modifier = modifier) {
+        val chipModifier = if (fillContainer) Modifier.fillMaxWidth() else Modifier
+        Row(
+            modifier = chipModifier
+                .clip(RoundedCornerShape(7.dp))
+                .background(MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.86f))
+                .border(
+                    BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.18f)),
+                    RoundedCornerShape(7.dp),
+                )
+                .heightIn(min = 46.dp)
+                .padding(horizontal = 8.dp, vertical = 7.dp)
+                .testTag("quick_meal_macro_${label.lowercase()}"),
+            horizontalArrangement = Arrangement.spacedBy(7.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = color,
+                modifier = Modifier.size(17.dp),
             )
-            .heightIn(min = 46.dp)
-            .padding(horizontal = 11.dp, vertical = 7.dp),
-        horizontalArrangement = Arrangement.spacedBy(7.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            tint = color,
-            modifier = Modifier.size(17.dp),
-        )
-        Text(
-            text = "${value.toFormattedString(true)}g",
-            style = MaterialTheme.typography.labelMedium,
-            fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colorScheme.onSurface,
-            maxLines = 1,
-        )
+            Text(
+                text = "${value.toFormattedString(true)}g",
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 1,
+            )
+        }
     }
 }
 
@@ -960,12 +1280,7 @@ private fun QuickImportMealDetailSheet(
                     foodCount = meal.foods.size,
                     modifier = Modifier.weight(1f),
                 )
-                Text(
-                    text = "${meal.totals.energy.toFormattedString(true)} kcal",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 1,
-                )
+                QuickCaloriesChip(meal.totals.energy)
             }
             Column(
                 modifier = Modifier
@@ -978,16 +1293,16 @@ private fun QuickImportMealDetailSheet(
                     horizontalArrangement = Arrangement.spacedBy(6.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    QuickMacroSummaryChip(Icons.Default.BakeryDining, meal.totals.carbohydrate, AccentDay)
-                    QuickMacroSummaryChip(Icons.Default.EggAlt, meal.totals.protein, AccentClear)
-                    QuickMacroSummaryChip(Icons.Default.Opacity, meal.totals.fat, AccentFood)
-                    QuickMacroSummaryChip(Icons.Default.Grass, meal.totals.fiber, AccentHealth)
+                    QuickMacroSummaryChip("Carbs", Icons.Default.BakeryDining, meal.totals.carbohydrate, AccentDay)
+                    QuickMacroSummaryChip("Protein", Icons.Default.EggAlt, meal.totals.protein, AccentClear)
+                    QuickMacroSummaryChip("Fat", Icons.Default.OilBarrel, meal.totals.fat, AccentFood)
+                    QuickMacroSummaryChip("Fiber", Icons.Default.Grass, meal.totals.fiber, AccentHealth)
                 }
                 QuickNutrientDetailGrid(
                     nutrients = meal.totals,
                     includeAmount = null,
                 )
-                GoalAllocationRow(targetAllocation)
+                QuickMealTargetProgressRow(meal.totals, targetAllocation)
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     meal.foods.forEach { food ->
                         CompactQuickFoodRow(
@@ -1008,53 +1323,126 @@ private fun QuickImportMealDetailSheet(
 }
 
 @Composable
-private fun GoalAllocationRow(allocation: MealTargetAllocation) {
-    if (allocation.calories == null) return
+private fun QuickGoalProgressRow(
+    progress: MacroTargets,
+) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(8.dp))
-            .background(MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.66f))
-            .border(
-                BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.12f)),
-                RoundedCornerShape(8.dp),
-            )
-            .padding(horizontal = 10.dp, vertical = 9.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Icon(
-            imageVector = Icons.Default.LocalFireDepartment,
-            contentDescription = null,
-            tint = AccentSend,
-            modifier = Modifier.size(18.dp),
-        )
-        Text(
-            text = "Meal target",
-            style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        Text(
-            text = "${allocation.calories.toFormattedString(true)} kcal",
-            style = MaterialTheme.typography.labelLarge,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.weight(1f),
-        )
-        allocation.protein?.let {
-            Text(
-                text = "P ${it.toFormattedString(true)}g",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-        allocation.carbs?.let {
-            Text(
-                text = "C ${it.toFormattedString(true)}g",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+        QuickGoalArcTile(Icons.Default.LocalFireDepartment, progress.calories, AccentSend, "Calories", "daily goal", Modifier.weight(1f))
+        QuickGoalArcTile(Icons.Default.EggAlt, progress.protein, AccentClear, "Protein", "daily goal", Modifier.weight(1f))
+        QuickGoalArcTile(Icons.Default.BakeryDining, progress.carbs, AccentDay, "Carbs", "daily goal", Modifier.weight(1f))
+        QuickGoalArcTile(Icons.Default.OilBarrel, progress.fat, AccentFood, "Fat", "daily goal", Modifier.weight(1f))
+        QuickGoalArcTile(Icons.Default.Grass, progress.fiber, AccentHealth, "Fiber", "daily goal", Modifier.weight(1f))
+    }
+}
+
+@Composable
+private fun QuickMealTargetProgressRow(
+    totals: QuickImportNutrients,
+    allocation: MealTargetAllocation,
+) {
+    if (allocation.calories == null) return
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        QuickGoalArcTile(Icons.Default.LocalFireDepartment, percent(totals.energy, allocation.calories), AccentSend, "Calories", "meal target", Modifier.weight(1f))
+        QuickGoalArcTile(Icons.Default.EggAlt, percent(totals.protein, allocation.protein), AccentClear, "Protein", "meal target", Modifier.weight(1f))
+        QuickGoalArcTile(Icons.Default.BakeryDining, percent(totals.carbohydrate, allocation.carbs), AccentDay, "Carbs", "meal target", Modifier.weight(1f))
+        QuickGoalArcTile(Icons.Default.OilBarrel, percent(totals.fat, allocation.fat), AccentFood, "Fat", "meal target", Modifier.weight(1f))
+        QuickGoalArcTile(Icons.Default.Grass, percent(totals.fiber, allocation.fiber), AccentHealth, "Fiber", "meal target", Modifier.weight(1f))
+    }
+}
+
+@Composable
+private fun QuickGoalArcTile(
+    icon: ImageVector,
+    value: Double?,
+    color: Color,
+    label: String,
+    descriptionSuffix: String,
+    modifier: Modifier = Modifier,
+) {
+    val isOver = value != null && value > 100.0
+    val progress = when {
+        value == null -> 0f
+        isOver -> ((value - 100.0).coerceIn(0.0, 100.0) / 100.0).toFloat()
+        else -> (value.coerceIn(0.0, 100.0) / 100.0).toFloat()
+    }
+    val progressColor = if (isOver) GoalOverage else color
+    MacroHintBox(label = label, modifier = modifier) {
+        BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+            val arcCanvasHeight = (maxWidth * 0.52f).coerceIn(30.dp, 62.dp)
+            val iconSize = (arcCanvasHeight * 0.42f).coerceIn(18.dp, 26.dp)
+            val tileMinHeight = (arcCanvasHeight + 18.dp).coerceAtLeast(48.dp)
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.72f))
+                    .border(
+                        BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.14f)),
+                        RoundedCornerShape(8.dp),
+                    )
+                    .heightIn(min = tileMinHeight)
+                    .padding(horizontal = 5.dp, vertical = 6.dp)
+                    .testTag("quick_goal_${label.lowercase()}"),
+                contentAlignment = Alignment.Center,
+            ) {
+                Canvas(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(arcCanvasHeight),
+                ) {
+                    val strokeWidth = 4.dp.toPx()
+                    val horizontalInset = 4.dp.toPx()
+                    val arcSize = Size(
+                        width = size.width - horizontalInset * 2,
+                        height = (size.height - strokeWidth) * 1.8f,
+                    )
+                    val top = strokeWidth / 2
+                    drawArc(
+                        color = Color.White.copy(alpha = 0.16f),
+                        startAngle = 180f,
+                        sweepAngle = 180f,
+                        useCenter = false,
+                        topLeft = androidx.compose.ui.geometry.Offset(horizontalInset, top),
+                        size = arcSize,
+                        style = Stroke(width = strokeWidth, cap = StrokeCap.Round),
+                    )
+                    if (progress > 0f) {
+                        drawArc(
+                            color = progressColor,
+                            startAngle = 180f,
+                            sweepAngle = 180f * progress,
+                            useCenter = false,
+                            topLeft = androidx.compose.ui.geometry.Offset(horizontalInset, top),
+                            size = arcSize,
+                            style = Stroke(width = strokeWidth, cap = StrokeCap.Round),
+                        )
+                    }
+                }
+                Icon(
+                    icon,
+                    contentDescription = "$label $descriptionSuffix progress",
+                    tint = if (value == null) MaterialTheme.colorScheme.onSurfaceVariant else color,
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(bottom = 2.dp)
+                        .size(iconSize),
+                )
+            }
         }
     }
+}
+
+private fun percent(value: Double, target: Double?): Double? {
+    if (target == null || target <= 0.0) return null
+    return value / target * 100.0
 }
 
 private fun consumedMealsForQuickImportDate(uiState: AppUiState): List<Pair<QuickImportMealType, QuickImportNutrients>> {
@@ -1067,6 +1455,16 @@ private fun consumedMealsForQuickImportDate(uiState: AppUiState): List<Pair<Quic
         }
 }
 
+private fun currentDayTotalsForQuickImportDate(uiState: AppUiState): QuickImportNutrients {
+    if (uiState.healthConnectViewerDate != uiState.inputQuickImportDateTime.toLocalDate()) return emptyQuickImportNutrients()
+    return sumHealthConnectFoods(uiState.healthConnectViewerMeals)
+}
+
+private fun currentDayFoodCountForQuickImportDate(uiState: AppUiState): Int {
+    if (uiState.healthConnectViewerDate != uiState.inputQuickImportDateTime.toLocalDate()) return 0
+    return uiState.healthConnectViewerMeals.size
+}
+
 private fun sumHealthConnectFoods(foods: List<HealthConnectNutritionMeal>): QuickImportNutrients {
     return QuickImportNutrients(
         energy = foods.sumOf { it.energy },
@@ -1076,6 +1474,18 @@ private fun sumHealthConnectFoods(foods: List<HealthConnectNutritionMeal>): Quic
         fat = foods.sumOf { it.totalFat },
         saturatedFat = foods.sumOf { it.saturatedFat },
         fiber = foods.sumOf { it.dietaryFiber },
+    )
+}
+
+private fun emptyQuickImportNutrients(): QuickImportNutrients {
+    return QuickImportNutrients(
+        energy = 0.0,
+        carbohydrate = 0.0,
+        sugar = 0.0,
+        protein = 0.0,
+        fat = 0.0,
+        saturatedFat = 0.0,
+        fiber = 0.0,
     )
 }
 
@@ -1176,6 +1586,22 @@ private fun QuickNutrientDetailPill(
     value: String,
     modifier: Modifier = Modifier,
 ) {
+    if (label.supportsMacroHint()) {
+        MacroHintBox(label = label, modifier = modifier) {
+            QuickNutrientDetailPillContent(label = label, value = value)
+        }
+        return
+    }
+
+    QuickNutrientDetailPillContent(label = label, value = value, modifier = modifier)
+}
+
+@Composable
+private fun QuickNutrientDetailPillContent(
+    label: String,
+    value: String,
+    modifier: Modifier = Modifier,
+) {
     Column(
         modifier = modifier
             .clip(RoundedCornerShape(8.dp))
@@ -1202,6 +1628,10 @@ private fun QuickNutrientDetailPill(
     }
 }
 
+private fun String.supportsMacroHint(): Boolean {
+    return this in setOf("Calories", "Carbs", "Protein", "Fat", "Fiber")
+}
+
 @Composable
 private fun SurfacePanel(
     modifier: Modifier = Modifier,
@@ -1212,7 +1642,7 @@ private fun SurfacePanel(
 ) {
     Surface(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(8.dp),
+        shape = MaterialTheme.shapes.medium,
         color = backgroundColor,
         border = BorderStroke(1.dp, borderColor),
         tonalElevation = 0.dp,
