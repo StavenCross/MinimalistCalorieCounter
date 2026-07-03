@@ -102,6 +102,7 @@ All non-UI files touched in this cleanup are now under the 300-line cap:
   - App preferences read Room first, fall back to CSV, and seed Room during migration.
   - Goals, Add Meal outbox, and app preference writes are mirrored to CSV while Room migration continues.
   - Add Meal writes local meal backup rows to Room for every committed meal food.
+  - Health Connect export and delete attempts write import/export job history rows to Room.
   - Added a real instrumentation round-trip test for `AppRoomStore`.
 
 ## Recommended Extraction Order

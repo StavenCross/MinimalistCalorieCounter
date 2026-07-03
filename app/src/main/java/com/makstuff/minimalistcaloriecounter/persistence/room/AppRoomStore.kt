@@ -75,6 +75,14 @@ class AppRoomStore(context: Context) {
         return database.localMealBackupDao().mealsForDate(date)
     }
 
+    suspend fun writeImportExportJob(job: ImportExportJobEntity) {
+        database.importExportJobDao().upsert(job)
+    }
+
+    suspend fun recentImportExportJobs(limit: Int = 20): List<ImportExportJobEntity> {
+        return database.importExportJobDao().recent(limit)
+    }
+
     fun close() {
         database.close()
     }

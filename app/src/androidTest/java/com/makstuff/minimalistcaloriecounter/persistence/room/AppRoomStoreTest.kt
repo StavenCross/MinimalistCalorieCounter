@@ -128,4 +128,26 @@ class AppRoomStoreTest {
 
         assertEquals(listOf(entity), store.localMealBackupsForDate(loggedAt.toLocalDate()))
     }
+
+    @Test
+    fun roundTripsImportExportJobs() = runBlocking {
+        val startedAt = LocalDateTime.of(2026, 7, 3, 8, 0)
+        val job = ImportExportJobEntity(
+            id = "job-test",
+            type = "health_connect_export",
+            mode = "NutritionOnly",
+            state = "success",
+            startedAt = startedAt,
+            finishedAt = startedAt.plusSeconds(5),
+            dateStart = startedAt.toLocalDate(),
+            dateEnd = startedAt.toLocalDate(),
+            outputPath = "/Downloads/export.csv",
+            recordCount = 12,
+            errorMessage = null,
+        )
+
+        store.writeImportExportJob(job)
+
+        assertEquals(listOf(job), store.recentImportExportJobs())
+    }
 }
