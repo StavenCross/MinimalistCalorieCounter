@@ -86,6 +86,9 @@ All non-UI files touched in this cleanup are now under the 300-line cap:
 - Extracted confirmation dialog host:
   - `AppConfirmationDialogs.kt`
   - reset, import, delete, and Health Connect confirmation prompts now live outside `App.kt`.
+- Extracted Settings page:
+  - `ui/settings/AppSettingsPage.kt`
+  - settings cards, sheets, date pickers, and Health Connect settings actions now live outside `App.kt`.
 - Added a single settings-sheet automation intent:
   - `AppViewModelUiActions.openSettingsSheet(...)`
   - `/settings/open` now navigates to Settings and opens the requested drawer as one command.
