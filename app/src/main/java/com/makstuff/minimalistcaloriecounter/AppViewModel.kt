@@ -14,14 +14,28 @@ import com.makstuff.minimalistcaloriecounter.classes.Archive
 import com.makstuff.minimalistcaloriecounter.classes.Combo
 import com.makstuff.minimalistcaloriecounter.classes.CustomWeights
 import com.makstuff.minimalistcaloriecounter.classes.DatabaseEntry
+import com.makstuff.minimalistcaloriecounter.classes.ActivityLevel
+import com.makstuff.minimalistcaloriecounter.classes.GoalCalculator
+import com.makstuff.minimalistcaloriecounter.classes.GoalFieldKey
+import com.makstuff.minimalistcaloriecounter.classes.GoalMacro
+import com.makstuff.minimalistcaloriecounter.classes.GoalMeasurement
+import com.makstuff.minimalistcaloriecounter.classes.GoalProfile
+import com.makstuff.minimalistcaloriecounter.classes.GoalRecommendation
+import com.makstuff.minimalistcaloriecounter.classes.GoalSex
+import com.makstuff.minimalistcaloriecounter.classes.Goals
+import com.makstuff.minimalistcaloriecounter.classes.GoalsCsv
+import com.makstuff.minimalistcaloriecounter.classes.GoalHistoryEntry
 import com.makstuff.minimalistcaloriecounter.classes.HistoricalMealImporter
 import com.makstuff.minimalistcaloriecounter.classes.Nutrients
 import com.makstuff.minimalistcaloriecounter.classes.QuickImportCommitOptions
 import com.makstuff.minimalistcaloriecounter.classes.QuickImportDatabaseEntryDraft
+import com.makstuff.minimalistcaloriecounter.classes.QuickImportMealType
 import com.makstuff.minimalistcaloriecounter.classes.QuickImportParser
 import com.makstuff.minimalistcaloriecounter.classes.QuickImportPlanner
 import com.makstuff.minimalistcaloriecounter.classes.QuickImportResult
+import com.makstuff.minimalistcaloriecounter.classes.WeeklyWeightLossTarget
 import com.makstuff.minimalistcaloriecounter.health.HealthConnectDeleteResult
+import com.makstuff.minimalistcaloriecounter.health.HealthConnectGoalProfileReadResult
 import com.makstuff.minimalistcaloriecounter.health.HealthConnectNutritionReadResult
 import com.makstuff.minimalistcaloriecounter.health.HealthConnectManager
 import com.makstuff.minimalistcaloriecounter.health.HistoricalMealHealthConnectResult
@@ -171,6 +185,185 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     fun updateQuickImportSettingsVisible(visible: Boolean) {
         _uiState.update { currentState ->
             currentState.copy(quickImportSettingsVisible = visible)
+        }
+    }
+
+    fun updateGoalsSettingsVisible(visible: Boolean) {
+        _uiState.update { currentState ->
+            currentState.copy(goals = currentState.goals.copy(settingsVisible = visible))
+        }
+    }
+
+    fun updateGoalBirthday(date: LocalDate?) {
+        _uiState.update { currentState ->
+            currentState.copy(goals = currentState.goals.copy(profile = currentState.goals.profile.copy(birthday = date)))
+        }
+        goalsWriteToCSV(getApplication<Application>().applicationContext)
+    }
+
+    fun updateGoalSex(sex: GoalSex) {
+        _uiState.update { currentState ->
+            currentState.copy(goals = currentState.goals.copy(profile = currentState.goals.profile.copy(sex = sex)))
+        }
+        goalsWriteToCSV(getApplication<Application>().applicationContext)
+    }
+
+    fun updateGoalActivityLevel(activityLevel: ActivityLevel) {
+        _uiState.update { currentState ->
+            currentState.copy(goals = currentState.goals.copy(profile = currentState.goals.profile.copy(activityLevel = activityLevel)))
+        }
+        goalsWriteToCSV(getApplication<Application>().applicationContext)
+    }
+
+    fun updateGoalWeightLossTarget(target: WeeklyWeightLossTarget) {
+        _uiState.update { currentState ->
+            currentState.copy(goals = currentState.goals.copy(profile = currentState.goals.profile.copy(weightLossTarget = target)))
+        }
+        goalsWriteToCSV(getApplication<Application>().applicationContext)
+    }
+
+    fun updateGoalMeasurement(field: GoalFieldKey, value: Double?) {
+        _uiState.update { currentState ->
+            val profile = currentState.goals.profile
+            val updated = when (field) {
+                GoalFieldKey.HeightCm -> profile.copy(heightCm = profile.heightCm.setManual(value))
+                GoalFieldKey.WeightKg -> profile.copy(weightKg = profile.weightKg.setManual(value))
+                GoalFieldKey.BodyFatPercent -> profile.copy(bodyFatPercent = profile.bodyFatPercent.setManual(value))
+                GoalFieldKey.LeanMassKg -> profile.copy(leanMassKg = profile.leanMassKg.setManual(value))
+                else -> profile
+            }
+            currentState.copy(goals = currentState.goals.copy(profile = updated))
+        }
+        goalsWriteToCSV(getApplication<Application>().applicationContext)
+    }
+
+    fun toggleGoalMeasurementLock(field: GoalFieldKey) {
+        _uiState.update { currentState ->
+            val profile = currentState.goals.profile
+            fun GoalMeasurement.toggled(): GoalMeasurement = copy(locked = !locked)
+            val updated = when (field) {
+                GoalFieldKey.HeightCm -> profile.copy(heightCm = profile.heightCm.toggled())
+                GoalFieldKey.WeightKg -> profile.copy(weightKg = profile.weightKg.toggled())
+                GoalFieldKey.BodyFatPercent -> profile.copy(bodyFatPercent = profile.bodyFatPercent.toggled())
+                GoalFieldKey.LeanMassKg -> profile.copy(leanMassKg = profile.leanMassKg.toggled())
+                else -> profile
+            }
+            currentState.copy(goals = currentState.goals.copy(profile = updated))
+        }
+        goalsWriteToCSV(getApplication<Application>().applicationContext)
+    }
+
+    fun updateGoalMacro(macro: GoalMacro, value: Double?) {
+        _uiState.update { currentState ->
+            val targets = currentState.goals.currentTargets.withValue(macro, value, lock = true)
+            currentState.copy(goals = currentState.goals.copy(currentTargets = targets))
+        }
+        goalsWriteToCSV(getApplication<Application>().applicationContext)
+    }
+
+    fun toggleGoalMacroLock(macro: GoalMacro) {
+        _uiState.update { currentState ->
+            val targets = currentState.goals.currentTargets
+            val updated = if (macro in targets.lockedMacros) targets.unlocked(macro) else targets.withValue(macro, targets.valueFor(macro), lock = true)
+            currentState.copy(goals = currentState.goals.copy(currentTargets = updated))
+        }
+        goalsWriteToCSV(getApplication<Application>().applicationContext)
+    }
+
+    fun recalculateGoalRecommendation(date: LocalDate = LocalDate.now()) {
+        _uiState.update { currentState ->
+            val recommendation = GoalCalculator.recommendTargets(
+                profile = currentState.goals.profile,
+                existingTargets = currentState.goals.currentTargets,
+                date = date,
+            )
+            currentState.copy(
+                goals = currentState.goals.copy(
+                    recommendation = recommendation,
+                    message = if (recommendation == null) {
+                        val missing = currentState.goals.profile.missingRequiredFields(date)
+                        if (missing.isEmpty()) {
+                            "Complete required profile fields and lean mass/body fat to calculate goals."
+                        } else {
+                            "Missing: ${missing.joinToString(", ")}."
+                        }
+                    } else {
+                        null
+                    },
+                )
+            )
+        }
+        goalsWriteToCSV(getApplication<Application>().applicationContext)
+    }
+
+    fun applyGoalRecommendation(date: LocalDate = LocalDate.now()) {
+        _uiState.update { currentState ->
+            val recommendation = currentState.goals.recommendation ?: return@update currentState
+            val history = (currentState.goals.history + GoalHistoryEntry(date, recommendation.targets, "recommended")).sortedBy { it.effectiveDate }
+            currentState.copy(
+                goals = currentState.goals.copy(
+                    currentTargets = recommendation.targets,
+                    history = history,
+                    recommendation = null,
+                    message = "Applied new goal recommendation.",
+                )
+            )
+        }
+        goalsWriteToCSV(getApplication<Application>().applicationContext)
+    }
+
+    fun dismissGoalRecommendation() {
+        _uiState.update { currentState ->
+            currentState.copy(goals = currentState.goals.copy(recommendation = null))
+        }
+        goalsWriteToCSV(getApplication<Application>().applicationContext)
+    }
+
+    fun refreshGoalsFromHealthConnect() {
+        _uiState.update { currentState ->
+            currentState.copy(goals = currentState.goals.copy(message = "Reading Health Connect profile data..."))
+        }
+        viewModelScope.launch {
+            when (val result = healthConnectManager.readGoalProfileSnapshot()) {
+                is HealthConnectGoalProfileReadResult.Success -> {
+                    _uiState.update { currentState ->
+                        val profile = GoalCalculator.applyHealthSnapshot(currentState.goals.profile, result.snapshot)
+                        val recommendation = GoalCalculator.recommendTargets(
+                            profile = profile,
+                            existingTargets = currentState.goals.currentTargets,
+                            date = LocalDate.now(),
+                        )
+                        currentState.copy(
+                            goals = currentState.goals.copy(
+                                profile = profile,
+                                recommendation = recommendation,
+                                message = if (recommendation == null) {
+                                    val missing = profile.missingRequiredFields(LocalDate.now())
+                                    "Updated unlocked fields. Missing: ${missing.joinToString(", ")}."
+                                } else {
+                                    "Updated unlocked fields from Health Connect."
+                                },
+                            )
+                        )
+                    }
+                    goalsWriteToCSV(getApplication<Application>().applicationContext)
+                }
+                HealthConnectGoalProfileReadResult.HealthConnectUnavailable -> {
+                    _uiState.update { currentState ->
+                        currentState.copy(goals = currentState.goals.copy(message = "Health Connect is unavailable."))
+                    }
+                }
+                HealthConnectGoalProfileReadResult.PermissionsMissing -> {
+                    _uiState.update { currentState ->
+                        currentState.copy(goals = currentState.goals.copy(message = "Health Connect profile permissions are missing."))
+                    }
+                }
+                is HealthConnectGoalProfileReadResult.Failed -> {
+                    _uiState.update { currentState ->
+                        currentState.copy(goals = currentState.goals.copy(message = "Health Connect profile read failed: ${result.message}"))
+                    }
+                }
+            }
         }
     }
 
@@ -797,6 +990,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                 inputQuickImportText = "",
                 inputQuickImportDateTime = LocalDateTime.now(),
                 quickImportSnackOverride = false,
+                quickImportMealTypeOverride = null,
                 quickImportMeal = null,
                 quickImportError = null,
                 quickImportResult = null,
@@ -813,6 +1007,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             currentState.copy(
                 inputQuickImportDateTime = LocalDateTime.now(),
                 quickImportSnackOverride = false,
+                quickImportMealTypeOverride = null,
                 quickImportResult = null,
             )
         }
@@ -823,6 +1018,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             currentState.copy(
                 inputQuickImportDateTime = dateTime,
                 quickImportSnackOverride = false,
+                quickImportMealTypeOverride = null,
                 quickImportResult = null,
             )
         }
@@ -832,6 +1028,11 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         _uiState.update { currentState ->
             currentState.copy(
                 quickImportSnackOverride = !currentState.quickImportSnackOverride,
+                quickImportMealTypeOverride = if (!currentState.quickImportSnackOverride) {
+                    QuickImportMealType.Snack
+                } else {
+                    null
+                },
                 quickImportResult = null,
             )
         }
@@ -841,6 +1042,21 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         _uiState.update { currentState ->
             currentState.copy(
                 quickImportSnackOverride = enabled,
+                quickImportMealTypeOverride = if (enabled) {
+                    QuickImportMealType.Snack
+                } else {
+                    null
+                },
+                quickImportResult = null,
+            )
+        }
+    }
+
+    fun updateQuickImportMealTypeOverride(mealType: QuickImportMealType) {
+        _uiState.update { currentState ->
+            currentState.copy(
+                quickImportMealTypeOverride = mealType,
+                quickImportSnackOverride = mealType == QuickImportMealType.Snack,
                 quickImportResult = null,
             )
         }
@@ -1249,6 +1465,16 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    fun goalsResetCSV(overwriteIfExists: Boolean, context: Context) {
+        val folder = context.getExternalFilesDir(null) ?: context.filesDir
+        val file = File(folder, "goals.csv")
+        if (!file.exists() || overwriteIfExists) {
+            csvWriter().open(file) {
+                GoalsCsv.defaultRows().forEach { writeRow(it) }
+            }
+        }
+    }
+
     private fun databaseWriteToCSV(context: Context) {
         val folder = context.getExternalFilesDir(null) ?: context.filesDir
         val file = File(folder, "database.csv")
@@ -1288,6 +1514,30 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             }
         } catch (_: CSVFieldNumDifferentException) {
             throw IllegalStateException(context.getString(R.string.day)+ ": " + context.getString(R.string.csv_wrong_number_fields))
+        }
+    }
+
+    fun goalsUpdateFromCSV(context: Context) {
+        try {
+            val folder = context.getExternalFilesDir(null) ?: context.filesDir
+            val file = File(folder, "goals.csv")
+            if (!file.exists()) return
+            val rows: List<List<String>> = file.readLines()
+                .filter { it.isNotBlank() }
+                .map { line -> line.split(",") }
+            _uiState.update { currentState ->
+                currentState.copy(goals = GoalsCsv.fromRows(rows))
+            }
+        } catch (_: CSVFieldNumDifferentException) {
+            throw IllegalStateException("Goals: " + context.getString(R.string.csv_wrong_number_fields))
+        }
+    }
+
+    private fun goalsWriteToCSV(context: Context) {
+        val folder = context.getExternalFilesDir(null) ?: context.filesDir
+        val file = File(folder, "goals.csv")
+        csvWriter().open(file) {
+            GoalsCsv.toRows(uiState.value.goals).forEach { writeRow(it) }
         }
     }
 

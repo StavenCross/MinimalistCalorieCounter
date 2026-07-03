@@ -8,6 +8,7 @@ import androidx.compose.runtime.snapshots.SnapshotStateList
 import com.makstuff.minimalistcaloriecounter.classes.Archive
 import com.makstuff.minimalistcaloriecounter.classes.Combo
 import com.makstuff.minimalistcaloriecounter.classes.DatabaseEntry
+import com.makstuff.minimalistcaloriecounter.classes.Goals
 import com.makstuff.minimalistcaloriecounter.classes.GridButtonData
 import com.makstuff.minimalistcaloriecounter.classes.HistoricalMealImportPreview
 import com.makstuff.minimalistcaloriecounter.classes.QuickImportMeal
@@ -100,6 +101,7 @@ data class AppUiState(
     val inputQuickImportText: String = "",
     val inputQuickImportDateTime: LocalDateTime = LocalDateTime.now(),
     val quickImportSnackOverride: Boolean = false,
+    val quickImportMealTypeOverride: QuickImportMealType? = null,
     val quickImportMeal: QuickImportMeal? = null,
     val quickImportError: String? = null,
     val quickImportResult: QuickImportResult? = null,
@@ -107,6 +109,7 @@ data class AppUiState(
     val quickImportAddFoodsToDay: Boolean = true,
     val quickImportWriteHealthConnect: Boolean = true,
     val quickImportInProgress: Boolean = false,
+    val goals: Goals = Goals(),
 
     val nameFoodDayAdd: String = "",
     val nameFoodDayEdit: String = "",
@@ -149,9 +152,10 @@ data class AppUiState(
     val indexDatabaseDelete: Int = -1,
 ) {
     val quickImportMealType: QuickImportMealType
-        get() = if (quickImportSnackOverride) {
-            QuickImportMealType.Snack
-        } else {
-            QuickImportMealType.inferFrom(inputQuickImportDateTime)
-        }
+        get() = quickImportMealTypeOverride
+            ?: if (quickImportSnackOverride) {
+                QuickImportMealType.Snack
+            } else {
+                QuickImportMealType.inferFrom(inputQuickImportDateTime)
+            }
 }

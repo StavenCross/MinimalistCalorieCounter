@@ -5,11 +5,19 @@
     <uses-permission android:name="android.permission.health.WRITE_NUTRITION" />
     <uses-permission android:name="android.permission.health.WRITE_WEIGHT" />
     <uses-permission android:name="android.permission.health.READ_NUTRITION" />
+    <uses-permission android:name="android.permission.health.READ_WEIGHT" />
+    <uses-permission android:name="android.permission.health.READ_HEIGHT" />
+    <uses-permission android:name="android.permission.health.READ_BODY_FAT" />
+    <uses-permission android:name="android.permission.health.READ_LEAN_BODY_MASS" />
 
     <!-- For backward compatibility with older Health Connect APK versions -->
     <uses-permission android:name="androidx.health.permission.nutrition.WRITE" />
     <uses-permission android:name="androidx.health.permission.nutrition.READ" />
     <uses-permission android:name="androidx.health.permission.weight.WRITE" />
+    <uses-permission android:name="androidx.health.permission.weight.READ" />
+    <uses-permission android:name="androidx.health.permission.height.READ" />
+    <uses-permission android:name="androidx.health.permission.body_fat.READ" />
+    <uses-permission android:name="androidx.health.permission.lean_body_mass.READ" />
 
     <queries>
         <package android:name="com.google.android.apps.healthdata" />

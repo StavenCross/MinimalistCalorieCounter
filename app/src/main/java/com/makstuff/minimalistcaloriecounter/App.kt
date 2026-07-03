@@ -6,6 +6,7 @@ import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatDelegate
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -95,6 +96,7 @@ import com.makstuff.minimalistcaloriecounter.essentials.NAV_ARCHIVE
 import com.makstuff.minimalistcaloriecounter.essentials.NAV_CREATE
 import com.makstuff.minimalistcaloriecounter.essentials.NAV_DATABASE
 import com.makstuff.minimalistcaloriecounter.essentials.NAV_DAY
+import com.makstuff.minimalistcaloriecounter.essentials.NAV_GOALS
 import com.makstuff.minimalistcaloriecounter.essentials.GENERAL_WEIGHTS
 import com.makstuff.minimalistcaloriecounter.essentials.NavControllerListener
 import com.makstuff.minimalistcaloriecounter.essentials.NavButton
@@ -114,6 +116,7 @@ import com.makstuff.minimalistcaloriecounter.ui.reused.TileArchive
 import com.makstuff.minimalistcaloriecounter.ui.reused.TileIngredient
 import com.makstuff.minimalistcaloriecounter.ui.reused.TileLegendArchive
 import com.makstuff.minimalistcaloriecounter.ui.screens.ScreenDatabaseEntry
+import com.makstuff.minimalistcaloriecounter.ui.screens.ScreenGoals
 import com.makstuff.minimalistcaloriecounter.ui.screens.ScreenHealthConnectNutrition
 import com.makstuff.minimalistcaloriecounter.ui.screens.ScreenEnterWeightOfFood
 import com.makstuff.minimalistcaloriecounter.ui.screens.ScreenInputOrEditArchive
@@ -134,6 +137,11 @@ import java.time.format.DateTimeFormatter
 import android.view.WindowManager
 import androidx.compose.runtime.DisposableEffect
 import com.github.doyaaaaaken.kotlincsv.dsl.csvReader
+
+private val AccentMenu = Color(0xFF90CAF9)
+private val AccentSettings = Color(0xFFFFD166)
+private val AccentMealsNav = Color(0xFFFFB74D)
+private val AccentQuickAddNav = Color(0xFF4FC3F7)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -216,6 +224,7 @@ fun App(
         viewModel.archiveResetCSV(false, context)
         viewModel.dayResetCSV(false, context)
         viewModel.optionsResetFile(false, context)
+        viewModel.goalsResetCSV(false, context)
 
         try {
             viewModel.optionsUpdateFromFile(context)
@@ -243,6 +252,13 @@ fun App(
         } catch (e: IllegalStateException) {
             Toast.makeText(
                 context, context.getString(R.string.day) + " CSV: " + e.message, Toast.LENGTH_LONG
+            ).show()
+        }
+        try {
+            viewModel.goalsUpdateFromCSV(context)
+        } catch (e: IllegalStateException) {
+            Toast.makeText(
+                context, "Goals CSV: " + e.message, Toast.LENGTH_LONG
             ).show()
         }
         delay(1000.milliseconds)//1000 seems enough to prevent glitches from dark mode override loading
@@ -330,8 +346,6 @@ fun App(
 
     @Composable
     fun SettingsPageContent() {
-        var languageMenuExpanded by remember { mutableStateOf(false) }
-        var themeMenuExpanded by remember { mutableStateOf(false) }
         var historicalCleanupConfirmVisible by remember { mutableStateOf(false) }
         val settingsSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
         val cleanupStartDate = uiState.healthConnectNutritionCleanupStartDate
@@ -438,7 +452,7 @@ fun App(
             ModalBottomSheet(
                 onDismissRequest = { viewModel.updateActiveSettingsSheet(null) },
                 sheetState = settingsSheetState,
-                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
             ) {
                 Column(
                     modifier = Modifier
@@ -494,6 +508,54 @@ fun App(
                                 ) {
                                     handleHCInteraction { viewModel.writeHistoricalMealImport() }
                                 }
+                            }
+                        }
+                        "theme" -> {
+                            SheetTitle("Appearance", "Pick the theme that feels best for daily logging.")
+                            OptionsItem(stringArrayResource(R.array.dark_mode_options)[0]) {
+                                viewModel.setTheme(AppTheme.MODE_AUTO, context)
+                                viewModel.updateActiveSettingsSheet(null)
+                            }
+                            OptionsItem(stringArrayResource(R.array.dark_mode_options)[1]) {
+                                viewModel.setTheme(AppTheme.MODE_DAY, context)
+                                viewModel.updateActiveSettingsSheet(null)
+                            }
+                            OptionsItem(stringArrayResource(R.array.dark_mode_options)[2]) {
+                                viewModel.setTheme(AppTheme.MODE_NIGHT, context)
+                                viewModel.updateActiveSettingsSheet(null)
+                            }
+                        }
+                        "language" -> {
+                            SheetTitle("Language", "Choose the app language.")
+                            OptionsItem(stringResource(R.string.always_english)) {
+                                AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags("en"))
+                                viewModel.setDialogLanguageInfo(bool = true)
+                                viewModel.updateActiveSettingsSheet(null)
+                            }
+                            OptionsItem(stringResource(R.string.always_german)) {
+                                AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags("de"))
+                                viewModel.setDialogLanguageInfo(bool = true)
+                                viewModel.updateActiveSettingsSheet(null)
+                            }
+                            OptionsItem(stringResource(R.string.always_french)) {
+                                AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags("fr"))
+                                viewModel.setDialogLanguageInfo(bool = true)
+                                viewModel.updateActiveSettingsSheet(null)
+                            }
+                            OptionsItem(stringResource(R.string.always_italian)) {
+                                AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags("it"))
+                                viewModel.setDialogLanguageInfo(bool = true)
+                                viewModel.updateActiveSettingsSheet(null)
+                            }
+                            OptionsItem(stringResource(R.string.always_spanish)) {
+                                AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags("es"))
+                                viewModel.setDialogLanguageInfo(bool = true)
+                                viewModel.updateActiveSettingsSheet(null)
+                            }
+                            OptionsItem(stringResource(R.string.system_default)) {
+                                AppCompatDelegate.setApplicationLocales(LocaleListCompat.getEmptyLocaleList())
+                                viewModel.setDialogLanguageInfo(bool = true)
+                                viewModel.updateActiveSettingsSheet(null)
                             }
                         }
                         "maintenance" -> {
@@ -623,70 +685,13 @@ fun App(
                 ) {
                     OptionsItem(
                         text = stringResource(R.string.dark_mode),
-                        trailingContent = {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Box {
-                                    DropdownMenu(
-                                        expanded = themeMenuExpanded,
-                                        onDismissRequest = { themeMenuExpanded = false },
-                                        items = listOf(
-                                            DropdownMenuItemData(stringArrayResource(R.array.dark_mode_options)[0]) {
-                                                viewModel.setTheme(AppTheme.MODE_AUTO, context)
-                                            },
-                                            DropdownMenuItemData(stringArrayResource(R.array.dark_mode_options)[1]) {
-                                                viewModel.setTheme(AppTheme.MODE_DAY, context)
-                                            },
-                                            DropdownMenuItemData(stringArrayResource(R.array.dark_mode_options)[2]) {
-                                                viewModel.setTheme(AppTheme.MODE_NIGHT, context)
-                                            },
-                                        ),
-                                    )
-                                }
-                                Text(currentThemeLabel, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.secondary)
-                            }
-                        },
-                        onClick = { themeMenuExpanded = true },
+                        trailingText = currentThemeLabel,
+                        onClick = { viewModel.updateActiveSettingsSheet("theme") },
                     )
                     OptionsItem(
                         text = stringResource(R.string.choose_language),
-                        trailingContent = {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Box {
-                                    DropdownMenu(
-                                        expanded = languageMenuExpanded,
-                                        onDismissRequest = { languageMenuExpanded = false },
-                                        items = listOf(
-                                            DropdownMenuItemData(stringResource(R.string.always_english)) {
-                                                AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags("en"))
-                                                viewModel.setDialogLanguageInfo(bool = true)
-                                            },
-                                            DropdownMenuItemData(stringResource(R.string.always_german)) {
-                                                AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags("de"))
-                                                viewModel.setDialogLanguageInfo(bool = true)
-                                            },
-                                            DropdownMenuItemData(stringResource(R.string.always_french)) {
-                                                AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags("fr"))
-                                                viewModel.setDialogLanguageInfo(bool = true)
-                                            },
-                                            DropdownMenuItemData(stringResource(R.string.always_italian)) {
-                                                AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags("it"))
-                                                viewModel.setDialogLanguageInfo(bool = true)
-                                            },
-                                            DropdownMenuItemData(stringResource(R.string.always_spanish)) {
-                                                AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags("es"))
-                                                viewModel.setDialogLanguageInfo(bool = true)
-                                            },
-                                            DropdownMenuItemData(stringResource(R.string.system_default)) {
-                                                AppCompatDelegate.setApplicationLocales(LocaleListCompat.getEmptyLocaleList())
-                                                viewModel.setDialogLanguageInfo(bool = true)
-                                            },
-                                        ),
-                                    )
-                                }
-                                Text(currentLanguageLabel, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.secondary)
-                            }
-                        },
-                        onClick = { languageMenuExpanded = true },
+                        trailingText = currentLanguageLabel,
+                        onClick = { viewModel.updateActiveSettingsSheet("language") },
                     )
                 }
             }
@@ -731,6 +736,7 @@ fun App(
                         Icon(
                             imageVector = Icons.Default.Menu,
                             contentDescription = "Open navigation menu",
+                            tint = AccentMenu,
                         )
                     }
                 },
@@ -744,6 +750,16 @@ fun App(
                             Icon(
                                 imageVector = Icons.Default.MoreVert,
                                 contentDescription = "Quick Import settings",
+                                tint = AccentSettings,
+                            )
+                        }
+                    }
+                    if (currentRoute == "goals_home") {
+                        IconButton(onClick = { viewModel.updateGoalsSettingsVisible(true) }) {
+                            Icon(
+                                imageVector = Icons.Default.MoreVert,
+                                contentDescription = "Goal settings",
+                                tint = AccentSettings,
                             )
                         }
                     }
@@ -1460,17 +1476,21 @@ fun App(
             NavigationBar(
                 items = listOf(
                     NavigationBarItemData(
-                        "Meals", R.drawable.archive, uiState.navigationBarHighlight == NAV_ARCHIVE
+                        "Meals", R.drawable.archive, uiState.navigationBarHighlight == NAV_ARCHIVE, AccentMealsNav
                     ) { navTo("health_connect_nutrition") },
                     NavigationBarItemData(
-                        "Quick add", R.drawable.plus, uiState.navigationBarHighlight == NAV_DAY
+                        "Quick add", R.drawable.plus, uiState.navigationBarHighlight == NAV_DAY, AccentQuickAddNav
                     ) { navTo("quick_import") },
+                    NavigationBarItemData(
+                        "Goals", R.drawable.goals, uiState.navigationBarHighlight == NAV_GOALS, AccentSettings
+                    ) { navTo("goals_home") },
                 ).map {
                     {
                         NavigationBarItem(
                             name = it.name,
                             iconId = it.iconId,
                             isSelected = it.isSelected,
+                            iconColor = it.iconColor,
                             onClick = it.onClick
                         )
                     }
@@ -1577,6 +1597,25 @@ fun App(
                     onDateChange = { viewModel.updateHealthConnectViewerDate(it) },
                     onRefresh = { viewModel.readHealthConnectNutritionMeals() },
                     onDeleteMeal = { viewModel.deleteHealthConnectNutritionMeal(it) },
+                )
+            }
+
+            composable("goals_home") {
+                ScreenGoals(
+                    uiState = uiState,
+                    onSettingsDismiss = { viewModel.updateGoalsSettingsVisible(false) },
+                    onRefreshHealthConnect = { viewModel.refreshGoalsFromHealthConnect() },
+                    onRecalculate = { viewModel.recalculateGoalRecommendation() },
+                    onApplyRecommendation = { viewModel.applyGoalRecommendation() },
+                    onDismissRecommendation = { viewModel.dismissGoalRecommendation() },
+                    onBirthdayChange = { viewModel.updateGoalBirthday(it) },
+                    onSexChange = { viewModel.updateGoalSex(it) },
+                    onActivityLevelChange = { viewModel.updateGoalActivityLevel(it) },
+                    onWeightLossTargetChange = { viewModel.updateGoalWeightLossTarget(it) },
+                    onMeasurementChange = { field, value -> viewModel.updateGoalMeasurement(field, value) },
+                    onMeasurementLockToggle = { viewModel.toggleGoalMeasurementLock(it) },
+                    onMacroChange = { macro, value -> viewModel.updateGoalMacro(macro, value) },
+                    onMacroLockToggle = { viewModel.toggleGoalMacroLock(it) },
                 )
             }
 
@@ -1880,10 +1919,9 @@ fun App(
                     onToggleHealthConnect = { viewModel.toggleQuickImportWriteHealthConnect() },
                     onRefreshDateTime = { viewModel.refreshQuickImportDateTime() },
                     onDateTimeChange = { viewModel.updateQuickImportDateTime(it) },
-                    onToggleSnackOverride = { viewModel.toggleQuickImportSnackOverride() },
+                    onMealTypeChange = { viewModel.updateQuickImportMealTypeOverride(it) },
                     onImport = { viewModel.quickImportCommit(context) },
                     onClear = { viewModel.resetQuickImport() },
-                    onBack = { navTo("day_home") },
                 )
             }
 
@@ -2156,7 +2194,7 @@ fun SettingsHubCard(
                 if (emphasized) {
                     MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.54f)
                 } else {
-                    MaterialTheme.colorScheme.surfaceContainerHigh
+                    MaterialTheme.colorScheme.surfaceContainer
                 }
             )
             .border(
@@ -2234,6 +2272,10 @@ fun SheetNote(text: String, isError: Boolean = false) {
             .fillMaxWidth()
             .clip(RoundedCornerShape(10.dp))
             .background(MaterialTheme.colorScheme.surfaceContainerHighest)
+            .border(
+                BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.12f)),
+                RoundedCornerShape(10.dp),
+            )
             .padding(horizontal = 12.dp, vertical = 9.dp),
     )
 }
@@ -2309,7 +2351,7 @@ fun OptionsItem(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(12.dp))
-            .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+            .background(MaterialTheme.colorScheme.surfaceContainerHighest)
             .border(
                 width = 1.dp,
                 color = MaterialTheme.colorScheme.outline.copy(alpha = 0.14f),

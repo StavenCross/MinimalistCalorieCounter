@@ -5,10 +5,17 @@ import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import com.makstuff.minimalistcaloriecounter.AppViewModel
+import com.makstuff.minimalistcaloriecounter.classes.ActivityLevel
+import com.makstuff.minimalistcaloriecounter.classes.GoalFieldKey
+import com.makstuff.minimalistcaloriecounter.classes.GoalMacro
+import com.makstuff.minimalistcaloriecounter.classes.GoalSex
+import com.makstuff.minimalistcaloriecounter.classes.Goals
+import com.makstuff.minimalistcaloriecounter.classes.MacroTargets
 import com.makstuff.minimalistcaloriecounter.classes.QuickImportMeal
 import com.makstuff.minimalistcaloriecounter.classes.QuickImportNutrients
 import com.makstuff.minimalistcaloriecounter.classes.QuickImportResult
 import com.makstuff.minimalistcaloriecounter.classes.QuickImportHealthWriteResult
+import com.makstuff.minimalistcaloriecounter.classes.WeeklyWeightLossTarget
 import com.makstuff.minimalistcaloriecounter.health.HealthConnectNutritionMeal
 import org.json.JSONArray
 import org.json.JSONObject
@@ -154,6 +161,23 @@ object AutomationBootstrap {
                         .put("startDate", startDate.toString())
                         .put("endDate", endDate.toString())
                 })
+                "GET" to "/goals/state" -> ok(runOnMain { goalsJson(viewModel.uiState.value.goals) })
+                "POST" to "/goals/settings" -> ok(runOnMain {
+                    viewModel.updateGoalsSettingsVisible(body.optBoolean("visible", true))
+                    goalsJson(viewModel.uiState.value.goals)
+                })
+                "POST" to "/goals/set-profile" -> ok(runOnMain {
+                    applyGoalsProfileBody(body)
+                    goalsJson(viewModel.uiState.value.goals)
+                })
+                "POST" to "/goals/recalculate" -> ok(runOnMain {
+                    viewModel.recalculateGoalRecommendation()
+                    goalsJson(viewModel.uiState.value.goals)
+                })
+                "POST" to "/goals/apply-recommendation" -> ok(runOnMain {
+                    viewModel.applyGoalRecommendation()
+                    goalsJson(viewModel.uiState.value.goals)
+                })
                 "POST" to "/reset-debug-state" -> ok(runOnMain {
                     viewModel.resetQuickImport()
                     viewModel.updateActiveSettingsSheet(null)
@@ -180,6 +204,7 @@ object AutomationBootstrap {
             return when (screen.lowercase().replace("-", "_")) {
                 "quick_add", "quick_import" -> "quick_import"
                 "meals", "health_connect", "health_connect_nutrition" -> "health_connect_nutrition"
+                "goals", "goals_home" -> "goals_home"
                 "settings", "options" -> "settings_home"
                 "database" -> "database_home"
                 "day" -> "day_home"
@@ -203,6 +228,7 @@ object AutomationBootstrap {
                 .put("healthConnectViewerLoading", state.healthConnectViewerLoading)
                 .put("healthConnectViewerMessage", state.healthConnectViewerMessage)
                 .put("healthConnectMeals", JSONArray(state.healthConnectViewerMeals.map { it.toJson() }))
+                .put("goals", goalsJson(state.goals))
                 .put("quickImport", quickImportJson())
                 .put("historicalMealImportMessage", state.historicalMealImportMessage)
                 .put("historicalMealImportInProgress", state.historicalMealImportInProgress)
@@ -262,6 +288,24 @@ object AutomationBootstrap {
                 append(payload)
             }
         }
+
+        private fun applyGoalsProfileBody(body: JSONObject) {
+            if (body.has("birthday")) viewModel.updateGoalBirthday(LocalDate.parse(body.requireString("birthday")))
+            if (body.has("sex")) viewModel.updateGoalSex(GoalSex.valueOf(body.requireString("sex")))
+            if (body.has("activityLevel")) viewModel.updateGoalActivityLevel(ActivityLevel.valueOf(body.requireString("activityLevel")))
+            if (body.has("weightLossTarget")) viewModel.updateGoalWeightLossTarget(WeeklyWeightLossTarget.valueOf(body.requireString("weightLossTarget")))
+            if (body.has("heightCm")) viewModel.updateGoalMeasurement(GoalFieldKey.HeightCm, body.optDoubleOrNull("heightCm"))
+            if (body.has("weightKg")) viewModel.updateGoalMeasurement(GoalFieldKey.WeightKg, body.optDoubleOrNull("weightKg"))
+            if (body.has("bodyFatPercent")) viewModel.updateGoalMeasurement(GoalFieldKey.BodyFatPercent, body.optDoubleOrNull("bodyFatPercent"))
+            if (body.has("leanMassKg")) viewModel.updateGoalMeasurement(GoalFieldKey.LeanMassKg, body.optDoubleOrNull("leanMassKg"))
+            body.optJSONObject("targets")?.let { targets ->
+                if (targets.has("calories")) viewModel.updateGoalMacro(GoalMacro.Calories, targets.optDoubleOrNull("calories"))
+                if (targets.has("protein")) viewModel.updateGoalMacro(GoalMacro.Protein, targets.optDoubleOrNull("protein"))
+                if (targets.has("carbs")) viewModel.updateGoalMacro(GoalMacro.Carbs, targets.optDoubleOrNull("carbs"))
+                if (targets.has("fat")) viewModel.updateGoalMacro(GoalMacro.Fat, targets.optDoubleOrNull("fat"))
+                if (targets.has("fiber")) viewModel.updateGoalMacro(GoalMacro.Fiber, targets.optDoubleOrNull("fiber"))
+            }
+        }
     }
 
     private data class Request(val method: String, val path: String, val body: String)
@@ -271,6 +315,47 @@ private fun JSONObject.requireString(name: String): String {
     require(has(name) && !isNull(name)) { "Missing '$name'" }
     return getString(name)
 }
+
+private fun JSONObject.optDoubleOrNull(name: String): Double? {
+    if (!has(name) || isNull(name)) return null
+    return optDouble(name)
+}
+
+private fun Goals.toJson(): JSONObject = goalsJson(this)
+
+private fun goalsJson(goals: Goals): JSONObject = JSONObject()
+    .put("profile", JSONObject()
+        .put("birthday", goals.profile.birthday?.toString())
+        .put("sex", goals.profile.sex?.name)
+        .put("activityLevel", goals.profile.activityLevel.name)
+        .put("weightLossTarget", goals.profile.weightLossTarget.name)
+        .put("heightCm", goals.profile.heightCm.value)
+        .put("heightLocked", goals.profile.heightCm.locked)
+        .put("weightKg", goals.profile.weightKg.value)
+        .put("weightLocked", goals.profile.weightKg.locked)
+        .put("bodyFatPercent", goals.profile.bodyFatPercent.value)
+        .put("bodyFatLocked", goals.profile.bodyFatPercent.locked)
+        .put("leanMassKg", goals.profile.leanMassKg.value)
+        .put("leanMassLocked", goals.profile.leanMassKg.locked))
+    .put("currentTargets", goals.currentTargets.toJson())
+    .put("activeTargets", goals.activeTargetsFor(LocalDate.now()).toJson())
+    .put("recommendation", goals.recommendation?.let { recommendation ->
+        JSONObject()
+            .put("generatedDate", recommendation.generatedDate.toString())
+            .put("bmr", recommendation.bmr)
+            .put("tdee", recommendation.tdee)
+            .put("warning", recommendation.warning)
+            .put("targets", recommendation.targets.toJson())
+    })
+    .put("message", goals.message)
+
+private fun MacroTargets.toJson(): JSONObject = JSONObject()
+    .put("calories", calories)
+    .put("protein", protein)
+    .put("carbs", carbs)
+    .put("fat", fat)
+    .put("fiber", fiber)
+    .put("lockedMacros", JSONArray(lockedMacros.map { it.name }))
 
 private fun QuickImportMeal.toJson(): JSONObject = JSONObject()
     .put("foods", JSONArray(foods.map { food ->

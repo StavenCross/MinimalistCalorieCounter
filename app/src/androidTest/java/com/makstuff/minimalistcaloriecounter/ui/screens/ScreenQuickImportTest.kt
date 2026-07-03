@@ -10,6 +10,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.makstuff.minimalistcaloriecounter.AppUiState
 import com.makstuff.minimalistcaloriecounter.classes.Archive
 import com.makstuff.minimalistcaloriecounter.classes.Combo
+import com.makstuff.minimalistcaloriecounter.classes.QuickImportMealType
 import com.makstuff.minimalistcaloriecounter.classes.QuickImportParser
 import com.makstuff.minimalistcaloriecounter.ui.theme.AppTheme
 import org.junit.Rule
@@ -41,10 +42,9 @@ class ScreenQuickImportTest {
                     onToggleHealthConnect = {},
                     onRefreshDateTime = {},
                     onDateTimeChange = {},
-                    onToggleSnackOverride = {},
+                    onMealTypeChange = { _: QuickImportMealType -> },
                     onImport = {},
                     onClear = {},
-                    onBack = {},
                 )
             }
         }
@@ -67,10 +67,9 @@ class ScreenQuickImportTest {
                     onToggleHealthConnect = {},
                     onRefreshDateTime = {},
                     onDateTimeChange = {},
-                    onToggleSnackOverride = {},
+                    onMealTypeChange = { _: QuickImportMealType -> },
                     onImport = {},
                     onClear = {},
-                    onBack = {},
                 )
             }
         }

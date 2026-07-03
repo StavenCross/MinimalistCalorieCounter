@@ -3,12 +3,14 @@ package com.makstuff.minimalistcaloriecounter.essentials
 enum class NavButton {
     DAY,
     ARCHIVE,
+    GOALS,
     DATABASE,
     CREATE,
 }
 
 val NAV_DAY = NavButton.DAY
 val NAV_ARCHIVE = NavButton.ARCHIVE
+val NAV_GOALS = NavButton.GOALS
 val NAV_DATABASE = NavButton.DATABASE
 val NAV_CREATE = NavButton.CREATE
 
@@ -78,4 +80,3 @@ val ALPHABET: List<Char> = listOf(
     'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
     'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'
 )
-

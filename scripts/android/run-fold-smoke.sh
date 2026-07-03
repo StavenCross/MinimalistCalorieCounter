@@ -19,6 +19,9 @@ cd "$ROOT_DIR"
 "$ADB" -s "$SERIAL" shell pm grant "$PACKAGE" android.permission.health.WRITE_NUTRITION >/dev/null 2>&1 || true
 "$ADB" -s "$SERIAL" shell pm grant "$PACKAGE" android.permission.health.READ_WEIGHT >/dev/null 2>&1 || true
 "$ADB" -s "$SERIAL" shell pm grant "$PACKAGE" android.permission.health.WRITE_WEIGHT >/dev/null 2>&1 || true
+"$ADB" -s "$SERIAL" shell pm grant "$PACKAGE" android.permission.health.READ_HEIGHT >/dev/null 2>&1 || true
+"$ADB" -s "$SERIAL" shell pm grant "$PACKAGE" android.permission.health.READ_BODY_FAT >/dev/null 2>&1 || true
+"$ADB" -s "$SERIAL" shell pm grant "$PACKAGE" android.permission.health.READ_LEAN_BODY_MASS >/dev/null 2>&1 || true
 
 CSV="${MCC_HISTORICAL_MEAL_CSV:-$HOME/Downloads/meal-log-health-connect-import-2026-07-02-cleaned.csv}"
 if [[ -f "$CSV" ]]; then

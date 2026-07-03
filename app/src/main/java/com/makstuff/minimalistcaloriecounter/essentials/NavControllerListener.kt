@@ -45,6 +45,9 @@ fun NavControllerListener(
             "health_connect_nutrition" ->
                 setNav("Meals", NAV_ARCHIVE)
 
+            "goals_home" ->
+                setNav("Goals", NAV_GOALS)
+
             "settings_home" ->
                 setNav(context.getString(R.string.options), NAV_DAY)
 

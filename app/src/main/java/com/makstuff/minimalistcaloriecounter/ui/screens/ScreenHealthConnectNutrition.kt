@@ -21,17 +21,28 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.BakeryDining
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.EggAlt
+import androidx.compose.material.icons.filled.Grass
 import androidx.compose.material.icons.filled.LocalFireDepartment
+import androidx.compose.material.icons.filled.Opacity
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Restaurant
-import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberDatePickerState
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -42,19 +53,26 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.health.connect.client.records.MealType
 import com.makstuff.minimalistcaloriecounter.AppUiState
+import com.makstuff.minimalistcaloriecounter.classes.GoalCalculator
+import com.makstuff.minimalistcaloriecounter.classes.MacroTargets
+import com.makstuff.minimalistcaloriecounter.classes.QuickImportNutrients
 import com.makstuff.minimalistcaloriecounter.essentials.toFormattedString
 import com.makstuff.minimalistcaloriecounter.health.HealthConnectNutritionMeal
 import java.time.DayOfWeek
+import java.time.Instant
 import java.time.LocalDate
 import java.time.YearMonth
+import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ScreenHealthConnectNutrition(
     uiState: AppUiState,
@@ -70,6 +88,7 @@ fun ScreenHealthConnectNutrition(
     val meals = uiState.healthConnectViewerMeals
     var selectedFood by remember { mutableStateOf<HealthConnectNutritionMeal?>(null) }
     var selectedMealGroup by remember { mutableStateOf<MealGroup?>(null) }
+    var datePickerVisible by remember { mutableStateOf(false) }
 
     selectedFood?.let { food ->
         FoodDetailDialog(
@@ -93,6 +112,17 @@ fun ScreenHealthConnectNutrition(
         )
     }
 
+    if (datePickerVisible) {
+        DatePickerSheet(
+            selectedDate = selectedDate,
+            onDismiss = { datePickerVisible = false },
+            onDateSelected = {
+                datePickerVisible = false
+                onDateChange(it)
+            },
+        )
+    }
+
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
@@ -100,9 +130,11 @@ fun ScreenHealthConnectNutrition(
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
         item {
-            MonthCalendarCard(
+            MealsDateHeader(
                 selectedDate = selectedDate,
-                onDateChange = onDateChange,
+                onPrevious = { onDateChange(selectedDate.minusDays(1)) },
+                onNext = { onDateChange(selectedDate.plusDays(1)) },
+                onDateClick = { datePickerVisible = true },
                 onRefresh = onRefresh,
             )
         }
@@ -111,6 +143,7 @@ fun ScreenHealthConnectNutrition(
             DaySummaryCard(
                 date = selectedDate,
                 meals = meals,
+                targets = uiState.goals.activeTargetsFor(selectedDate),
                 isLoading = uiState.healthConnectViewerLoading,
                 message = uiState.healthConnectViewerMessage,
             )
@@ -155,67 +188,114 @@ fun ScreenHealthConnectNutrition(
 }
 
 @Composable
-private fun MonthCalendarCard(
+private fun MealsDateHeader(
     selectedDate: LocalDate,
-    onDateChange: (LocalDate) -> Unit,
+    onPrevious: () -> Unit,
+    onNext: () -> Unit,
+    onDateClick: () -> Unit,
     onRefresh: () -> Unit,
 ) {
-    val yearMonth = YearMonth.from(selectedDate)
-    val monthStart = yearMonth.atDay(1)
-    val firstDayOffset = dayOffset(monthStart.dayOfWeek)
-    val daysInMonth = yearMonth.lengthOfMonth()
-    val cells = (0 until 42).map { index ->
-        val dayNumber = index - firstDayOffset + 1
-        if (dayNumber in 1..daysInMonth) yearMonth.atDay(dayNumber) else null
-    }
-
     SurfacePanel(
         backgroundColor = MaterialTheme.colorScheme.surfaceContainerHigh,
         borderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.14f),
-        contentPadding = 12,
+        contentPadding = 10,
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Column {
+            IconButton(onClick = onPrevious) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
+                    contentDescription = "Previous day",
+                    tint = Color(0xFF90CAF9),
+                )
+            }
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .clip(RoundedCornerShape(12.dp))
+                    .clickable(onClick = onDateClick)
+                    .padding(vertical = 6.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(1.dp),
+            ) {
                 Text(
-                    text = yearMonth.format(DateTimeFormatter.ofPattern("MMMM yyyy")),
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
+                    text = selectedDate.format(DateTimeFormatter.ofPattern("EEEE")),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Text(
-                    text = "Pick a day",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    text = selectedDate.format(DateTimeFormatter.ofPattern("MMM d, yyyy")),
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
                 )
             }
             IconButton(onClick = onRefresh) {
                 Icon(
                     imageVector = Icons.Default.Refresh,
                     contentDescription = "Refresh meals",
-                    tint = MaterialTheme.colorScheme.primary,
+                    tint = Color(0xFF90CAF9),
+                )
+            }
+            IconButton(onClick = onNext) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                    contentDescription = "Next day",
+                    tint = Color(0xFF90CAF9),
                 )
             }
         }
+    }
+}
 
-        CalendarWeekLabels()
-
-        Column(verticalArrangement = Arrangement.spacedBy(7.dp)) {
-            cells.chunked(7).forEach { week ->
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun DatePickerSheet(
+    selectedDate: LocalDate,
+    onDismiss: () -> Unit,
+    onDateSelected: (LocalDate) -> Unit,
+) {
+    val zoneId = ZoneId.systemDefault()
+    val datePickerState = rememberDatePickerState(
+        initialSelectedDateMillis = selectedDate
+            .atStartOfDay(zoneId)
+            .toInstant()
+            .toEpochMilli(),
+    )
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 14.dp)
+                .padding(bottom = 18.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            DatePicker(state = datePickerState)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                TextButton(onClick = onDismiss, modifier = Modifier.weight(1f)) {
+                    Text("Cancel")
+                }
+                Button(
+                    onClick = {
+                        val millis = datePickerState.selectedDateMillis
+                        if (millis != null) {
+                            onDateSelected(Instant.ofEpochMilli(millis).atZone(zoneId).toLocalDate())
+                        }
+                    },
+                    modifier = Modifier.weight(1f),
                 ) {
-                    week.forEach { date ->
-                        CalendarDayCell(
-                            date = date,
-                            selectedDate = selectedDate,
-                            onDateChange = onDateChange,
-                            modifier = Modifier.weight(1f),
-                        )
-                    }
+                    Text("Set date")
                 }
             }
         }
@@ -296,6 +376,7 @@ private fun CalendarDayCell(
 private fun DaySummaryCard(
     date: LocalDate,
     meals: List<HealthConnectNutritionMeal>,
+    targets: MacroTargets,
     isLoading: Boolean,
     message: String?,
 ) {
@@ -304,6 +385,18 @@ private fun DaySummaryCard(
     val carbs = meals.sumOf { it.totalCarbohydrate }
     val fat = meals.sumOf { it.totalFat }
     val fiber = meals.sumOf { it.dietaryFiber }
+    val progress = GoalCalculator.progress(
+        nutrients = QuickImportNutrients(
+            energy = calories,
+            carbohydrate = carbs,
+            sugar = meals.sumOf { it.sugar },
+            protein = protein,
+            fat = fat,
+            saturatedFat = meals.sumOf { it.saturatedFat },
+            fiber = fiber,
+        ),
+        targets = targets,
+    )
 
     Box(
         modifier = Modifier
@@ -340,7 +433,7 @@ private fun DaySummaryCard(
                 ) {
                     Surface(
                         shape = RoundedCornerShape(999.dp),
-                        color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.62f),
+                        color = AccentGold.copy(alpha = 0.16f),
                     ) {
                         Row(
                             modifier = Modifier.padding(horizontal = 10.dp, vertical = 7.dp),
@@ -350,13 +443,13 @@ private fun DaySummaryCard(
                             Icon(
                                 imageVector = Icons.Default.LocalFireDepartment,
                                 contentDescription = null,
-                                tint = MaterialTheme.colorScheme.secondary,
+                                tint = AccentGold,
                                 modifier = Modifier.size(18.dp),
                             )
                             Text(
                                 text = "${meals.size} foods",
                                 style = MaterialTheme.typography.labelLarge,
-                                color = MaterialTheme.colorScheme.onSecondaryContainer,
+                                color = MaterialTheme.colorScheme.onSurface,
                             )
                         }
                     }
@@ -377,7 +470,54 @@ private fun DaySummaryCard(
                     "Fiber" to "${fiber.toFormattedString(true)}g",
                 )
             )
+            GoalProgressRow(progress)
         }
+    }
+}
+
+@Composable
+private fun GoalProgressRow(progress: MacroTargets) {
+    if (listOf(progress.calories, progress.protein, progress.carbs, progress.fat, progress.fiber).all { it == null }) return
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        ProgressChip(Icons.Default.LocalFireDepartment, progress.calories, "Cal", AccentGold, Modifier.weight(1f))
+        ProgressChip(Icons.Default.EggAlt, progress.protein, "Pro", Color(0xFFFF6E7F), Modifier.weight(1f))
+        ProgressChip(Icons.Default.BakeryDining, progress.carbs, "Carb", Color(0xFFFFB74D), Modifier.weight(1f))
+        ProgressChip(Icons.Default.Opacity, progress.fat, "Fat", Color(0xFF64B5F6), Modifier.weight(1f))
+        ProgressChip(Icons.Default.Grass, progress.fiber, "Fib", Color(0xFF81C784), Modifier.weight(1f))
+    }
+}
+
+@Composable
+private fun ProgressChip(
+    icon: ImageVector,
+    value: Double?,
+    label: String,
+    color: Color,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier
+            .clip(RoundedCornerShape(8.dp))
+            .background(MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.72f))
+            .border(
+                BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.14f)),
+                RoundedCornerShape(8.dp),
+            )
+            .padding(horizontal = 6.dp, vertical = 7.dp),
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(15.dp))
+        Text(
+            text = value?.let { "${it.toFormattedString(true)}%" } ?: "--",
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.Bold,
+            maxLines = 1,
+        )
     }
 }
 
@@ -408,10 +548,10 @@ private fun MealCard(
                 group = group,
                 modifier = Modifier.weight(1f),
             )
-            MacroSummaryChip("C", carbs)
-            MacroSummaryChip("P", protein)
-            MacroSummaryChip("F", fat)
-            MacroSummaryChip("Fi", fiber)
+            MacroSummaryChip(Icons.Default.BakeryDining, carbs)
+            MacroSummaryChip(Icons.Default.EggAlt, protein)
+            MacroSummaryChip(Icons.Default.Opacity, fat)
+            MacroSummaryChip(Icons.Default.Grass, fiber)
             Text(
                 text = "${calories.toFormattedString(true)} kcal",
                 style = MaterialTheme.typography.titleSmall,
@@ -480,7 +620,7 @@ private fun MealTitle(
 
 @Composable
 private fun MacroSummaryChip(
-    label: String,
+    icon: ImageVector,
     value: Double,
 ) {
     Row(
@@ -492,19 +632,18 @@ private fun MacroSummaryChip(
                 RoundedCornerShape(7.dp),
             )
             .heightIn(min = 46.dp)
-            .padding(horizontal = 10.dp, vertical = 7.dp),
-        horizontalArrangement = Arrangement.spacedBy(5.dp),
+            .padding(horizontal = 11.dp, vertical = 7.dp),
+        horizontalArrangement = Arrangement.spacedBy(7.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelMedium,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            maxLines = 1,
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(17.dp),
         )
         Text(
-            text = value.toFormattedString(true),
+            text = "${value.toFormattedString(true)}g",
             style = MaterialTheme.typography.labelMedium,
             fontWeight = FontWeight.SemiBold,
             color = MaterialTheme.colorScheme.onSurface,
@@ -547,6 +686,7 @@ private fun CompactFoodRow(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun MealDetailDialog(
     group: MealGroup,
@@ -561,9 +701,18 @@ private fun MealDetailDialog(
     val sugar = group.foods.sumOf { it.sugar }
     val saturatedFat = group.foods.sumOf { it.saturatedFat }
 
-    AlertDialog(
+    ModalBottomSheet(
         onDismissRequest = onDismiss,
-        title = {
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 14.dp)
+                .padding(bottom = 18.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
@@ -580,10 +729,10 @@ private fun MealDetailDialog(
                     maxLines = 1,
                 )
             }
-        },
-        text = {
             Column(
-                modifier = Modifier.verticalScroll(rememberScrollState()),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 Row(
@@ -591,10 +740,10 @@ private fun MealDetailDialog(
                     horizontalArrangement = Arrangement.spacedBy(6.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    MacroSummaryChip("C", carbs)
-                    MacroSummaryChip("P", protein)
-                    MacroSummaryChip("F", fat)
-                    MacroSummaryChip("Fi", fiber)
+                    MacroSummaryChip(Icons.Default.BakeryDining, carbs)
+                    MacroSummaryChip(Icons.Default.EggAlt, protein)
+                    MacroSummaryChip(Icons.Default.Opacity, fat)
+                    MacroSummaryChip(Icons.Default.Grass, fiber)
                 }
                 MacroGrid(
                     items = listOf(
@@ -616,24 +765,35 @@ private fun MealDetailDialog(
                     }
                 }
             }
-        },
-        confirmButton = {
-            TextButton(onClick = onDismiss) {
+            Button(
+                onClick = onDismiss,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
                 Text("Close")
             }
-        },
-    )
+        }
+    }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun FoodDetailDialog(
     meal: HealthConnectNutritionMeal,
     onDismiss: () -> Unit,
     onDelete: () -> Unit,
 ) {
-    AlertDialog(
+    ModalBottomSheet(
         onDismissRequest = onDismiss,
-        title = {
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 14.dp)
+                .padding(bottom = 18.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(
                     text = meal.name,
@@ -646,8 +806,6 @@ private fun FoodDetailDialog(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-        },
-        text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 MacroGrid(
                     items = listOf(
@@ -662,27 +820,34 @@ private fun FoodDetailDialog(
                     )
                 )
             }
-        },
-        confirmButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Close")
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                TextButton(
+                    onClick = onDelete,
+                    modifier = Modifier.weight(1f),
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Delete,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.size(18.dp),
+                    )
+                    Text(
+                        text = "Delete",
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                }
+                Button(
+                    onClick = onDismiss,
+                    modifier = Modifier.weight(1f),
+                ) {
+                    Text("Close")
+                }
             }
-        },
-        dismissButton = {
-            TextButton(onClick = onDelete) {
-                Icon(
-                    imageVector = Icons.Default.Delete,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.size(18.dp),
-                )
-                Text(
-                    text = "Delete",
-                    color = MaterialTheme.colorScheme.error,
-                )
-            }
-        },
-    )
+        }
+    }
 }
 
 @Composable
@@ -789,7 +954,7 @@ private data class MealGroup(
 private fun mealGroups(meals: List<HealthConnectNutritionMeal>): List<MealGroup> {
     return listOf(
         groupFor(MealType.MEAL_TYPE_BREAKFAST, "Breakfast", Color(0xFF4285F4), meals),
-        groupFor(MealType.MEAL_TYPE_LUNCH, "Lunch", AccentGreen, meals),
+        groupFor(MealType.MEAL_TYPE_LUNCH, "Lunch", Color(0xFF00BCD4), meals),
         groupFor(MealType.MEAL_TYPE_DINNER, "Dinner", Color(0xFFE8710A), meals),
         groupFor(MealType.MEAL_TYPE_SNACK, "Snack", Color(0xFF9C27B0), meals),
         groupFor(MealType.MEAL_TYPE_UNKNOWN, "Other", Color(0xFF607D8B), meals),
@@ -814,5 +979,4 @@ private fun dayOffset(dayOfWeek: DayOfWeek): Int {
     return dayOfWeek.value % 7
 }
 
-private val AccentGreen = Color(0xFF34A853)
 private val AccentGold = Color(0xFFFBBC04)

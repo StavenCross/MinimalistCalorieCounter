@@ -7,11 +7,15 @@ import androidx.health.connect.client.HealthConnectClient
 import androidx.health.connect.client.permission.HealthPermission
 import androidx.health.connect.client.records.metadata.DataOrigin
 import androidx.health.connect.client.request.ReadRecordsRequest
+import androidx.health.connect.client.records.BodyFatRecord
+import androidx.health.connect.client.records.HeightRecord
+import androidx.health.connect.client.records.LeanBodyMassRecord
 import androidx.health.connect.client.records.NutritionRecord
 import androidx.health.connect.client.records.WeightRecord
 import androidx.health.connect.client.time.TimeRangeFilter
 import androidx.health.connect.client.units.Energy
 import androidx.health.connect.client.units.Mass
+import com.makstuff.minimalistcaloriecounter.classes.HealthConnectGoalSnapshot
 import com.makstuff.minimalistcaloriecounter.R
 import com.makstuff.minimalistcaloriecounter.classes.Archive
 import com.makstuff.minimalistcaloriecounter.classes.HistoricalMealFood
@@ -27,6 +31,8 @@ import kotlinx.coroutines.withContext
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.ZoneId
+import java.time.Instant
+import java.time.temporal.ChronoUnit
 import kotlin.time.Duration.Companion.milliseconds
 
 class HealthConnectManager(private val context: Context) {
@@ -54,7 +60,11 @@ class HealthConnectManager(private val context: Context) {
     val permissions = setOf(
         HealthPermission.getReadPermission(NutritionRecord::class),
         HealthPermission.getWritePermission(NutritionRecord::class),
+        HealthPermission.getReadPermission(WeightRecord::class),
         HealthPermission.getWritePermission(WeightRecord::class),
+        HealthPermission.getReadPermission(HeightRecord::class),
+        HealthPermission.getReadPermission(BodyFatRecord::class),
+        HealthPermission.getReadPermission(LeanBodyMassRecord::class),
     )
 
     private val writePermissions = setOf(
@@ -64,6 +74,13 @@ class HealthConnectManager(private val context: Context) {
 
     private val readNutritionPermissions = setOf(
         HealthPermission.getReadPermission(NutritionRecord::class),
+    )
+
+    private val readGoalProfilePermissions = setOf(
+        HealthPermission.getReadPermission(WeightRecord::class),
+        HealthPermission.getReadPermission(HeightRecord::class),
+        HealthPermission.getReadPermission(BodyFatRecord::class),
+        HealthPermission.getReadPermission(LeanBodyMassRecord::class),
     )
 
     suspend fun hasAllPermissions(): Boolean {
@@ -90,6 +107,75 @@ class HealthConnectManager(private val context: Context) {
             client.permissionController.getGrantedPermissions().containsAll(readNutritionPermissions)
         } catch (_: Throwable) {
             false
+        }
+    }
+
+    private suspend fun hasReadGoalProfilePermissions(): Boolean {
+        val client = getClient() ?: return false
+        return try {
+            client.permissionController.getGrantedPermissions().containsAll(readGoalProfilePermissions)
+        } catch (_: Throwable) {
+            false
+        }
+    }
+
+    suspend fun readGoalProfileSnapshot(): HealthConnectGoalProfileReadResult {
+        if (!isSdkAvailable()) return HealthConnectGoalProfileReadResult.HealthConnectUnavailable
+        val client = getClient() ?: return HealthConnectGoalProfileReadResult.HealthConnectUnavailable
+
+        return try {
+            if (!hasReadGoalProfilePermissions()) return HealthConnectGoalProfileReadResult.PermissionsMissing
+            val start = Instant.now().minus(3650, ChronoUnit.DAYS)
+            val end = Instant.now().plus(1, ChronoUnit.DAYS)
+            val weight = client.readRecords(
+                ReadRecordsRequest(
+                    recordType = WeightRecord::class,
+                    timeRangeFilter = TimeRangeFilter.between(start, end),
+                    ascendingOrder = false,
+                    pageSize = 1,
+                )
+            ).records.firstOrNull()
+            val height = client.readRecords(
+                ReadRecordsRequest(
+                    recordType = HeightRecord::class,
+                    timeRangeFilter = TimeRangeFilter.between(start, end),
+                    ascendingOrder = false,
+                    pageSize = 1,
+                )
+            ).records.firstOrNull()
+            val bodyFat = client.readRecords(
+                ReadRecordsRequest(
+                    recordType = BodyFatRecord::class,
+                    timeRangeFilter = TimeRangeFilter.between(start, end),
+                    ascendingOrder = false,
+                    pageSize = 1,
+                )
+            ).records.firstOrNull()
+            val leanMass = client.readRecords(
+                ReadRecordsRequest(
+                    recordType = LeanBodyMassRecord::class,
+                    timeRangeFilter = TimeRangeFilter.between(start, end),
+                    ascendingOrder = false,
+                    pageSize = 1,
+                )
+            ).records.firstOrNull()
+
+            HealthConnectGoalProfileReadResult.Success(
+                HealthConnectGoalSnapshot(
+                    weightKg = weight?.weight?.inKilograms,
+                    weightUpdatedAt = weight?.time?.let { LocalDateTime.ofInstant(it, ZoneId.systemDefault()) },
+                    heightCm = height?.height?.inMeters?.times(100.0),
+                    heightUpdatedAt = height?.time?.let { LocalDateTime.ofInstant(it, ZoneId.systemDefault()) },
+                    bodyFatPercent = bodyFat?.percentage?.value,
+                    bodyFatUpdatedAt = bodyFat?.time?.let { LocalDateTime.ofInstant(it, ZoneId.systemDefault()) },
+                    leanMassKg = leanMass?.mass?.inKilograms,
+                    leanMassUpdatedAt = leanMass?.time?.let { LocalDateTime.ofInstant(it, ZoneId.systemDefault()) },
+                )
+            )
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
+        } catch (e: Throwable) {
+            HealthConnectGoalProfileReadResult.Failed(e.message ?: "Unknown Health Connect profile read error")
         }
     }
 
@@ -608,4 +694,11 @@ class HealthConnectManager(private val context: Context) {
             }
         }
     }
+}
+
+sealed class HealthConnectGoalProfileReadResult {
+    data class Success(val snapshot: HealthConnectGoalSnapshot) : HealthConnectGoalProfileReadResult()
+    data object HealthConnectUnavailable : HealthConnectGoalProfileReadResult()
+    data object PermissionsMissing : HealthConnectGoalProfileReadResult()
+    data class Failed(val message: String) : HealthConnectGoalProfileReadResult()
 }

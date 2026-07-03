@@ -38,5 +38,17 @@ curl --silent --fail \
   "http://127.0.0.1:${HOST_PORT}/quick-import/preview"
 printf '\n'
 
+curl --silent --fail \
+  -H 'content-type: application/json' \
+  -d '{"birthday":"1988-01-01","sex":"Male","heightCm":180,"weightKg":95,"bodyFatPercent":25,"activityLevel":"LightlyActive","weightLossTarget":"OnePound"}' \
+  "http://127.0.0.1:${HOST_PORT}/goals/set-profile"
+printf '\n'
+
+curl --silent --fail \
+  -H 'content-type: application/json' \
+  -d '{}' \
+  "http://127.0.0.1:${HOST_PORT}/goals/recalculate"
+printf '\n'
+
 curl --silent --fail "http://127.0.0.1:${HOST_PORT}/state" >/tmp/mcc-automation-state.json
 echo "Automation smoke passed. State saved to /tmp/mcc-automation-state.json"
