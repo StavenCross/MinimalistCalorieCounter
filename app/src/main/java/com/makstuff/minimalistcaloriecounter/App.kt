@@ -86,16 +86,14 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.makstuff.minimalistcaloriecounter.classes.Nutrients
 import com.makstuff.minimalistcaloriecounter.essentials.ALPHABET
-import com.makstuff.minimalistcaloriecounter.essentials.NAV_ARCHIVE
 import com.makstuff.minimalistcaloriecounter.essentials.NAV_CREATE
 import com.makstuff.minimalistcaloriecounter.essentials.NAV_DATABASE
-import com.makstuff.minimalistcaloriecounter.essentials.NAV_DAY
-import com.makstuff.minimalistcaloriecounter.essentials.NAV_GOALS
 import com.makstuff.minimalistcaloriecounter.essentials.GENERAL_WEIGHTS
 import com.makstuff.minimalistcaloriecounter.essentials.NavControllerListener
 import com.makstuff.minimalistcaloriecounter.essentials.NavButton
 import com.makstuff.minimalistcaloriecounter.essentials.toBodyWeight
 import com.makstuff.minimalistcaloriecounter.essentials.toFormattedString
+import com.makstuff.minimalistcaloriecounter.ui.navigation.AppDestinations
 import com.makstuff.minimalistcaloriecounter.ui.navigation.AppRoutes
 import com.makstuff.minimalistcaloriecounter.ui.navigation.navigateApp
 import com.makstuff.minimalistcaloriecounter.ui.reused.ButtonGrid
@@ -141,9 +139,6 @@ import com.github.doyaaaaaken.kotlincsv.dsl.csvReader
 
 private val AccentMenu = Color(0xFF90CAF9)
 private val AccentSettings = Color(0xFFFFD166)
-private val AccentMealsNav = Color(0xFFFFB74D)
-private val AccentQuickAddNav = Color(0xFF4FC3F7)
-private val AccentGoalsNav = Color(0xFFFF6E7F)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -1070,17 +1065,14 @@ fun App(
         },
         bottomBar = {
             NavigationBar(
-                items = listOf(
+                items = AppDestinations.bottomBar.map { destination ->
                     NavigationBarItemData(
-                        "Meals", R.drawable.archive, uiState.navigationBarHighlight == NAV_ARCHIVE, AccentMealsNav
-                    ) { navTo(AppRoutes.HEALTH_CONNECT_NUTRITION) },
-                    NavigationBarItemData(
-                        "Add Meal", R.drawable.plus, uiState.navigationBarHighlight == NAV_DAY, AccentQuickAddNav
-                    ) { navTo(AppRoutes.QUICK_IMPORT) },
-                    NavigationBarItemData(
-                        "Goals", R.drawable.goals, uiState.navigationBarHighlight == NAV_GOALS, AccentGoalsNav
-                    ) { navTo(AppRoutes.GOALS_HOME) },
-                ).map {
+                        destination.label,
+                        destination.iconId,
+                        uiState.navigationBarHighlight == destination.navButton,
+                        Color(destination.accentArgb),
+                    ) { navTo(destination.route) }
+                }.map {
                     {
                         NavigationBarItem(
                             name = it.name,
@@ -1701,14 +1693,12 @@ fun App(
                     color = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp),
                 )
-                DrawerNavItem(stringResource(R.string.database_navbar)) {
-                    mainMenuExpanded = false
-                    navTo(AppRoutes.DATABASE_HOME)
-                }
-                HorizontalDivider(Modifier.padding(vertical = 8.dp))
-                DrawerNavItem(stringResource(R.string.options)) {
-                    mainMenuExpanded = false
-                    navTo(AppRoutes.SETTINGS_HOME)
+                AppDestinations.drawer.forEachIndexed { index, destination ->
+                    if (index > 0) HorizontalDivider(Modifier.padding(vertical = 8.dp))
+                    DrawerNavItem(destination.label) {
+                        mainMenuExpanded = false
+                        navTo(destination.route)
+                    }
                 }
             }
         }

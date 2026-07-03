@@ -68,6 +68,9 @@ All non-UI files touched in this cleanup are now under the 300-line cap:
 - Centralized top-level app navigation:
   - `ui/navigation/AppNavigation.kt`
   - top-level routes use `launchSingleTop`, `restoreState`, and a stable route set from `AppRoutes`.
+- Centralized first destination metadata:
+  - `ui/navigation/AppDestinations.kt`
+  - bottom-bar order, drawer visibility, nav highlight key, icon id, label, and accent color now share one metadata source.
 - Added a single settings-sheet automation intent:
   - `AppViewModelUiActions.openSettingsSheet(...)`
   - `/settings/open` now navigates to Settings and opens the requested drawer as one command.
