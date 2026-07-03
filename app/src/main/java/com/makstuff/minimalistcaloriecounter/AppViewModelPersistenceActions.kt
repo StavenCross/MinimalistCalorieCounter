@@ -92,15 +92,22 @@ internal class AppViewModelPersistenceActions(
     }
 
     fun updateOptionsFromFile(context: Context) {
-        val options = env.csvStore.readOptions(context) ?: return
-        env.state.update { currentState ->
-            currentState.copy(themeUserSetting = options.theme)
-        }
-
         env.scope.launch {
+            val options = runCatching { env.roomStore.readOptions() }.getOrNull()
+                ?: env.csvStore.readOptions(context)?.also { csvOptions ->
+                    env.launchRoomWrite {
+                        writeOptions(
+                            theme = csvOptions.theme,
+                            syncEnabled = csvOptions.healthConnectSyncEnabled ?: false,
+                            toastsEnabled = csvOptions.healthConnectToastsEnabled ?: false,
+                        )
+                    }
+                }
+                ?: return@launch
             val granted = env.healthConnectManager.hasArchiveSyncPermissions()
             env.state.update { currentState ->
                 currentState.copy(
+                    themeUserSetting = options.theme,
                     healthConnectSyncEnabled = (options.healthConnectSyncEnabled ?: currentState.healthConnectSyncEnabled) && granted,
                     healthConnectToastsEnabled = (options.healthConnectToastsEnabled ?: currentState.healthConnectToastsEnabled) && granted,
                 )
@@ -115,10 +122,26 @@ internal class AppViewModelPersistenceActions(
             syncEnabled = env.uiState.healthConnectSyncEnabled,
             toastsEnabled = env.uiState.healthConnectToastsEnabled,
         )
+        env.launchRoomWrite {
+            writeOptions(
+                theme = env.uiState.themeUserSetting,
+                syncEnabled = env.uiState.healthConnectSyncEnabled,
+                toastsEnabled = env.uiState.healthConnectToastsEnabled,
+            )
+        }
     }
 
     fun resetOptions(overwriteIfExists: Boolean, context: Context) {
         env.csvStore.resetOptions(context, overwriteIfExists)
+        env.csvStore.readOptions(context)?.let { options ->
+            env.launchRoomWrite {
+                writeOptions(
+                    theme = options.theme,
+                    syncEnabled = options.healthConnectSyncEnabled ?: false,
+                    toastsEnabled = options.healthConnectToastsEnabled ?: false,
+                )
+            }
+        }
     }
 
     fun writeArchive(context: Context) {

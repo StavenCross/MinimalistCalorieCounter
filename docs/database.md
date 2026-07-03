@@ -24,8 +24,9 @@ The second Phase 6 slice wires runtime storage for:
 
 - Goals
 - Add Meal Health Connect outbox
+- app preferences
 
-On startup, each surface reads Room first. If Room is empty or unavailable during the migration window, the app falls back to the existing CSV file and seeds Room from that CSV data. Writes are mirrored to CSV during the transition so rollback and manual troubleshooting remain possible.
+On startup, each migrated surface reads Room first. If Room is empty or unavailable during the migration window, the app falls back to the existing CSV file and seeds Room from that CSV data. Writes are mirrored to CSV during the transition so rollback and manual troubleshooting remain possible.
 
 ## Backup
 
@@ -56,7 +57,7 @@ Bundled defaults live under `app/src/main/res/raw`.
 
 `CsvRoomSeedPlanner` converts existing Goals and Add Meal outbox CSV rows into Room seed objects before any database write occurs. Corrupt outbox CSV input is rejected before Room insertion so migration wiring can fail without partially mutating the database.
 
-Runtime CSV fallback currently applies to Goals and Add Meal outbox data. Food database, day data, archive data, app preferences, local meal backup records, and import/export job history still need full Room runtime wiring.
+Runtime CSV fallback currently applies to Goals, Add Meal outbox data, and app preferences. Food database, day data, archive data, local meal backup records, and import/export job history still need full Room runtime wiring.
 
 ## Food Database
 

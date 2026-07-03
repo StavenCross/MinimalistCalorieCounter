@@ -10,6 +10,8 @@ import com.makstuff.minimalistcaloriecounter.classes.QuickImportHealthPayload
 import com.makstuff.minimalistcaloriecounter.classes.QuickImportMealType
 import com.makstuff.minimalistcaloriecounter.classes.QuickImportOutboxItem
 import com.makstuff.minimalistcaloriecounter.classes.QuickImportOutboxState
+import com.makstuff.minimalistcaloriecounter.persistence.AppOptionsFile
+import com.makstuff.minimalistcaloriecounter.ui.theme.AppTheme
 import java.time.LocalDate
 import java.time.LocalDateTime
 import kotlinx.coroutines.runBlocking
@@ -80,5 +82,23 @@ class AppRoomStoreTest {
 
         assertEquals(goals, store.readGoals())
         assertEquals(listOf(outbox), store.readQuickImportOutbox())
+    }
+
+    @Test
+    fun roundTripsOptions() = runBlocking {
+        store.writeOptions(
+            theme = AppTheme.MODE_AUTO,
+            syncEnabled = true,
+            toastsEnabled = false,
+        )
+
+        assertEquals(
+            AppOptionsFile(
+                theme = AppTheme.MODE_AUTO,
+                healthConnectSyncEnabled = true,
+                healthConnectToastsEnabled = false,
+            ),
+            store.readOptions(),
+        )
     }
 }
