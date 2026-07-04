@@ -113,6 +113,9 @@ object AutomationBootstrap {
                     viewModel.quickImportRetryHealthConnect(context, outboxId)
                     JSONObject().put("started", true).put("id", outboxId).put("quickImport", quickImportJson())
                 })
+                "POST" to "/quick-import/outbox/clear" -> ok(runOnMain {
+                    clearQuickImportOutbox(context, viewModel, body).put("quickImport", quickImportJson())
+                })
                 "POST" to "/meals/select-date" -> ok(runOnMain {
                     val date = LocalDate.parse(body.requireString("date"))
                     viewModel.updateHealthConnectViewerDate(date)
@@ -125,26 +128,16 @@ object AutomationBootstrap {
                         .put("started", true)
                 })
                 "POST" to "/health-connect/delete-range" -> ok(runOnMain {
-                    val startDate = LocalDate.parse(body.requireString("startDate"))
-                    val endDate = LocalDate.parse(body.requireString("endDate"))
-                    viewModel.updateHealthConnectNutritionCleanupStartDate(startDate)
-                    viewModel.updateHealthConnectNutritionCleanupEndDate(endDate)
-                    viewModel.removeHealthConnectNutritionRange()
-                    JSONObject()
-                        .put("started", true)
-                        .put("startDate", startDate.toString())
-                        .put("endDate", endDate.toString())
+                    deleteHealthRange(viewModel, body)
+                })
+                "POST" to "/health-connect/preview-delete-range" -> ok(runOnMain {
+                    previewHealthDeleteRange(viewModel, body)
+                })
+                "POST" to "/health-connect/export-options" -> ok(runOnMain {
+                    updateHealthExportOptions(viewModel, body)
                 })
                 "POST" to "/health-connect/export-range" -> ok(runOnMain {
-                    val startDate = LocalDate.parse(body.requireString("startDate"))
-                    val endDate = LocalDate.parse(body.requireString("endDate"))
-                    viewModel.updateHealthConnectExportStartDate(startDate)
-                    viewModel.updateHealthConnectExportEndDate(endDate)
-                    viewModel.exportHealthConnectRange()
-                    JSONObject()
-                        .put("started", true)
-                        .put("startDate", startDate.toString())
-                        .put("endDate", endDate.toString())
+                    exportHealthRange(viewModel, body)
                 })
                 "GET" to "/goals/state" -> ok(runOnMain { goalsJson(viewModel.uiState.value.goals) })
                 "POST" to "/goals/settings" -> ok(runOnMain {
@@ -237,6 +230,7 @@ object AutomationBootstrap {
                 .put("healthConnectExportEndDate", state.healthConnectExportEndDate.toString())
                 .put("healthConnectExportInProgress", state.healthConnectExportInProgress)
                 .put("healthConnectExportMessage", state.healthConnectExportMessage)
+                .put("healthConnect", healthOptionsJson(viewModel))
         }
 
         private fun quickImportJson(): JSONObject {

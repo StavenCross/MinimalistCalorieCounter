@@ -49,6 +49,11 @@ class AppRoomStore(context: Context) {
         items.forEach { writeQuickImportOutboxItem(it) }
     }
 
+    suspend fun deleteQuickImportOutboxItems(ids: List<String>) {
+        if (ids.isEmpty()) return
+        database.quickImportOutboxDao().deleteItems(ids)
+    }
+
     suspend fun readOptions(): AppOptionsFile? {
         val values = database.appPreferenceDao().list().associate { it.preferenceKey to it.preferenceValue }
         if (values.isEmpty()) return null

@@ -4,9 +4,13 @@ import { AdbClient, CommandRunner } from "../adb.js";
 import {
   ConnectInput,
   createToolContext,
+  deleteHealthRange,
   exportHealthRange,
   openSettingsPanel,
+  previewHealthDeleteRange,
+  quickImportOutboxClear,
   quickImportRetry,
+  setHealthExportOptions,
   setGoalsMacro,
   setGoalsProfile,
   toggleGoalsMeasurementLock,
@@ -87,7 +91,7 @@ test("goals tools post to the bridge", async () => {
   ]);
 });
 
-test("health export posts date range to the bridge", async () => {
+test("health export posts date range and options to the bridge", async () => {
   const calls: Array<{ path: string; body: Record<string, unknown> }> = [];
   const ctx = {
     ...createToolContext(async () => ({ stdout: "", stderr: "" })),
@@ -100,11 +104,44 @@ test("health export posts date range to the bridge", async () => {
     }),
   };
 
-  assert.deepEqual(await exportHealthRange(ctx, "2026-07-01", "2026-07-02", 18765), { ok: true });
+  assert.deepEqual(await setHealthExportOptions(ctx, "NutritionAndGoals", true, 18765), { ok: true });
+  assert.deepEqual(await exportHealthRange(ctx, "2026-07-01", "2026-07-02", "Full", false, 18765), { ok: true });
   assert.deepEqual(calls, [
     {
+      path: "/health-connect/export-options",
+      body: { mode: "NutritionAndGoals", redacted: true },
+    },
+    {
       path: "/health-connect/export-range",
-      body: { startDate: "2026-07-01", endDate: "2026-07-02" },
+      body: { startDate: "2026-07-01", endDate: "2026-07-02", mode: "Full", redacted: false },
+    },
+  ]);
+});
+
+test("health cleanup preview and delete post mode to the bridge", async () => {
+  const calls: Array<{ path: string; body: Record<string, unknown> }> = [];
+  const ctx = {
+    ...createToolContext(async () => ({ stdout: "", stderr: "" })),
+    bridgeFor: () => ({
+      post: async (path: string, body: Record<string, unknown>) => {
+        calls.push({ path, body });
+        return { ok: true };
+      },
+      get: async () => ({ ok: true }),
+    }),
+  };
+
+  await previewHealthDeleteRange(ctx, "2026-07-01", "2026-07-02", "AddMeal", 18765);
+  await deleteHealthRange(ctx, "2026-07-01", "2026-07-02", "AllAppNutrition", 18765);
+
+  assert.deepEqual(calls, [
+    {
+      path: "/health-connect/preview-delete-range",
+      body: { startDate: "2026-07-01", endDate: "2026-07-02", mode: "AddMeal" },
+    },
+    {
+      path: "/health-connect/delete-range",
+      body: { startDate: "2026-07-01", endDate: "2026-07-02", mode: "AllAppNutrition" },
     },
   ]);
 });
@@ -145,5 +182,9 @@ test("quick import retry posts outbox id to the bridge", async () => {
   };
 
   assert.deepEqual(await quickImportRetry(ctx, "abc123", 18765), { ok: true });
-  assert.deepEqual(calls, [{ path: "/quick-import/retry", body: { id: "abc123" } }]);
+  assert.deepEqual(await quickImportOutboxClear(ctx, "abc123", true, 18765), { ok: true });
+  assert.deepEqual(calls, [
+    { path: "/quick-import/retry", body: { id: "abc123" } },
+    { path: "/quick-import/outbox/clear", body: { id: "abc123", attentionOnly: true } },
+  ]);
 });

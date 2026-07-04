@@ -73,6 +73,8 @@ Cleanup modes are:
 
 Cleanup must be previewed before deletion. Preview scans the selected date range and reports total matching records plus split counts for historical import records, Add Meal records, and legacy Daily Total records. Delete uses the same classifier as preview so the confirmation count and actual deletion target stay aligned.
 
+Debug automation and the MCP server expose cleanup preview separately from deletion. This keeps automated destructive tests aligned with the Settings UI rule that a preview must happen before delete.
+
 ## Export
 
 Settings can export Health Connect CSV files to Downloads. Export modes are:
@@ -82,3 +84,5 @@ Settings can export Health Connect CSV files to Downloads. Export modes are:
 - Full Health Connect export
 
 Redacted export is enabled by default for ChatGPT check-ins. It omits Health Connect record ids, client record ids, client record version, data-origin package, recording method, last-modified time, and the raw record text while keeping dates, times, calories, macros, meal type, and available body metrics. Raw/full export remains available by turning redaction off and selecting the full mode.
+
+Debug automation and the MCP server can set export mode and redaction before triggering an export so emulator smoke tests cover all export choices without manual drawer navigation.

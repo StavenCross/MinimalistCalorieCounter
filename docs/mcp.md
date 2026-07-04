@@ -37,12 +37,18 @@ npm start
   - Commits an Add Meal meal through the real app path.
 - `mcc_quick_import_retry`
   - Retries a failed or pending Add Meal Health Connect write by outbox id.
+- `mcc_quick_import_outbox_clear`
+  - Clears one Add Meal outbox row or all pending/failed/retrying rows for debug test setup.
 - `mcc_select_meals_date`
   - Selects a Meals page date.
 - `mcc_health_read_day`
   - Starts a Health Connect read for a date.
+- `mcc_health_preview_delete_range`
+  - Previews matching app-owned Health Connect Nutrition rows before deletion.
 - `mcc_health_delete_range`
   - Deletes app-owned Health Connect Nutrition rows in a date range.
+- `mcc_health_export_options`
+  - Sets Health Connect export mode and redaction options.
 - `mcc_health_export_range`
   - Exports readable Health Connect records in a date range to device Downloads.
 - `mcc_open_settings_panel`

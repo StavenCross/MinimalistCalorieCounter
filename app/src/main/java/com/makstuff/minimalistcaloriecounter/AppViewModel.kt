@@ -224,6 +224,9 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     fun quickImportRetryHealthConnect(context: Context, outboxId: String) = quickImportRetryActions.retry(context, outboxId)
 
+    fun quickImportClearOutbox(context: Context, outboxId: String?, attentionOnly: Boolean) =
+        quickImportRetryActions.clear(context, outboxId, attentionOnly)
+
     fun archiveAddEntry(date: LocalDate, bodyWeight: String, nutrients: Nutrients, context: Context) =
         archiveDayActions.addArchiveEntry(date, bodyWeight, nutrients, context)
 

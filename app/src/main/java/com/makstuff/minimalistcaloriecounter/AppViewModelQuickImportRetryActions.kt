@@ -58,5 +58,23 @@ internal class AppViewModelQuickImportRetryActions(
             }
         }
     }
-}
 
+    fun clear(context: Context, outboxId: String?, attentionOnly: Boolean) {
+        val removedIds = env.uiState.quickImportOutbox
+            .filter { item ->
+                val matchesTarget = outboxId == null || item.id == outboxId
+                val matchesState = !attentionOnly || item.needsAttention
+                matchesTarget && matchesState
+            }
+            .map { it.id }
+            .toSet()
+        if (removedIds.isEmpty()) return
+
+        val retained = env.uiState.quickImportOutbox.filterNot { it.id in removedIds }
+        env.csvStore.writeQuickImportOutbox(context, retained)
+        env.launchRoomWrite {
+            deleteQuickImportOutboxItems(removedIds.toList())
+        }
+        env.state.update { it.copy(quickImportOutbox = retained) }
+    }
+}

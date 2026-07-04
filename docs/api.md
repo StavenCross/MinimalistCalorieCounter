@@ -38,14 +38,23 @@ curl http://127.0.0.1:18765/health
 - `POST /quick-import/retry`
   - Body: `{ "id": "<outbox-id>" }`
   - Retries one Add Meal Health Connect write from stored outbox payloads.
+- `POST /quick-import/outbox/clear`
+  - Body: `{ "id": "<optional-outbox-id>", "attentionOnly": true }`
+  - Clears one outbox row or all pending/failed/retrying rows for debug test setup.
 - `POST /meals/select-date`
   - Body: `{ "date": "YYYY-MM-DD" }`
 - `POST /health-connect/read-day`
   - Starts a Health Connect read for one date.
+- `POST /health-connect/preview-delete-range`
+  - Body: `{ "startDate": "YYYY-MM-DD", "endDate": "YYYY-MM-DD", "mode": "HistoricalImports" | "AddMeal" | "AllAppNutrition" }`
+  - Starts cleanup preview for app-owned Nutrition records in an inclusive date range.
 - `POST /health-connect/delete-range`
-  - Starts deletion of app-owned Nutrition records in an inclusive date range.
+  - Starts deletion of previously previewed app-owned Nutrition records in an inclusive date range.
+- `POST /health-connect/export-options`
+  - Body: `{ "mode": "NutritionOnly" | "NutritionAndGoals" | "Full", "redacted": true }`
+  - Updates export mode/redaction options for test automation.
 - `POST /health-connect/export-range`
-  - Starts CSV export of readable Health Connect records in an inclusive date range.
+  - Starts CSV export of readable Health Connect records in an inclusive date range. The same body may include `mode` and `redacted`.
 - `GET /goals/state`
   - Returns the current Goals profile, targets, active targets, and recommendation state.
 - `POST /goals/settings`
