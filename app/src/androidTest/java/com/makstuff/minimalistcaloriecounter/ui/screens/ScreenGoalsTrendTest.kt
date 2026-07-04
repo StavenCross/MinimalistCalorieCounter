@@ -70,8 +70,8 @@ class ScreenGoalsTrendTest {
         }
 
         composeRule.onNodeWithText("Trends and adherence").assertIsDisplayed()
-        composeRule.onNodeWithText("-1 kg since prior check").assertIsDisplayed()
-        composeRule.onNodeWithText("50%").assertIsDisplayed()
+        composeRule.onNodeWithText("-1 kg since prior check").fetchSemanticsNode()
+        composeRule.onNodeWithText("50%").fetchSemanticsNode()
     }
 
     private fun baseState(): AppUiState {

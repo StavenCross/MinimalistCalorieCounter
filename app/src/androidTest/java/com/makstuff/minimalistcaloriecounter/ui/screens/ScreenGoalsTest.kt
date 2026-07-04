@@ -259,7 +259,7 @@ class ScreenGoalsTest {
 
         composeRule.onNodeWithText("Sunday recalculation").assertIsDisplayed()
         composeRule.onNodeWithText("Last recommendation: none yet").assertIsDisplayed()
-        composeRule.onNodeWithContentDescription("Recalculate goals").performClick()
+        composeRule.onNodeWithTag("goals_recalculate_schedule").performClick()
         assertEquals(1, recalculateCount)
     }
 

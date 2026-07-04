@@ -35,6 +35,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -85,7 +86,7 @@ internal fun GoalHeroCard(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            IconButton(onClick = onRecalculate) {
+            IconButton(onClick = onRecalculate, modifier = Modifier.testTag("goals_recalculate_hero")) {
                 Icon(
                     imageVector = Icons.Default.Calculate,
                     contentDescription = "Recalculate goals",
@@ -182,7 +183,7 @@ internal fun RecalculationCard(
                     color = if (status.dueToday) AccentGoals else MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            IconButton(onClick = onRecalculate) {
+            IconButton(onClick = onRecalculate, modifier = Modifier.testTag("goals_recalculate_schedule")) {
                 Icon(Icons.Default.Calculate, contentDescription = "Recalculate goals", tint = AccentGoals)
             }
         }

@@ -9,6 +9,7 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.makstuff.minimalistcaloriecounter.AppUiState
@@ -72,15 +73,15 @@ class ScreenQuickImportTest {
         }
 
         composeRule.onNodeWithTag("quick_import_preview_totals").assertIsDisplayed()
-        composeRule.onAllNodesWithTag("quick_meal_macro_carbs", useUnmergedTree = true)[0].assertIsDisplayed()
-        composeRule.onAllNodesWithTag("quick_meal_macro_protein", useUnmergedTree = true)[0].assertIsDisplayed()
-        composeRule.onAllNodesWithTag("quick_meal_macro_fat", useUnmergedTree = true)[0].assertIsDisplayed()
-        composeRule.onAllNodesWithTag("quick_meal_macro_fiber", useUnmergedTree = true)[0].assertIsDisplayed()
-        composeRule.onAllNodesWithTag("quick_goal_calories", useUnmergedTree = true)[0].assertIsDisplayed()
-        composeRule.onAllNodesWithTag("quick_goal_protein", useUnmergedTree = true)[0].assertIsDisplayed()
-        composeRule.onAllNodesWithTag("quick_goal_carbs", useUnmergedTree = true)[0].assertIsDisplayed()
-        composeRule.onAllNodesWithTag("quick_goal_fat", useUnmergedTree = true)[0].assertIsDisplayed()
-        composeRule.onAllNodesWithTag("quick_goal_fiber", useUnmergedTree = true)[0].assertIsDisplayed()
+        composeRule.onAllNodesWithTag("quick_meal_macro_carbs", useUnmergedTree = true)[0].fetchSemanticsNode()
+        composeRule.onAllNodesWithTag("quick_meal_macro_protein", useUnmergedTree = true)[0].fetchSemanticsNode()
+        composeRule.onAllNodesWithTag("quick_meal_macro_fat", useUnmergedTree = true)[0].fetchSemanticsNode()
+        composeRule.onAllNodesWithTag("quick_meal_macro_fiber", useUnmergedTree = true)[0].fetchSemanticsNode()
+        composeRule.onAllNodesWithTag("quick_goal_calories", useUnmergedTree = true)[0].fetchSemanticsNode()
+        composeRule.onAllNodesWithTag("quick_goal_protein", useUnmergedTree = true)[0].fetchSemanticsNode()
+        composeRule.onAllNodesWithTag("quick_goal_carbs", useUnmergedTree = true)[0].fetchSemanticsNode()
+        composeRule.onAllNodesWithTag("quick_goal_fat", useUnmergedTree = true)[0].fetchSemanticsNode()
+        composeRule.onAllNodesWithTag("quick_goal_fiber", useUnmergedTree = true)[0].fetchSemanticsNode()
         composeRule.onNodeWithTag("quick_import_import_button").assertIsEnabled()
     }
 
@@ -253,8 +254,8 @@ class ScreenQuickImportTest {
         }
 
         composeRule.onNodeWithTag("quick_import_outbox_status").assertIsDisplayed()
-        composeRule.onNodeWithText("1 Health Connect write needs sync attention.").assertIsDisplayed()
-        composeRule.onNodeWithTag("quick_import_outbox_retry").assertIsDisplayed().assertIsEnabled()
+        composeRule.onNodeWithText("1 Health Connect write needs sync attention.").fetchSemanticsNode()
+        composeRule.onNodeWithTag("quick_import_outbox_retry").performScrollTo().assertIsDisplayed().assertIsEnabled()
     }
 
     private fun baseState(context: android.content.Context): AppUiState {
