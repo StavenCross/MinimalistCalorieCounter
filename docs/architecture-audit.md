@@ -74,6 +74,9 @@ All non-UI files touched in this cleanup are now under the 300-line cap:
 - Extracted app chrome components:
   - `ui/navigation/AppChrome.kt`
   - bottom navigation and hamburger drawer now live outside `App.kt` while preserving destination metadata and route behavior.
+- Extracted top app bar:
+  - `ui/navigation/AppTopBar.kt`
+  - title, hamburger action, and page-specific top-right settings actions now live outside `App.kt`.
 - Extracted Health Connect sync dialogs:
   - `AppHealthConnectDialogs.kt`
   - progress, keep-screen-on behavior, and sync error confirmation now live outside `App.kt`.

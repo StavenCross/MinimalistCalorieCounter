@@ -4,7 +4,6 @@ import android.content.Intent
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -21,28 +20,20 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
@@ -81,6 +72,7 @@ import com.makstuff.minimalistcaloriecounter.essentials.toFormattedString
 import com.makstuff.minimalistcaloriecounter.ui.navigation.AppBottomBar
 import com.makstuff.minimalistcaloriecounter.ui.navigation.AppMainDrawer
 import com.makstuff.minimalistcaloriecounter.ui.navigation.AppRoutes
+import com.makstuff.minimalistcaloriecounter.ui.navigation.AppTopBar
 import com.makstuff.minimalistcaloriecounter.ui.navigation.navigateApp
 import com.makstuff.minimalistcaloriecounter.ui.reused.ButtonGrid
 import com.makstuff.minimalistcaloriecounter.ui.reused.ButtonText
@@ -102,7 +94,6 @@ import com.makstuff.minimalistcaloriecounter.ui.screens.ScreenShowFoodAll
 import com.makstuff.minimalistcaloriecounter.ui.screens.ScreenShowFoodSelection
 import com.makstuff.minimalistcaloriecounter.ui.screens.ScreenWithHoverCard
 import com.makstuff.minimalistcaloriecounter.ui.settings.AppSettingsPage
-import com.makstuff.minimalistcaloriecounter.ui.theme.AppTheme
 import com.makstuff.minimalistcaloriecounter.health.HealthConnectManager
 import com.makstuff.minimalistcaloriecounter.health.DayCheckInExporter
 import androidx.health.connect.client.HealthConnectClient
@@ -110,9 +101,6 @@ import androidx.health.connect.client.PermissionController
 import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.delay
 import java.time.LocalDateTime
-
-private val AccentMenu = Color(0xFF90CAF9)
-private val AccentSettings = Color(0xFFFFD166)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -264,52 +252,12 @@ fun App(
     Scaffold(
         containerColor = MaterialTheme.colorScheme.surfaceContainer,
         topBar = {
-            TopAppBar(
-                title = { Text(text = uiState.topBarTitle) },
-                navigationIcon = {
-                    IconButton(onClick = { mainMenuExpanded = true }) {
-                        Icon(
-                            imageVector = Icons.Default.Menu,
-                            contentDescription = "Open navigation menu",
-                            tint = AccentMenu,
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainer,
-                    actionIconContentColor = MaterialTheme.colorScheme.onSurface,
-                ),
-                actions = {
-                    if (currentRoute == AppRoutes.QUICK_IMPORT) {
-                        IconButton(onClick = { viewModel.updateQuickImportSettingsVisible(true) }) {
-                            Icon(
-                                imageVector = Icons.Default.MoreVert,
-                                contentDescription = "Add Meal settings",
-                                tint = AccentSettings,
-                            )
-                        }
-                    }
-                    if (currentRoute == AppRoutes.GOALS_HOME) {
-                        IconButton(onClick = { viewModel.updateGoalsSettingsVisible(true) }) {
-                            Icon(
-                                imageVector = Icons.Default.MoreVert,
-                                contentDescription = "Goal settings",
-                                tint = AccentSettings,
-                            )
-                        }
-                    }
-                    AppConfirmationDialogs(
-                        uiState = uiState,
-                        viewModel = viewModel,
-                        context = context,
-                        fileLaunchers = fileLaunchers,
-                        healthConnectManager = healthConnectManager,
-                        healthConnectRequestPermissionLauncher = healthConnectRequestPermissionLauncher,
-                        onNavigate = { navTo(it) },
-                        onNavigateBack = { navBack() },
-                    )
-
-                }
+            AppTopBar(
+                title = uiState.topBarTitle,
+                currentRoute = currentRoute,
+                onOpenMenu = { mainMenuExpanded = true },
+                onOpenQuickImportSettings = { viewModel.updateQuickImportSettingsVisible(true) },
+                onOpenGoalsSettings = { viewModel.updateGoalsSettingsVisible(true) },
             )
         },
         bottomBar = {
@@ -909,7 +857,18 @@ fun App(
         }
     }
 
-        if (mainMenuExpanded) AppMainDrawer(onDismiss = { mainMenuExpanded = false }, onNavigate = { navTo(it) })
+    AppConfirmationDialogs(
+        uiState = uiState,
+        viewModel = viewModel,
+        context = context,
+        fileLaunchers = fileLaunchers,
+        healthConnectManager = healthConnectManager,
+        healthConnectRequestPermissionLauncher = healthConnectRequestPermissionLauncher,
+        onNavigate = { navTo(it) },
+        onNavigateBack = { navBack() },
+    )
+
+    if (mainMenuExpanded) AppMainDrawer(onDismiss = { mainMenuExpanded = false }, onNavigate = { navTo(it) })
     }
 
     HealthConnectSyncDialogs(
