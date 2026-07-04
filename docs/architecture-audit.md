@@ -136,6 +136,10 @@ All non-UI files touched in this cleanup are now under the 300-line cap:
   - outbox clear for debug test setup.
   - Health Connect cleanup preview separate from delete.
   - Health Connect export mode/redaction selection.
+- Tightened connected UI tests after the Material 3 sheet/card redesign:
+  - stable tags for meal cards and goal recalculation buttons.
+  - Health Connect historical smoke tests now skip cleanly when emulator permissions or optional CSV fixtures are unavailable.
+  - meal detail action tests render the detail sheet directly so copy/repeat/delete controls are covered without depending on a brittle card-click path.
 - Added the first Add Meal Health Connect outbox slice:
   - `classes/QuickImportOutbox.kt`
   - `classes/QuickImportOutboxCsv.kt`

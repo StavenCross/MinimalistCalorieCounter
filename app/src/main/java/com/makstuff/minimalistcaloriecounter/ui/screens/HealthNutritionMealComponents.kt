@@ -79,7 +79,9 @@ internal fun MealCard(
     val hiddenFoodCount = group.foods.size - visibleFoods.size
 
     SurfacePanel(
-        modifier = Modifier.clickable(onClick = onMealClick),
+        modifier = Modifier
+            .clickable(onClick = onMealClick)
+            .testTag("meal_card_${group.label.lowercase()}"),
         borderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.16f),
         backgroundColor = MaterialTheme.colorScheme.surfaceContainerHigh,
         contentPadding = 12,
@@ -336,6 +338,7 @@ internal fun MealDetailDialog(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
         containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+        modifier = Modifier.testTag("meals_meal_detail_sheet"),
     ) {
         Column(
             modifier = Modifier
@@ -370,6 +373,7 @@ internal fun MealDetailDialog(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .heightIn(max = 360.dp)
                     .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {

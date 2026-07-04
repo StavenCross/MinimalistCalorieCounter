@@ -24,7 +24,7 @@ Run on an emulator:
 ./gradlew connectedDebugAndroidTest --console=plain
 ```
 
-Room runtime round-trip coverage is in `AppRoomStoreTest`. If connected Compose tests are unstable, `assembleDebugAndroidTest` still verifies this test compiles into the instrumentation APK.
+Room runtime round-trip coverage is in `AppRoomStoreTest`. Health Connect historical import tests skip when the emulator lacks the fixture CSV or Health Connect nutrition permissions. If connected Compose tests are unstable, `assembleDebugAndroidTest` still verifies these tests compile into the instrumentation APK.
 
 ## Fold Emulator Smoke
 

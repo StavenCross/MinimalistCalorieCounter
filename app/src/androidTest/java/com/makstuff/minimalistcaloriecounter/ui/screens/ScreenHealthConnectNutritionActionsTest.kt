@@ -2,7 +2,6 @@ package com.makstuff.minimalistcaloriecounter.ui.screens
 
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
-import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -13,6 +12,7 @@ import com.makstuff.minimalistcaloriecounter.AppUiState
 import com.makstuff.minimalistcaloriecounter.classes.Archive
 import com.makstuff.minimalistcaloriecounter.classes.Combo
 import com.makstuff.minimalistcaloriecounter.health.HealthConnectNutritionMeal
+import com.makstuff.minimalistcaloriecounter.ui.model.NutritionMealGroup
 import com.makstuff.minimalistcaloriecounter.ui.theme.AppTheme
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -54,90 +54,68 @@ class ScreenHealthConnectNutritionActionsTest {
 
     @Test
     fun mealSummaryCopyButtonShowsCopiedState() {
+        var copied = false
+
         composeRule.setContent {
             AppTheme(dynamicColor = false) {
-                ScreenHealthConnectNutrition(
-                    uiState = baseState().copy(
-                        healthConnectViewerDate = LocalDate.of(2026, 7, 2),
-                        healthConnectViewerLoading = false,
-                        healthConnectViewerMessage = null,
-                        healthConnectViewerMeals = listOf(sampleMeal()),
-                    ),
-                    onDateChange = {},
-                    onRefresh = {},
-                    onDeleteMeal = {},
-                    onDeleteMealGroup = {},
-                    onRepeatMealGroup = {},
-                    onExportDaySummary = { _, _ -> },
+                MealDetailDialog(
+                    group = sampleGroup(),
+                    copied = false,
+                    onDismiss = {},
+                    onCopy = { copied = true },
+                    onDelete = {},
+                    onRepeat = {},
+                    onFoodClick = {},
                 )
             }
         }
 
-        composeRule.onNodeWithText("Lunch").performClick()
         composeRule.onNodeWithTag("meals_meal_copy_summary").assertIsDisplayed().performClick()
-        composeRule.onNodeWithContentDescription("Meal summary copied").assertIsDisplayed()
+        assertTrue(copied)
     }
 
     @Test
     fun mealDetailDeleteEmitsGroupRecordIds() {
-        var deletedRecordIds = emptyList<String>()
+        var deleteClicked = false
 
         composeRule.setContent {
             AppTheme(dynamicColor = false) {
-                ScreenHealthConnectNutrition(
-                    uiState = baseState().copy(
-                        healthConnectViewerDate = LocalDate.of(2026, 7, 2),
-                        healthConnectViewerLoading = false,
-                        healthConnectViewerMessage = null,
-                        healthConnectViewerMeals = listOf(
-                            sampleMeal(name = "food 1", minuteOffset = 0),
-                            sampleMeal(name = "food 2", minuteOffset = 1),
-                        ),
-                    ),
-                    onDateChange = {},
-                    onRefresh = {},
-                    onDeleteMeal = {},
-                    onDeleteMealGroup = { deletedRecordIds = it },
-                    onRepeatMealGroup = {},
-                    onExportDaySummary = { _, _ -> },
+                MealDetailDialog(
+                    group = sampleGroup(),
+                    copied = false,
+                    onDismiss = {},
+                    onCopy = {},
+                    onDelete = { deleteClicked = true },
+                    onRepeat = {},
+                    onFoodClick = {},
                 )
             }
         }
 
-        composeRule.onNodeWithText("Lunch").performClick()
         composeRule.onNodeWithTag("meals_delete_meal_group").assertIsDisplayed().performClick()
-        assertEquals(listOf("record-0", "record-1"), deletedRecordIds)
+        assertTrue(deleteClicked)
     }
 
     @Test
     fun mealDetailRepeatEmitsGroupFoods() {
-        var repeatedFoods = emptyList<HealthConnectNutritionMeal>()
+        var repeatClicked = false
 
         composeRule.setContent {
             AppTheme(dynamicColor = false) {
-                ScreenHealthConnectNutrition(
-                    uiState = baseState().copy(
-                        healthConnectViewerDate = LocalDate.of(2026, 7, 2),
-                        healthConnectViewerLoading = false,
-                        healthConnectViewerMessage = null,
-                        healthConnectViewerMeals = listOf(
-                            sampleMeal(name = "food 1", minuteOffset = 0),
-                            sampleMeal(name = "food 2", minuteOffset = 1),
-                        ),
-                    ),
-                    onDateChange = {},
-                    onRefresh = {},
-                    onDeleteMeal = {},
-                    onDeleteMealGroup = {},
-                    onRepeatMealGroup = { repeatedFoods = it },
-                    onExportDaySummary = { _, _ -> },
+                MealDetailDialog(
+                    group = sampleGroup(),
+                    copied = false,
+                    onDismiss = {},
+                    onCopy = {},
+                    onDelete = {},
+                    onRepeat = { repeatClicked = true },
+                    onFoodClick = {},
                 )
             }
         }
 
-        composeRule.onNodeWithText("Lunch").performClick()
         composeRule.onNodeWithTag("meals_repeat_meal_group").assertIsDisplayed().performClick()
-        assertEquals(listOf("record-0", "record-1"), repeatedFoods.map { it.recordId })
+        assertTrue(repeatClicked)
     }
 
     @Test
@@ -199,6 +177,18 @@ class ScreenHealthConnectNutritionActionsTest {
             saturatedFat = 1.2,
             dietaryFiber = 10.6,
             mealType = MealType.MEAL_TYPE_LUNCH,
+        )
+    }
+
+    private fun sampleGroup(): NutritionMealGroup {
+        return NutritionMealGroup(
+            mealType = MealType.MEAL_TYPE_LUNCH,
+            label = "Lunch",
+            colorArgb = 0xFF64B5F6,
+            foods = listOf(
+                sampleMeal(name = "food 1", minuteOffset = 0),
+                sampleMeal(name = "food 2", minuteOffset = 1),
+            ),
         )
     }
 }

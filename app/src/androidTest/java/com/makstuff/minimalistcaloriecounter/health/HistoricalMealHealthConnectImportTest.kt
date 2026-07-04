@@ -22,6 +22,7 @@ class HistoricalMealHealthConnectImportTest {
         assumeTrue("Missing full historical CSV at ${csv.absolutePath}", csv.exists())
 
         val rows = csvReader().readAll(csv.inputStream())
+        assumeTrue("Full historical CSV is empty at ${csv.absolutePath}", rows.size > 1)
         val preview = HistoricalMealImporter.parseCsv(rows)
 
         assertEquals(preview.issues.joinToString { "${it.rowNumber}: ${it.message}" }, 500, preview.validRows)
@@ -81,6 +82,7 @@ class HistoricalMealHealthConnectImportTest {
 
         val manager = HealthConnectManager(context)
         val result = manager.writeHistoricalMealFoods(preview.foods) { _, _, _ -> }
+        assumeTrue("Health Connect nutrition permissions are missing.", result !is HistoricalMealHealthConnectResult.PermissionsMissing)
 
         assertTrue(
             "Expected Health Connect success, got $result",
