@@ -51,8 +51,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.DpOffset
 import androidx.navigation.NavHostController
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.makstuff.minimalistcaloriecounter.essentials.NAV_CREATE
@@ -61,22 +59,15 @@ import com.makstuff.minimalistcaloriecounter.essentials.NavControllerListener
 import com.makstuff.minimalistcaloriecounter.essentials.NavButton
 import com.makstuff.minimalistcaloriecounter.ui.navigation.AppBottomBar
 import com.makstuff.minimalistcaloriecounter.ui.navigation.AppMainDrawer
+import com.makstuff.minimalistcaloriecounter.ui.navigation.AppRouteHost
 import com.makstuff.minimalistcaloriecounter.ui.navigation.AppRoutes
 import com.makstuff.minimalistcaloriecounter.ui.navigation.AppTopBar
-import com.makstuff.minimalistcaloriecounter.ui.navigation.legacy.legacyArchiveRoutes
-import com.makstuff.minimalistcaloriecounter.ui.navigation.legacy.legacyDatabaseRoutes
-import com.makstuff.minimalistcaloriecounter.ui.navigation.legacy.legacyDayRoutes
 import com.makstuff.minimalistcaloriecounter.ui.navigation.navigateApp
 import com.makstuff.minimalistcaloriecounter.ui.reused.ButtonText
 import com.makstuff.minimalistcaloriecounter.ui.reused.DropdownMenu
 import com.makstuff.minimalistcaloriecounter.ui.reused.TextField
 import com.makstuff.minimalistcaloriecounter.ui.screens.QuickImportDestinationDialogHost
-import com.makstuff.minimalistcaloriecounter.ui.screens.ScreenGoals
-import com.makstuff.minimalistcaloriecounter.ui.screens.ScreenHealthConnectNutrition
-import com.makstuff.minimalistcaloriecounter.ui.screens.ScreenQuickImport
-import com.makstuff.minimalistcaloriecounter.ui.settings.AppSettingsPage
 import com.makstuff.minimalistcaloriecounter.health.HealthConnectManager
-import com.makstuff.minimalistcaloriecounter.health.DayCheckInExporter
 import androidx.health.connect.client.HealthConnectClient
 import androidx.health.connect.client.PermissionController
 
@@ -167,106 +158,23 @@ fun App(
                 )
             },
         ) { innerPadding ->
-            NavHost(
+            AppRouteHost(
+                uiState = uiState,
+                viewModel = viewModel,
+                navController = navController,
+                fileLaunchers = fileLaunchers,
+                healthConnectManager = healthConnectManager,
+                healthConnectExportPermissionLauncher = healthConnectExportPermissionLauncher,
+                keyboardController = keyboardController,
+                onNavigate = { navTo(it) },
+                onNavigateBack = { navBack() },
+                onEditDatabaseEntry = { editDatabaseEntry(it) },
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(innerPadding)
                     .consumeWindowInsets(innerPadding)
                     .padding(4.dp),
-            navController = navController,
-            startDestination = AppRoutes.QUICK_IMPORT,
-        ) {
-                legacyDayRoutes(
-                    uiState = uiState,
-                    viewModel = viewModel,
-                    context = context,
-                    keyboardController = keyboardController,
-                    onNavigate = { navTo(it) },
-                    onEditDatabaseEntry = { editDatabaseEntry(it) },
-                )
-                legacyArchiveRoutes(
-                    uiState = uiState,
-                    viewModel = viewModel,
-                    context = context,
-                    keyboardController = keyboardController,
-                    onNavigate = { navTo(it) },
-                )
-                legacyDatabaseRoutes(
-                    uiState = uiState,
-                    viewModel = viewModel,
-                    context = context,
-                    keyboardController = keyboardController,
-                    onNavigate = { navTo(it) },
-                    onNavigateBack = { navBack() },
-                    onEditDatabaseEntry = { editDatabaseEntry(it) },
-                )
-
-                composable(AppRoutes.HEALTH_CONNECT_NUTRITION) {
-                    ScreenHealthConnectNutrition(
-                        uiState = uiState,
-                        onDateChange = { viewModel.updateHealthConnectViewerDate(it) },
-                        onRefresh = { viewModel.readHealthConnectNutritionMeals() },
-                        onDeleteMeal = { viewModel.deleteHealthConnectNutritionMeal(it) },
-                        onDeleteMealGroup = { viewModel.deleteHealthConnectNutritionMeals(it) },
-                        onRepeatMealGroup = {
-                            viewModel.prepareQuickImportRepeat(it)
-                            navController.navigate(AppRoutes.QUICK_IMPORT) {
-                                launchSingleTop = true
-                                restoreState = true
-                            }
-                        },
-                        onExportDaySummary = { date, summary ->
-                            runCatching { DayCheckInExporter(context).export(date, summary) }
-                                .onSuccess { Toast.makeText(context, "Exported check-in to $it", Toast.LENGTH_LONG).show() }
-                                .onFailure { Toast.makeText(context, "Check-in export failed: ${it.message}", Toast.LENGTH_LONG).show() }
-                        },
-                    )
-                }
-
-                composable(AppRoutes.GOALS_HOME) {
-                    ScreenGoals(
-                        uiState = uiState,
-                        onSettingsDismiss = { viewModel.updateGoalsSettingsVisible(false) },
-                        onRefreshHealthConnect = { viewModel.refreshGoalsFromHealthConnect() },
-                        onRecalculate = { viewModel.recalculateGoalRecommendation() },
-                        onApplyRecommendation = { viewModel.applyGoalRecommendation() },
-                        onDismissRecommendation = { viewModel.dismissGoalRecommendation() },
-                        onBirthdayChange = { viewModel.updateGoalBirthday(it) },
-                        onSexChange = { viewModel.updateGoalSex(it) },
-                        onActivityLevelChange = { viewModel.updateGoalActivityLevel(it) },
-                        onWeightLossTargetChange = { viewModel.updateGoalWeightLossTarget(it) },
-                        onMeasurementChange = { field, value -> viewModel.updateGoalMeasurement(field, value) },
-                        onMeasurementLockToggle = { viewModel.toggleGoalMeasurementLock(it) },
-                        onMacroChange = { macro, value -> viewModel.updateGoalMacro(macro, value) },
-                        onMacroLockToggle = { viewModel.toggleGoalMacroLock(it) },
-                    )
-                }
-
-                composable(AppRoutes.SETTINGS_HOME) {
-                    AppSettingsPage(
-                        uiState = uiState,
-                        viewModel = viewModel,
-                        fileLaunchers = fileLaunchers,
-                        healthConnectManager = healthConnectManager,
-                        healthConnectExportPermissionLauncher = healthConnectExportPermissionLauncher,
-                    )
-                }
-
-                composable(AppRoutes.QUICK_IMPORT) {
-                    ScreenQuickImport(
-                        uiState = uiState,
-                        onTextChange = { viewModel.updateQuickImportText(it) },
-                        onToggleAddDatabase = { viewModel.toggleQuickImportAddFoodsToDatabase() },
-                        onToggleAddDay = { viewModel.toggleQuickImportAddFoodsToDay() },
-                        onToggleHealthConnect = { viewModel.toggleQuickImportWriteHealthConnect() },
-                        onRefreshDateTime = { viewModel.refreshQuickImportDateTime() },
-                        onDateTimeChange = { viewModel.updateQuickImportDateTime(it) },
-                        onMealTypeChange = { viewModel.updateQuickImportMealTypeOverride(it) },
-                        onImport = { viewModel.quickImportCommit(context) },
-                        onClear = { viewModel.resetQuickImport() },
-                        onRetryOutbox = { viewModel.quickImportRetryHealthConnect(context, it) },
-                    )
-                }
+            )
         }
     }
 
@@ -282,7 +190,6 @@ fun App(
     )
 
     if (mainMenuExpanded) AppMainDrawer(onDismiss = { mainMenuExpanded = false }, onNavigate = { navTo(it) })
-    }
 
     HealthConnectSyncDialogs(
         uiState = uiState,
