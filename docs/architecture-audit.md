@@ -107,6 +107,9 @@ All non-UI files touched in this cleanup are now under the 300-line cap:
   - `ui/screens/QuickImportDestinationDialogHost.kt`
   - Add Meal destination settings now live outside `App.kt`.
   - the Add Meal destination bottom sheet implementation now lives with the host instead of inside `ScreenQuickImport.kt`.
+- Extracted Add Meal nutrient detail components:
+  - `ui/screens/QuickImportNutrientDetails.kt`
+  - food detail sheet and shared nutrient detail pills now live outside `ScreenQuickImport.kt`.
 - Added a single settings-sheet automation intent:
   - `AppViewModelUiActions.openSettingsSheet(...)`
   - `/settings/open` now navigates to Settings and opens the requested drawer as one command.
