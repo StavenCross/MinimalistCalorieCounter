@@ -95,6 +95,14 @@ All non-UI files touched in this cleanup are now under the 300-line cap:
 - Extracted Settings page:
   - `ui/settings/AppSettingsPage.kt`
   - settings cards, sheets, date pickers, and Health Connect settings actions now live outside `App.kt`.
+- Extracted legacy maintenance routes:
+  - `ui/navigation/legacy/LegacyArchiveRoutes.kt`
+  - `ui/navigation/legacy/LegacyDatabaseRoutes.kt`
+  - `ui/navigation/legacy/LegacyDayRoutes.kt`
+  - old archive, database, and day-builder routes are isolated from the modern Add Meal/Meals/Goals route host.
+- Extracted Add Meal destination dialog host:
+  - `ui/screens/QuickImportDestinationDialogHost.kt`
+  - Add Meal destination settings now live outside `App.kt`.
 - Added a single settings-sheet automation intent:
   - `AppViewModelUiActions.openSettingsSheet(...)`
   - `/settings/open` now navigates to Settings and opens the requested drawer as one command.
