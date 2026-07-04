@@ -80,6 +80,9 @@ All non-UI files touched in this cleanup are now under the 300-line cap:
 - Extracted startup effects:
   - `AppStartupEffects.kt`
   - automation navigation, Health Connect permission refresh, CSV bootstrap, and loading completion now live outside `App.kt`.
+- Extracted route host:
+  - `ui/navigation/AppRouteHost.kt`
+  - modern Add Meal, Meals, Goals, Settings routes and legacy route registration now live outside `App.kt`.
 - Extracted Health Connect sync dialogs:
   - `AppHealthConnectDialogs.kt`
   - progress, keep-screen-on behavior, and sync error confirmation now live outside `App.kt`.
