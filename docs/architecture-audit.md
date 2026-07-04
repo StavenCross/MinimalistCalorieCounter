@@ -8,10 +8,11 @@ Generated output, Gradle build folders, `node_modules`, and IDE metadata are exc
 
 | File | Approx. lines | Type | Cleanup priority |
 | --- | ---: | --- | --- |
-| `app/src/main/java/com/makstuff/minimalistcaloriecounter/ui/screens/ScreenQuickImport.kt` | 829 | Compose screen and controls | Medium, UI-file exception applies |
+| `app/src/main/java/com/makstuff/minimalistcaloriecounter/ui/screens/ScreenQuickImport.kt` | 340 | Compose screen orchestration | Low, UI-file exception applies |
 | `app/src/main/java/com/makstuff/minimalistcaloriecounter/ui/screens/QuickImportMealComponents.kt` | 630 | Compose Add Meal display components | Low, UI-file exception applies |
 | `app/src/main/java/com/makstuff/minimalistcaloriecounter/ui/screens/HealthNutritionMealComponents.kt` | 601 | Compose meal display components | Low, UI-file exception applies |
 | `app/src/main/java/com/makstuff/minimalistcaloriecounter/ui/screens/ScreenHealthConnectNutrition.kt` | 576 | Compose screen and components | Low, UI-file exception applies |
+| `app/src/main/java/com/makstuff/minimalistcaloriecounter/ui/screens/QuickImportControls.kt` | 517 | Compose Add Meal controls | Low, UI-file exception applies |
 | `app/src/main/java/com/makstuff/minimalistcaloriecounter/ui/screens/GoalsSettingsComponents.kt` | 500 | Compose goals settings components | Low, UI-file exception applies |
 | `app/src/main/java/com/makstuff/minimalistcaloriecounter/ui/settings/AppSettingsPage.kt` | 461 | Compose settings page | Low, UI-file exception applies |
 | `app/src/main/java/com/makstuff/minimalistcaloriecounter/ui/screens/GoalsDashboardComponents.kt` | 449 | Compose goals dashboard display components | Low, UI-file exception applies |
@@ -116,6 +117,9 @@ All non-UI files touched in this cleanup are now under the 300-line cap:
 - Extracted Add Meal meal/day display components:
   - `ui/screens/QuickImportMealComponents.kt`
   - day summary, parsed meal preview, meal detail sheet, macro chips, food rows, and goal progress arcs now live outside `ScreenQuickImport.kt`.
+- Extracted Add Meal controls:
+  - `ui/screens/QuickImportControls.kt`
+  - success pill, capture card, outbox status card, meal time drawers, and meal type picker now live outside `ScreenQuickImport.kt`.
 - Extracted Health Connect Meals display components:
   - `ui/screens/HealthNutritionMealComponents.kt`
   - meal cards, food rows, detail drawers, macro grids, and status/section primitives now live outside `ScreenHealthConnectNutrition.kt`.
