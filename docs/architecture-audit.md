@@ -77,6 +77,9 @@ All non-UI files touched in this cleanup are now under the 300-line cap:
 - Extracted top app bar:
   - `ui/navigation/AppTopBar.kt`
   - title, hamburger action, and page-specific top-right settings actions now live outside `App.kt`.
+- Extracted startup effects:
+  - `AppStartupEffects.kt`
+  - automation navigation, Health Connect permission refresh, CSV bootstrap, and loading completion now live outside `App.kt`.
 - Extracted Health Connect sync dialogs:
   - `AppHealthConnectDialogs.kt`
   - progress, keep-screen-on behavior, and sync error confirmation now live outside `App.kt`.

@@ -21,9 +21,6 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
-import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.foundation.layout.Spacer
@@ -33,7 +30,6 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
@@ -98,8 +94,6 @@ import com.makstuff.minimalistcaloriecounter.health.HealthConnectManager
 import com.makstuff.minimalistcaloriecounter.health.DayCheckInExporter
 import androidx.health.connect.client.HealthConnectClient
 import androidx.health.connect.client.PermissionController
-import kotlin.time.Duration.Companion.milliseconds
-import kotlinx.coroutines.delay
 import java.time.LocalDateTime
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -111,7 +105,6 @@ fun App(
 ) {
     val context = LocalContext.current
     context.findActivity() // Use the proper unwrap function!
-    val lifecycleOwner = LocalLifecycleOwner.current
     val focusManager = LocalFocusManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
     val healthConnectManager = remember { HealthConnectManager(context) }
@@ -136,12 +129,6 @@ fun App(
     fun navTo(route: String) {
         keyboardController?.hide()
         navController.navigateApp(route)
-    }
-
-    LaunchedEffect(uiState.automationRouteRequest) {
-        val route = uiState.automationRouteRequest ?: return@LaunchedEffect
-        navTo(route)
-        viewModel.clearNavigationRequest(route)
     }
 
     fun navBack() {
@@ -174,68 +161,7 @@ fun App(
         setNav = { string, button -> setNav(string, button) }
     )
 
-    LaunchedEffect(lifecycleOwner) {
-        val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME) {
-                viewModel.updateHealthConnectPermissionsStatus()
-            }
-        }
-        lifecycleOwner.lifecycle.addObserver(observer)
-    }
-
-    LaunchedEffect(Unit) {
-        viewModel.updateHealthConnectPermissionsStatus()
-        viewModel.databaseResetCSV(false, context)
-        viewModel.archiveResetCSV(false, context)
-        viewModel.dayResetCSV(false, context)
-        viewModel.optionsResetFile(false, context)
-        viewModel.goalsResetCSV(false, context)
-
-        try {
-            viewModel.optionsUpdateFromFile(context)
-        } catch (e: IllegalStateException) {
-            Toast.makeText(
-                context, context.getString(R.string.options) + " CSV: " + e.message, Toast.LENGTH_LONG
-            ).show()
-        }
-        try {
-            viewModel.archiveUpdateFromCSV(context)
-        } catch (e: IllegalStateException) {
-            Toast.makeText(
-                context, context.getString(R.string.archive) + " CSV: " + e.message, Toast.LENGTH_LONG
-            ).show()
-        }
-        try {
-            viewModel.databaseUpdateFromCSV(context)
-        } catch (e: IllegalStateException) {
-            Toast.makeText(
-                context, context.getString(R.string.database)  + " CSV: " + e.message, Toast.LENGTH_LONG
-            ).show()
-        }
-        try {
-            viewModel.dayUpdateFromCSV(context)
-        } catch (e: IllegalStateException) {
-            Toast.makeText(
-                context, context.getString(R.string.day) + " CSV: " + e.message, Toast.LENGTH_LONG
-            ).show()
-        }
-        try {
-            viewModel.goalsUpdateFromCSV(context)
-        } catch (e: IllegalStateException) {
-            Toast.makeText(
-                context, "Goals CSV: " + e.message, Toast.LENGTH_LONG
-            ).show()
-        }
-        try {
-            viewModel.quickImportOutboxUpdateFromCSV(context)
-        } catch (e: IllegalStateException) {
-            Toast.makeText(
-                context, "Add Meal outbox CSV: " + e.message, Toast.LENGTH_LONG
-            ).show()
-        }
-        delay(1000.milliseconds)//1000 seems enough to prevent glitches from dark mode override loading
-        viewModel.setLoadingToFalse()
-    }
+    AppStartupEffects(uiState = uiState, viewModel = viewModel, onNavigate = { navTo(it) })
     Box(modifier = Modifier.fillMaxSize()) {
     if (uiState.quickImportSettingsVisible) {
         DestinationDialog(
