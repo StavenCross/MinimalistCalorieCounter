@@ -9,9 +9,9 @@ Generated output, Gradle build folders, `node_modules`, and IDE metadata are exc
 | File | Approx. lines | Type | Cleanup priority |
 | --- | ---: | --- | --- |
 | `app/src/main/java/com/makstuff/minimalistcaloriecounter/ui/screens/ScreenQuickImport.kt` | 1417 | Compose screen and components | Medium, UI-file exception applies |
-| `app/src/main/java/com/makstuff/minimalistcaloriecounter/ui/screens/ScreenGoals.kt` | 627 | Compose screen and settings editor | Medium, UI-file exception applies |
 | `app/src/main/java/com/makstuff/minimalistcaloriecounter/ui/screens/HealthNutritionMealComponents.kt` | 601 | Compose meal display components | Low, UI-file exception applies |
 | `app/src/main/java/com/makstuff/minimalistcaloriecounter/ui/screens/ScreenHealthConnectNutrition.kt` | 576 | Compose screen and components | Low, UI-file exception applies |
+| `app/src/main/java/com/makstuff/minimalistcaloriecounter/ui/screens/GoalsSettingsComponents.kt` | 500 | Compose goals settings components | Low, UI-file exception applies |
 | `app/src/main/java/com/makstuff/minimalistcaloriecounter/ui/settings/AppSettingsPage.kt` | 461 | Compose settings page | Low, UI-file exception applies |
 | `app/src/main/java/com/makstuff/minimalistcaloriecounter/ui/screens/GoalsDashboardComponents.kt` | 449 | Compose goals dashboard display components | Low, UI-file exception applies |
 
@@ -118,6 +118,9 @@ All non-UI files touched in this cleanup are now under the 300-line cap:
 - Extracted Goals dashboard display components:
   - `ui/screens/GoalsDashboardComponents.kt`
   - hero, recommendation, recalculation, history, macro target, profile snapshot, and trend cards now live outside `ScreenGoals.kt`.
+- Extracted Goals settings components:
+  - `ui/screens/GoalsSettingsComponents.kt`
+  - settings drawer, profile picker drawers, measurement inputs, macro inputs, and lock controls now live outside `ScreenGoals.kt`.
 - Added a single settings-sheet automation intent:
   - `AppViewModelUiActions.openSettingsSheet(...)`
   - `/settings/open` now navigates to Settings and opens the requested drawer as one command.
