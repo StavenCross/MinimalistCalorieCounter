@@ -104,8 +104,6 @@ import com.makstuff.minimalistcaloriecounter.ui.model.currentDayTotalsForQuickIm
 import com.makstuff.minimalistcaloriecounter.ui.model.macroPercent
 import com.makstuff.minimalistcaloriecounter.ui.model.macroProgressArc
 import com.makstuff.minimalistcaloriecounter.ui.model.macroSummaryItems
-import com.makstuff.minimalistcaloriecounter.ui.model.quickNutrientDetailItems
-import com.makstuff.minimalistcaloriecounter.ui.model.supportsMacroHint
 import com.makstuff.minimalistcaloriecounter.ui.model.todayCheckInSummary
 import com.makstuff.minimalistcaloriecounter.ui.reused.MacroHintBox
 import com.makstuff.minimalistcaloriecounter.ui.reused.SheetTitle
@@ -1232,12 +1230,6 @@ private fun CompactQuickFoodRow(
     }
 }
 
-private fun quickFoodDisplayName(food: QuickImportFood): String {
-    return listOf(food.amountText, food.name)
-        .filter { part -> part.isNotBlank() }
-        .joinToString(" ")
-}
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun QuickImportMealDetailSheet(
@@ -1421,124 +1413,5 @@ private fun QuickGoalArcTile(
                 )
             }
         }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun QuickImportFoodDetailSheet(
-    food: QuickImportFood,
-    onDismiss: () -> Unit,
-) {
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-        containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 14.dp)
-                .padding(bottom = 18.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text(
-                    text = quickFoodDisplayName(food),
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                )
-                Text(
-                    text = "${food.nutrients.energy.toFormattedString(true)} kcal",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-            QuickNutrientDetailGrid(
-                nutrients = food.nutrients,
-                includeAmount = food.amountText.takeIf { it.isNotBlank() },
-            )
-            Button(
-                onClick = onDismiss,
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Text("Close")
-            }
-        }
-    }
-}
-
-@Composable
-private fun QuickNutrientDetailGrid(
-    nutrients: QuickImportNutrients,
-    includeAmount: String?,
-) {
-    val items = quickNutrientDetailItems(nutrients, includeAmount)
-    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        items.chunked(2).forEach { rowItems ->
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
-            ) {
-                rowItems.forEach { item ->
-                    QuickNutrientDetailPill(
-                        label = item.label,
-                        value = item.value,
-                        modifier = Modifier.weight(1f),
-                    )
-                }
-                if (rowItems.size == 1) {
-                    Box(modifier = Modifier.weight(1f))
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun QuickNutrientDetailPill(
-    label: String,
-    value: String,
-    modifier: Modifier = Modifier,
-) {
-    if (supportsMacroHint(label)) {
-        MacroHintBox(label = label, modifier = modifier) {
-            QuickNutrientDetailPillContent(label = label, value = value)
-        }
-        return
-    }
-
-    QuickNutrientDetailPillContent(label = label, value = value, modifier = modifier)
-}
-
-@Composable
-private fun QuickNutrientDetailPillContent(
-    label: String,
-    value: String,
-    modifier: Modifier = Modifier,
-) {
-    Column(
-        modifier = modifier
-            .clip(RoundedCornerShape(8.dp))
-            .background(MaterialTheme.colorScheme.surfaceContainerHigh)
-            .border(
-                BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.18f)),
-                RoundedCornerShape(8.dp),
-            )
-            .padding(horizontal = 9.dp, vertical = 8.dp),
-        verticalArrangement = Arrangement.spacedBy(2.dp),
-    ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        Text(
-            text = value,
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.SemiBold,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
     }
 }
