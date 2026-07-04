@@ -132,6 +132,10 @@ All non-UI files touched in this cleanup are now under the 300-line cap:
 - Added a single settings-sheet automation intent:
   - `AppViewModelUiActions.openSettingsSheet(...)`
   - `/settings/open` now navigates to Settings and opens the requested drawer as one command.
+- Added missing automation/MCP controls for spec coverage:
+  - outbox clear for debug test setup.
+  - Health Connect cleanup preview separate from delete.
+  - Health Connect export mode/redaction selection.
 - Added the first Add Meal Health Connect outbox slice:
   - `classes/QuickImportOutbox.kt`
   - `classes/QuickImportOutboxCsv.kt`

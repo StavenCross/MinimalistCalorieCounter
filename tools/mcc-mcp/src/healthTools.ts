@@ -6,8 +6,13 @@ import {
   ToolContext,
   deleteHealthRange,
   exportHealthRange,
+  previewHealthDeleteRange,
   readHealthDay,
+  setHealthExportOptions,
 } from "./tools.js";
+
+const HealthExportMode = z.enum(["NutritionOnly", "NutritionAndGoals", "Full"]);
+const HealthCleanupMode = z.enum(["HistoricalImports", "AddMeal", "AllAppNutrition"]);
 
 export function registerHealthTools(server: McpServer, ctx: ToolContext) {
   server.registerTool(
@@ -32,11 +37,44 @@ export function registerHealthTools(server: McpServer, ctx: ToolContext) {
       inputSchema: {
         startDate: z.string(),
         endDate: z.string(),
+        mode: HealthCleanupMode.optional(),
         hostPort: HostPortInput,
       },
       annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true, openWorldHint: false },
     },
-    async ({ startDate, endDate, hostPort }) => result(await deleteHealthRange(ctx, startDate, endDate, hostPort)),
+    async ({ startDate, endDate, mode, hostPort }) => result(await deleteHealthRange(ctx, startDate, endDate, mode, hostPort)),
+  );
+
+  server.registerTool(
+    "mcc_health_preview_delete_range",
+    {
+      title: "Preview Health Connect nutrition cleanup",
+      description: "Preview matching app-owned Health Connect Nutrition records before deletion.",
+      inputSchema: {
+        startDate: z.string(),
+        endDate: z.string(),
+        mode: HealthCleanupMode.optional(),
+        hostPort: HostPortInput,
+      },
+      annotations: { readOnlyHint: true, openWorldHint: false },
+    },
+    async ({ startDate, endDate, mode, hostPort }) =>
+      result(await previewHealthDeleteRange(ctx, startDate, endDate, mode, hostPort)),
+  );
+
+  server.registerTool(
+    "mcc_health_export_options",
+    {
+      title: "Set Health Connect export options",
+      description: "Set Health Connect export mode and redaction before exporting.",
+      inputSchema: {
+        mode: HealthExportMode.optional(),
+        redacted: z.boolean().optional(),
+        hostPort: HostPortInput,
+      },
+      annotations: { readOnlyHint: false, idempotentHint: true, openWorldHint: false },
+    },
+    async ({ mode, redacted, hostPort }) => result(await setHealthExportOptions(ctx, mode, redacted, hostPort)),
   );
 
   server.registerTool(
@@ -47,10 +85,13 @@ export function registerHealthTools(server: McpServer, ctx: ToolContext) {
       inputSchema: {
         startDate: z.string(),
         endDate: z.string(),
+        mode: HealthExportMode.optional(),
+        redacted: z.boolean().optional(),
         hostPort: HostPortInput,
       },
       annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
     },
-    async ({ startDate, endDate, hostPort }) => result(await exportHealthRange(ctx, startDate, endDate, hostPort)),
+    async ({ startDate, endDate, mode, redacted, hostPort }) =>
+      result(await exportHealthRange(ctx, startDate, endDate, mode, redacted, hostPort)),
   );
 }

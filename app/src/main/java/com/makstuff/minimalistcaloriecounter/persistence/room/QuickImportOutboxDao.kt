@@ -23,6 +23,9 @@ interface QuickImportOutboxDao {
     @Query("DELETE FROM quick_import_outbox_payloads WHERE outboxId = :outboxId")
     suspend fun clearPayloads(outboxId: String)
 
+    @Query("DELETE FROM quick_import_outbox WHERE id IN (:ids)")
+    suspend fun deleteItems(ids: List<String>)
+
     @Transaction
     suspend fun upsert(seed: QuickImportOutboxRoomSeed) {
         upsertItem(seed.item)

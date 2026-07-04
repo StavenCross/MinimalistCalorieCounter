@@ -5,6 +5,7 @@ import { HostPortInput, QuickImportInput } from "./toolSchemas.js";
 import {
   ToolContext,
   quickImportCommit,
+  quickImportOutboxClear,
   quickImportPreview,
   quickImportRetry,
   selectMealsDate,
@@ -45,6 +46,21 @@ export function registerQuickImportTools(server: McpServer, ctx: ToolContext) {
       annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
     },
     async ({ id, hostPort }) => result(await quickImportRetry(ctx, id, hostPort)),
+  );
+
+  server.registerTool(
+    "mcc_quick_import_outbox_clear",
+    {
+      title: "Clear Add Meal outbox rows",
+      description: "Clear one Add Meal outbox row or all attention-needed rows for debug test setup.",
+      inputSchema: {
+        id: z.string().optional().describe("Optional outbox id. Omit to clear all matching rows."),
+        attentionOnly: z.boolean().default(true).describe("When true, only pending, failed, or retrying rows are cleared."),
+        hostPort: HostPortInput,
+      },
+      annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true, openWorldHint: false },
+    },
+    async ({ id, attentionOnly, hostPort }) => result(await quickImportOutboxClear(ctx, id, attentionOnly, hostPort)),
   );
 
   server.registerTool(

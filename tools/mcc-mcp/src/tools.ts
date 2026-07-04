@@ -72,6 +72,15 @@ export async function quickImportRetry(ctx: ToolContext, id: string, hostPort = 
   return ctx.bridgeFor(hostPort).post("/quick-import/retry", { id });
 }
 
+export async function quickImportOutboxClear(
+  ctx: ToolContext,
+  id: string | undefined,
+  attentionOnly = true,
+  hostPort = DEFAULT_HOST_PORT,
+) {
+  return ctx.bridgeFor(hostPort).post("/quick-import/outbox/clear", { id, attentionOnly });
+}
+
 export async function selectMealsDate(ctx: ToolContext, date: string, hostPort = DEFAULT_HOST_PORT) {
   return ctx.bridgeFor(hostPort).post("/meals/select-date", { date });
 }
@@ -84,18 +93,40 @@ export async function deleteHealthRange(
   ctx: ToolContext,
   startDate: string,
   endDate: string,
+  mode?: string,
   hostPort = DEFAULT_HOST_PORT,
 ) {
-  return ctx.bridgeFor(hostPort).post("/health-connect/delete-range", { startDate, endDate });
+  return ctx.bridgeFor(hostPort).post("/health-connect/delete-range", { startDate, endDate, mode });
+}
+
+export async function previewHealthDeleteRange(
+  ctx: ToolContext,
+  startDate: string,
+  endDate: string,
+  mode?: string,
+  hostPort = DEFAULT_HOST_PORT,
+) {
+  return ctx.bridgeFor(hostPort).post("/health-connect/preview-delete-range", { startDate, endDate, mode });
+}
+
+export async function setHealthExportOptions(
+  ctx: ToolContext,
+  mode?: string,
+  redacted?: boolean,
+  hostPort = DEFAULT_HOST_PORT,
+) {
+  return ctx.bridgeFor(hostPort).post("/health-connect/export-options", { mode, redacted });
 }
 
 export async function exportHealthRange(
   ctx: ToolContext,
   startDate: string,
   endDate: string,
+  mode?: string,
+  redacted?: boolean,
   hostPort = DEFAULT_HOST_PORT,
 ) {
-  return ctx.bridgeFor(hostPort).post("/health-connect/export-range", { startDate, endDate });
+  return ctx.bridgeFor(hostPort).post("/health-connect/export-range", { startDate, endDate, mode, redacted });
 }
 
 export async function openSettingsPanel(ctx: ToolContext, sheet: string | null, hostPort = DEFAULT_HOST_PORT) {
