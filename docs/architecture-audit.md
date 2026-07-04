@@ -8,7 +8,8 @@ Generated output, Gradle build folders, `node_modules`, and IDE metadata are exc
 
 | File | Approx. lines | Type | Cleanup priority |
 | --- | ---: | --- | --- |
-| `app/src/main/java/com/makstuff/minimalistcaloriecounter/ui/screens/ScreenQuickImport.kt` | 1417 | Compose screen and components | Medium, UI-file exception applies |
+| `app/src/main/java/com/makstuff/minimalistcaloriecounter/ui/screens/ScreenQuickImport.kt` | 829 | Compose screen and controls | Medium, UI-file exception applies |
+| `app/src/main/java/com/makstuff/minimalistcaloriecounter/ui/screens/QuickImportMealComponents.kt` | 630 | Compose Add Meal display components | Low, UI-file exception applies |
 | `app/src/main/java/com/makstuff/minimalistcaloriecounter/ui/screens/HealthNutritionMealComponents.kt` | 601 | Compose meal display components | Low, UI-file exception applies |
 | `app/src/main/java/com/makstuff/minimalistcaloriecounter/ui/screens/ScreenHealthConnectNutrition.kt` | 576 | Compose screen and components | Low, UI-file exception applies |
 | `app/src/main/java/com/makstuff/minimalistcaloriecounter/ui/screens/GoalsSettingsComponents.kt` | 500 | Compose goals settings components | Low, UI-file exception applies |
@@ -112,6 +113,9 @@ All non-UI files touched in this cleanup are now under the 300-line cap:
 - Extracted Add Meal nutrient detail components:
   - `ui/screens/QuickImportNutrientDetails.kt`
   - food detail sheet and shared nutrient detail pills now live outside `ScreenQuickImport.kt`.
+- Extracted Add Meal meal/day display components:
+  - `ui/screens/QuickImportMealComponents.kt`
+  - day summary, parsed meal preview, meal detail sheet, macro chips, food rows, and goal progress arcs now live outside `ScreenQuickImport.kt`.
 - Extracted Health Connect Meals display components:
   - `ui/screens/HealthNutritionMealComponents.kt`
   - meal cards, food rows, detail drawers, macro grids, and status/section primitives now live outside `ScreenHealthConnectNutrition.kt`.
