@@ -7,25 +7,38 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.makstuff.minimalistcaloriecounter.AppUiState
 import com.makstuff.minimalistcaloriecounter.classes.ActivityLevel
 import com.makstuff.minimalistcaloriecounter.classes.GoalFieldKey
 import com.makstuff.minimalistcaloriecounter.classes.GoalMacro
-import com.makstuff.minimalistcaloriecounter.classes.GoalRecalculationSchedule
+import com.makstuff.minimalistcaloriecounter.classes.GoalStatusState
 import com.makstuff.minimalistcaloriecounter.classes.GoalSex
 import com.makstuff.minimalistcaloriecounter.classes.WeeklyWeightLossTarget
+import com.makstuff.minimalistcaloriecounter.classes.statusState
 import com.makstuff.minimalistcaloriecounter.ui.model.goalAdherenceCards
 import com.makstuff.minimalistcaloriecounter.ui.model.goalBodyTrendCards
 import com.makstuff.minimalistcaloriecounter.ui.model.sumNutrition
 import java.time.LocalDate
 
+private enum class GoalDetailsDestination {
+    CurrentGoal,
+    Recommendation,
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ScreenGoals(
     uiState: AppUiState,
+    onSettingsOpen: () -> Unit,
     onSettingsDismiss: () -> Unit,
     onRefreshHealthConnect: () -> Unit,
     onRecalculate: () -> Unit,
@@ -42,9 +55,11 @@ fun ScreenGoals(
 ) {
     val goals = uiState.goals
     val activeTargets = goals.activeTargetsFor(LocalDate.now())
-    val recalculationStatus = GoalRecalculationSchedule.status(goals)
+    val statusState = goals.statusState()
     val bodyTrendCards = goalBodyTrendCards(goals)
-    val adherenceCards = goalAdherenceCards(uiState.healthConnectViewerMeals.sumNutrition(), activeTargets)
+    val dayTotals = uiState.healthConnectViewerMeals.sumNutrition()
+    val adherenceCards = goalAdherenceCards(dayTotals, activeTargets)
+    var detailsDestination by remember { mutableStateOf<GoalDetailsDestination?>(null) }
 
     if (goals.settingsVisible) {
         GoalsSettingsSheet(
@@ -62,6 +77,24 @@ fun ScreenGoals(
             onMacroLockToggle = onMacroLockToggle,
         )
     }
+    detailsDestination?.let { destination ->
+        ModalBottomSheet(
+            onDismissRequest = { detailsDestination = null },
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+        ) {
+            GoalsDetailsSheet(
+                goals = goals,
+                targets = activeTargets,
+                mode = when (destination) {
+                    GoalDetailsDestination.CurrentGoal -> GoalDetailsMode.CurrentGoal
+                    GoalDetailsDestination.Recommendation -> GoalDetailsMode.Recommendation
+                },
+                onRecalculate = onRecalculate,
+                onApplyRecommendation = onApplyRecommendation,
+                onDismissRecommendation = onDismissRecommendation,
+            )
+        }
+    }
 
     LazyColumn(
         modifier = Modifier
@@ -71,42 +104,25 @@ fun ScreenGoals(
     ) {
         item {
             GoalHeroCard(
+                statusState = statusState,
                 targets = activeTargets,
-                profileComplete = goals.profile.isRequiredComplete(),
                 message = goals.message,
-                onRecalculate = onRecalculate,
+                onPrimaryAction = {
+                    when (statusState) {
+                        is GoalStatusState.ProfileIncomplete -> onSettingsOpen()
+                        is GoalStatusState.NewRecommendation -> detailsDestination = GoalDetailsDestination.Recommendation
+                        GoalStatusState.CurrentGoal -> detailsDestination = GoalDetailsDestination.CurrentGoal
+                    }
+                },
             )
         }
 
-        goals.recommendation?.let { recommendation ->
-            item {
-                RecommendationCard(
-                    currentTargets = activeTargets,
-                    recommendedTargets = recommendation.targets,
-                    bmr = recommendation.bmr,
-                    tdee = recommendation.tdee,
-                    warning = recommendation.warning,
-                    onApply = onApplyRecommendation,
-                    onDismiss = onDismissRecommendation,
-                )
-            }
-        }
-
         item {
-            RecalculationCard(
-                status = recalculationStatus,
-                onRecalculate = onRecalculate,
+            GoalProgressCard(
+                totals = dayTotals,
+                targets = activeTargets,
+                date = uiState.healthConnectViewerDate,
             )
-        }
-
-        if (goals.history.isNotEmpty()) {
-            item {
-                GoalHistoryCard(entries = goals.history)
-            }
-        }
-
-        item {
-            MacroTargetGrid(targets = activeTargets)
         }
 
         item {
@@ -114,7 +130,7 @@ fun ScreenGoals(
         }
 
         item {
-            GoalTrendCards(
+            RecentTrendCard(
                 bodyCards = bodyTrendCards,
                 adherenceCards = adherenceCards,
                 adherenceDate = uiState.healthConnectViewerDate,

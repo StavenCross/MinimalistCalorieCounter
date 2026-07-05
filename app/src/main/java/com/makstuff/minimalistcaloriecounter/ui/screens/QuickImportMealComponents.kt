@@ -26,11 +26,16 @@ import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.EggAlt
 import androidx.compose.material.icons.filled.Grass
 import androidx.compose.material.icons.filled.LocalFireDepartment
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.OilBarrel
 import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Surface
@@ -38,6 +43,10 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -71,7 +80,10 @@ internal fun ParsedMealPreviewCard(
     mealType: QuickImportMealType,
     targetAllocation: MealTargetAllocation,
     onMealClick: () -> Unit,
-    onFoodClick: (QuickImportFood) -> Unit,
+    onFoodClick: (Int) -> Unit,
+    canSave: Boolean,
+    isSaving: Boolean,
+    onSaveMeal: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     SurfacePanel(
@@ -81,13 +93,35 @@ internal fun ParsedMealPreviewCard(
         contentPadding = 12,
     ) {
         ParsedMealSummaryRow(meal, mealType)
+        Button(
+            onClick = onSaveMeal,
+            enabled = canSave && !isSaving,
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag("quick_import_save_meal_button"),
+        ) {
+            if (isSaving) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(18.dp),
+                    strokeWidth = 2.dp,
+                    color = MaterialTheme.colorScheme.onPrimary,
+                )
+            } else {
+                Icon(
+                    imageVector = Icons.Default.Check,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp),
+                )
+            }
+            Text("Save meal", modifier = Modifier.padding(start = 8.dp))
+        }
 
         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            meal.foods.forEach { food ->
+            meal.foods.forEachIndexed { index, food ->
                 CompactQuickFoodRow(
                     food = food,
                     reserveActionSpace = true,
-                    onClick = { onFoodClick(food) },
+                    onClick = { onFoodClick(index) },
                 )
             }
         }
@@ -103,6 +137,8 @@ internal fun QuickDaySummaryCard(
     checkInCopied: Boolean,
     onCopyCheckIn: () -> Unit,
 ) {
+    var menuExpanded by remember { mutableStateOf(false) }
+
     SurfacePanel(
         borderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.16f),
         backgroundColor = MaterialTheme.colorScheme.surfaceContainerHigh,
@@ -110,13 +146,14 @@ internal fun QuickDaySummaryCard(
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(end = 112.dp),
+                modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.Top,
             ) {
-                Column(verticalArrangement = Arrangement.spacedBy(1.dp)) {
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(1.dp),
+                    modifier = Modifier.weight(1f),
+                ) {
                     Text(
                         text = dateTime.format(DateTimeFormatter.ofPattern("EEEE, MMM d")),
                         style = MaterialTheme.typography.labelLarge,
@@ -128,24 +165,46 @@ internal fun QuickDaySummaryCard(
                         fontWeight = FontWeight.Bold,
                     )
                 }
-                QuickFoodCountChip(foodCount)
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    QuickFoodCountChip(foodCount)
+                    Box {
+                        IconButton(
+                            onClick = { menuExpanded = true },
+                            modifier = Modifier.testTag("quick_import_day_actions"),
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.MoreVert,
+                                contentDescription = "Day actions",
+                            )
+                        }
+                        DropdownMenu(
+                            expanded = menuExpanded,
+                            onDismissRequest = { menuExpanded = false },
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text(if (checkInCopied) "Check-in copied" else "Copy today check-in") },
+                                leadingIcon = {
+                                    Icon(
+                                        imageVector = if (checkInCopied) Icons.Default.Check else Icons.Default.ContentCopy,
+                                        contentDescription = null,
+                                    )
+                                },
+                                onClick = {
+                                    menuExpanded = false
+                                    onCopyCheckIn()
+                                },
+                                modifier = Modifier.testTag("quick_import_check_in_copy"),
+                            )
+                        }
+                    }
+                }
             }
 
             QuickDayMacroGrid(totals)
             QuickGoalProgressRow(progress)
-            TextButton(
-                onClick = onCopyCheckIn,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .testTag("quick_import_check_in_copy"),
-            ) {
-                Icon(
-                    imageVector = if (checkInCopied) Icons.Default.Check else Icons.Default.ContentCopy,
-                    contentDescription = null,
-                    modifier = Modifier.size(18.dp),
-                )
-                Text(if (checkInCopied) "Check-in copied" else "Copy today check-in")
-            }
         }
     }
 }
@@ -441,7 +500,7 @@ internal fun QuickImportMealDetailSheet(
     mealType: QuickImportMealType,
     targetAllocation: MealTargetAllocation,
     onDismiss: () -> Unit,
-    onFoodClick: (QuickImportFood) -> Unit,
+    onFoodClick: (Int) -> Unit,
 ) {
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -489,10 +548,10 @@ internal fun QuickImportMealDetailSheet(
                 )
                 QuickMealTargetProgressRow(meal.totals, targetAllocation)
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    meal.foods.forEach { food ->
+                    meal.foods.forEachIndexed { index, food ->
                         CompactQuickFoodRow(
                             food = food,
-                            onClick = { onFoodClick(food) },
+                            onClick = { onFoodClick(index) },
                         )
                     }
                 }
@@ -509,16 +568,50 @@ internal fun QuickImportMealDetailSheet(
 
 @Composable
 private fun QuickGoalProgressRow(progress: MacroTargets) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        QuickGoalArcTile(Icons.Default.LocalFireDepartment, progress.calories, QuickAccentSend, "Calories", "daily goal", Modifier.weight(1f))
-        QuickGoalArcTile(Icons.Default.EggAlt, progress.protein, QuickAccentClear, "Protein", "daily goal", Modifier.weight(1f))
-        QuickGoalArcTile(Icons.Default.BakeryDining, progress.carbs, QuickAccentDay, "Carbs", "daily goal", Modifier.weight(1f))
-        QuickGoalArcTile(Icons.Default.OilBarrel, progress.fat, QuickAccentFood, "Fat", "daily goal", Modifier.weight(1f))
-        QuickGoalArcTile(Icons.Default.Grass, progress.fiber, QuickAccentHealth, "Fiber", "daily goal", Modifier.weight(1f))
+    BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+        if (maxWidth < 420.dp) {
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    QuickGoalArcTile(Icons.Default.LocalFireDepartment, progress.calories, QuickAccentSend, "Calories", "daily goal", Modifier.weight(1f))
+                    QuickGoalArcTile(Icons.Default.EggAlt, progress.protein, QuickAccentClear, "Protein", "daily goal", Modifier.weight(1f))
+                    Box(modifier = Modifier.weight(1f))
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    QuickGoalArcTile(Icons.Default.BakeryDining, progress.carbs, QuickAccentDay, "Carbs", "daily goal", Modifier.weight(1f))
+                    QuickGoalArcTile(Icons.Default.OilBarrel, progress.fat, QuickAccentFood, "Fat", "daily goal", Modifier.weight(1f))
+                    Box(modifier = Modifier.weight(1f))
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    QuickGoalArcTile(Icons.Default.Grass, progress.fiber, QuickAccentHealth, "Fiber", "daily goal", Modifier.weight(1f))
+                    Box(modifier = Modifier.weight(1f))
+                    Box(modifier = Modifier.weight(1f))
+                }
+            }
+        } else {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                QuickGoalArcTile(Icons.Default.LocalFireDepartment, progress.calories, QuickAccentSend, "Calories", "daily goal", Modifier.weight(1f))
+                QuickGoalArcTile(Icons.Default.EggAlt, progress.protein, QuickAccentClear, "Protein", "daily goal", Modifier.weight(1f))
+                QuickGoalArcTile(Icons.Default.BakeryDining, progress.carbs, QuickAccentDay, "Carbs", "daily goal", Modifier.weight(1f))
+                QuickGoalArcTile(Icons.Default.OilBarrel, progress.fat, QuickAccentFood, "Fat", "daily goal", Modifier.weight(1f))
+                QuickGoalArcTile(Icons.Default.Grass, progress.fiber, QuickAccentHealth, "Fiber", "daily goal", Modifier.weight(1f))
+            }
+        }
     }
 }
 
@@ -528,16 +621,50 @@ private fun QuickMealTargetProgressRow(
     allocation: MealTargetAllocation,
 ) {
     if (allocation.calories == null) return
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        QuickGoalArcTile(Icons.Default.LocalFireDepartment, macroPercent(totals.energy, allocation.calories), QuickAccentSend, "Calories", "meal target", Modifier.weight(1f))
-        QuickGoalArcTile(Icons.Default.EggAlt, macroPercent(totals.protein, allocation.protein), QuickAccentClear, "Protein", "meal target", Modifier.weight(1f))
-        QuickGoalArcTile(Icons.Default.BakeryDining, macroPercent(totals.carbohydrate, allocation.carbs), QuickAccentDay, "Carbs", "meal target", Modifier.weight(1f))
-        QuickGoalArcTile(Icons.Default.OilBarrel, macroPercent(totals.fat, allocation.fat), QuickAccentFood, "Fat", "meal target", Modifier.weight(1f))
-        QuickGoalArcTile(Icons.Default.Grass, macroPercent(totals.fiber, allocation.fiber), QuickAccentHealth, "Fiber", "meal target", Modifier.weight(1f))
+    BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+        if (maxWidth < 420.dp) {
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    QuickGoalArcTile(Icons.Default.LocalFireDepartment, macroPercent(totals.energy, allocation.calories), QuickAccentSend, "Calories", "meal target", Modifier.weight(1f))
+                    QuickGoalArcTile(Icons.Default.EggAlt, macroPercent(totals.protein, allocation.protein), QuickAccentClear, "Protein", "meal target", Modifier.weight(1f))
+                    Box(modifier = Modifier.weight(1f))
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    QuickGoalArcTile(Icons.Default.BakeryDining, macroPercent(totals.carbohydrate, allocation.carbs), QuickAccentDay, "Carbs", "meal target", Modifier.weight(1f))
+                    QuickGoalArcTile(Icons.Default.OilBarrel, macroPercent(totals.fat, allocation.fat), QuickAccentFood, "Fat", "meal target", Modifier.weight(1f))
+                    Box(modifier = Modifier.weight(1f))
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    QuickGoalArcTile(Icons.Default.Grass, macroPercent(totals.fiber, allocation.fiber), QuickAccentHealth, "Fiber", "meal target", Modifier.weight(1f))
+                    Box(modifier = Modifier.weight(1f))
+                    Box(modifier = Modifier.weight(1f))
+                }
+            }
+        } else {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                QuickGoalArcTile(Icons.Default.LocalFireDepartment, macroPercent(totals.energy, allocation.calories), QuickAccentSend, "Calories", "meal target", Modifier.weight(1f))
+                QuickGoalArcTile(Icons.Default.EggAlt, macroPercent(totals.protein, allocation.protein), QuickAccentClear, "Protein", "meal target", Modifier.weight(1f))
+                QuickGoalArcTile(Icons.Default.BakeryDining, macroPercent(totals.carbohydrate, allocation.carbs), QuickAccentDay, "Carbs", "meal target", Modifier.weight(1f))
+                QuickGoalArcTile(Icons.Default.OilBarrel, macroPercent(totals.fat, allocation.fat), QuickAccentFood, "Fat", "meal target", Modifier.weight(1f))
+                QuickGoalArcTile(Icons.Default.Grass, macroPercent(totals.fiber, allocation.fiber), QuickAccentHealth, "Fiber", "meal target", Modifier.weight(1f))
+            }
+        }
     }
 }
 

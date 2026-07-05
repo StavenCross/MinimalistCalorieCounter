@@ -43,6 +43,7 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -216,7 +217,6 @@ internal fun QuickImportOutboxStatusCard(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun MealTimePanel(
-    dateTimeText: String,
     selectedDateTime: LocalDateTime,
     mealType: QuickImportMealType,
     onDateTimeChange: (LocalDateTime) -> Unit,
@@ -226,63 +226,66 @@ internal fun MealTimePanel(
     var timeSheetVisible by remember { mutableStateOf(false) }
     var mealTypeSheetVisible by remember { mutableStateOf(false) }
     var mealActionsSheetVisible by remember { mutableStateOf(false) }
-    val zoneId = ZoneId.systemDefault()
-    val datePickerState = rememberDatePickerState(
-        initialSelectedDateMillis = selectedDateTime.toLocalDate()
-            .atStartOfDay(zoneId)
-            .toInstant()
-            .toEpochMilli(),
-    )
-    val timePickerState = rememberTimePickerState(
-        initialHour = selectedDateTime.hour,
-        initialMinute = selectedDateTime.minute,
-        is24Hour = false,
-    )
 
     if (timeSheetVisible) {
-        ModalBottomSheet(
-            onDismissRequest = { timeSheetVisible = false },
-            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 14.dp)
-                    .padding(bottom = 18.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
+        key(selectedDateTime) {
+            val zoneId = ZoneId.systemDefault()
+            val datePickerState = rememberDatePickerState(
+                initialSelectedDateMillis = selectedDateTime.toLocalDate()
+                    .atStartOfDay(zoneId)
+                    .toInstant()
+                    .toEpochMilli(),
+            )
+            val timePickerState = rememberTimePickerState(
+                initialHour = selectedDateTime.hour,
+                initialMinute = selectedDateTime.minute,
+                is24Hour = false,
+            )
+
+            ModalBottomSheet(
+                onDismissRequest = { timeSheetVisible = false },
+                sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+                containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
             ) {
-                SheetTitle("Meal time", "The time sets breakfast, lunch, dinner, or snack.")
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .verticalScroll(rememberScrollState())
+                        .padding(horizontal = 14.dp)
+                        .padding(bottom = 18.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
-                    TextButton(
-                        onClick = { timeSheetVisible = false },
-                        modifier = Modifier.weight(1f),
+                    SheetTitle("Meal time", "The time sets breakfast, lunch, dinner, or snack.")
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
                     ) {
-                        Text("Cancel")
+                        TextButton(
+                            onClick = { timeSheetVisible = false },
+                            modifier = Modifier.weight(1f),
+                        ) {
+                            Text("Cancel")
+                        }
+                        Button(
+                            onClick = {
+                                val millis = datePickerState.selectedDateMillis
+                                if (millis != null) {
+                                    val date = Instant.ofEpochMilli(millis).atZone(zoneId).toLocalDate()
+                                    onDateTimeChange(
+                                        LocalDateTime.of(date.year, date.month, date.dayOfMonth, timePickerState.hour, timePickerState.minute)
+                                    )
+                                }
+                                timeSheetVisible = false
+                            },
+                            modifier = Modifier.weight(1f),
+                        ) {
+                            Text("Set")
+                        }
                     }
-                    Button(
-                        onClick = {
-                            val millis = datePickerState.selectedDateMillis
-                            if (millis != null) {
-                                val date = Instant.ofEpochMilli(millis).atZone(zoneId).toLocalDate()
-                                onDateTimeChange(
-                                    LocalDateTime.of(date.year, date.month, date.dayOfMonth, timePickerState.hour, timePickerState.minute)
-                                )
-                            }
-                            timeSheetVisible = false
-                        },
-                        modifier = Modifier.weight(1f),
-                    ) {
-                        Text("Set")
-                    }
+                    DatePicker(state = datePickerState)
+                    TimePicker(state = timePickerState)
                 }
-                DatePicker(state = datePickerState)
-                TimePicker(state = timePickerState)
             }
         }
     }
@@ -391,11 +394,6 @@ internal fun MealTimePanel(
                         text = mealType.label,
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
-                    )
-                    Text(
-                        text = dateTimeText,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }

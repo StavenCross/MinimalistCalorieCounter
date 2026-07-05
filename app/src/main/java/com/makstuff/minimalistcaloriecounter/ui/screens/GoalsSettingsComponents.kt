@@ -68,7 +68,7 @@ import com.makstuff.minimalistcaloriecounter.ui.reused.SheetTitle
 import com.makstuff.minimalistcaloriecounter.ui.reused.SurfacePanel
 import java.time.Instant
 import java.time.LocalDate
-import java.time.ZoneId
+import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -170,7 +170,6 @@ private fun ProfileEditor(
 ) {
     val profile = uiState.goals.profile
     var pickerSheet by remember { mutableStateOf<GoalPickerSheet?>(null) }
-    val zoneId = ZoneId.systemDefault()
 
     pickerSheet?.let { sheet ->
         ModalBottomSheet(
@@ -188,16 +187,19 @@ private fun ProfileEditor(
                 when (sheet) {
                     GoalPickerSheet.Birthday -> {
                         val initialMillis = profile.birthday
-                            ?.atStartOfDay(zoneId)
+                            ?.atStartOfDay(ZoneOffset.UTC)
                             ?.toInstant()
                             ?.toEpochMilli()
                         val datePickerState = rememberDatePickerState(initialSelectedDateMillis = initialMillis)
                         var appliedMillis by remember(initialMillis) { mutableStateOf(initialMillis) }
+                        var readyToApply by remember(initialMillis) { mutableStateOf(false) }
                         LaunchedEffect(datePickerState.selectedDateMillis) {
                             val millis = datePickerState.selectedDateMillis
-                            if (millis != null && millis != appliedMillis) {
+                            if (!readyToApply) {
+                                readyToApply = true
+                            } else if (millis != null && millis != appliedMillis) {
                                 appliedMillis = millis
-                                onBirthdayChange(Instant.ofEpochMilli(millis).atZone(zoneId).toLocalDate())
+                                onBirthdayChange(Instant.ofEpochMilli(millis).atZone(ZoneOffset.UTC).toLocalDate())
                                 pickerSheet = null
                             }
                         }
@@ -247,6 +249,31 @@ private fun ProfileEditor(
                             )
                         }
                     }
+                    GoalPickerSheet.Height -> {
+                        GoalHeightPickerSheet(
+                            currentHeightCm = profile.heightCm.value,
+                            onSetHeightCm = { onMeasurementChange(GoalFieldKey.HeightCm, it) },
+                            onDismiss = { pickerSheet = null },
+                        )
+                    }
+                    GoalPickerSheet.Weight -> {
+                        GoalWeightPickerSheet(
+                            currentWeightKg = profile.weightKg.value,
+                            onSetWeightKg = { onMeasurementChange(GoalFieldKey.WeightKg, it) },
+                            onDismiss = { pickerSheet = null },
+                        )
+                    }
+                    GoalPickerSheet.LeanMass -> {
+                        GoalWeightPickerSheet(
+                            currentWeightKg = profile.leanMassKg.value,
+                            onSetWeightKg = { onMeasurementChange(GoalFieldKey.LeanMassKg, it) },
+                            onDismiss = { pickerSheet = null },
+                            title = "Lean mass",
+                            testTagPrefix = "goals_lean_mass_lb",
+                            setButtonTag = "goals_lean_mass_set",
+                            setButtonText = "Set lean mass",
+                        )
+                    }
                 }
             }
         }
@@ -267,10 +294,34 @@ private fun ProfileEditor(
             testTag = "goals_sex_picker",
             onClick = { pickerSheet = GoalPickerSheet.Sex },
         )
-        MeasurementField("Height", GoalFieldKey.HeightCm, profile.heightCm, "cm", onMeasurementChange, onMeasurementLockToggle)
-        MeasurementField("Weight", GoalFieldKey.WeightKg, profile.weightKg, "kg", onMeasurementChange, onMeasurementLockToggle)
+        MeasurementPickerField(
+            label = "Height",
+            value = profile.heightCm.heightImperialLabel(),
+            isMissing = profile.heightCm.value == null,
+            locked = profile.heightCm.locked,
+            testTag = "goals_measurement_HeightCm",
+            onClick = { pickerSheet = GoalPickerSheet.Height },
+            onLockClick = { onMeasurementLockToggle(GoalFieldKey.HeightCm) },
+        )
+        MeasurementPickerField(
+            label = "Weight",
+            value = profile.weightKg.weightImperialLabel(),
+            isMissing = profile.weightKg.value == null,
+            locked = profile.weightKg.locked,
+            testTag = "goals_measurement_WeightKg",
+            onClick = { pickerSheet = GoalPickerSheet.Weight },
+            onLockClick = { onMeasurementLockToggle(GoalFieldKey.WeightKg) },
+        )
         MeasurementField("Body fat", GoalFieldKey.BodyFatPercent, profile.bodyFatPercent, "%", onMeasurementChange, onMeasurementLockToggle)
-        MeasurementField("Lean mass", GoalFieldKey.LeanMassKg, profile.leanMassKg, "kg", onMeasurementChange, onMeasurementLockToggle)
+        MeasurementPickerField(
+            label = "Lean mass",
+            value = if (profile.leanMassKg.value == null) "Estimated after profile" else profile.leanMassKg.weightImperialLabel(),
+            isMissing = false,
+            locked = profile.leanMassKg.locked,
+            testTag = "goals_measurement_LeanMassKg",
+            onClick = { pickerSheet = GoalPickerSheet.LeanMass },
+            onLockClick = { onMeasurementLockToggle(GoalFieldKey.LeanMassKg) },
+        )
         PickerField(
             label = "Lifestyle",
             value = profile.activityLevel.label,
@@ -423,6 +474,60 @@ private fun PickerField(
 }
 
 @Composable
+private fun MeasurementPickerField(
+    label: String,
+    value: String,
+    isMissing: Boolean,
+    locked: Boolean,
+    testTag: String,
+    onClick: () -> Unit,
+    onLockClick: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(58.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .background(MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.82f))
+            .border(
+                BorderStroke(
+                    1.dp,
+                    if (isMissing) MaterialTheme.colorScheme.error.copy(alpha = 0.46f) else MaterialTheme.colorScheme.outline.copy(alpha = 0.18f),
+                ),
+                RoundedCornerShape(12.dp),
+            )
+            .clickable(onClick = onClick)
+            .testTag(testTag)
+            .padding(start = 12.dp),
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(1.dp)) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Text(
+                text = value,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = if (isMissing) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+        LockButton(locked = locked, onClick = onLockClick)
+        Icon(
+            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+            contentDescription = null,
+            tint = if (isMissing) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(end = 12.dp),
+        )
+    }
+}
+
+@Composable
 private fun PickerOptionRow(
     label: String,
     selected: Boolean,
@@ -468,6 +573,9 @@ private enum class GoalPickerSheet {
     Sex,
     Activity,
     WeightLoss,
+    Height,
+    Weight,
+    LeanMass,
 }
 
 @Composable

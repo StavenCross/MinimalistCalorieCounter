@@ -82,6 +82,8 @@ fun macroDescription(label: String): String {
         "protein" -> "Protein supports muscle repair and fullness."
         "fat" -> "Fat is dietary fat grams, including saturated fat."
         "fiber" -> "Fiber is the carb portion your body does not fully digest."
+        "locked" -> "Locked values stay manual and will not be replaced by Health Connect."
+        "estimated" -> "Estimated values are calculated from your available body measurements."
         else -> label
     }
 }

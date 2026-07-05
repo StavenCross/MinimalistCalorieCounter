@@ -1,6 +1,7 @@
 package com.makstuff.minimalistcaloriecounter.health
 
 import androidx.health.connect.client.records.MealType
+import com.makstuff.minimalistcaloriecounter.classes.NutritionFoodEditDraft
 import com.makstuff.minimalistcaloriecounter.classes.QuickImportHealthPayload
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -66,5 +67,48 @@ class HealthConnectNutritionMapperTest {
 
         assert(first.isNotBlank())
         assert(first != second)
+    }
+
+    @Test
+    fun editedViewerMealMapsToReplacementPayload() {
+        val meal = HealthConnectNutritionMeal(
+            recordId = "record-1",
+            clientRecordId = "client-1",
+            startTime = LocalDateTime.of(2026, 7, 3, 21, 0),
+            endTime = LocalDateTime.of(2026, 7, 3, 21, 1),
+            name = "Whiskey",
+            energy = 100.0,
+            energyFromFat = 0.0,
+            totalCarbohydrate = 0.0,
+            sugar = 0.0,
+            protein = 0.0,
+            totalFat = 0.0,
+            saturatedFat = 0.0,
+            dietaryFiber = 0.0,
+            mealType = MealType.MEAL_TYPE_SNACK,
+        )
+
+        val payload = meal.toEditedHealthPayload(
+            draft = NutritionFoodEditDraft(
+                name = "Whiskey pour",
+                energy = 120.0,
+                totalCarbohydrate = 1.0,
+                protein = 0.0,
+                totalFat = 2.0,
+                dietaryFiber = 0.0,
+                sugar = 0.5,
+                saturatedFat = 0.1,
+            ),
+            clientRecordId = "mcc-meal-edit-test",
+        )
+
+        assertEquals("Whiskey pour", payload.name)
+        assertEquals("mcc-meal-edit-test", payload.clientRecordId)
+        assertEquals(LocalDateTime.of(2026, 7, 3, 21, 0), payload.dateTime)
+        assertEquals(MealType.MEAL_TYPE_SNACK, payload.mealType)
+        assertEquals(120.0, payload.energy, 0.001)
+        assertEquals(18.0, payload.energyFromFat, 0.001)
+        assertEquals(1.0, payload.totalCarbohydrate, 0.001)
+        assertEquals(0.5, payload.sugar, 0.001)
     }
 }

@@ -11,9 +11,14 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Download
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Switch
@@ -27,6 +32,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -252,20 +258,30 @@ private fun HealthDataSheetContent(
     OptionsItem("Redacted for ChatGPT", trailingText = if (uiState.healthConnectExportRedacted) "On" else "Off") {
         viewModel.updateHealthConnectExportRedacted(!uiState.healthConnectExportRedacted)
     }
-    OptionsItem(
-        text = when {
-            uiState.healthConnectExportInProgress -> "Exporting Health Connect CSV..."
-            !uiState.healthConnectExportPermissionsGranted -> "Grant export read permissions"
-            uiState.healthConnectExportRedacted -> "Export redacted ${uiState.healthConnectExportMode.label.lowercase()} CSV"
-            else -> "Export raw ${uiState.healthConnectExportMode.label.lowercase()} CSV"
+    Button(
+        onClick = {
+            if (uiState.healthConnectExportPermissionsGranted) {
+                viewModel.exportHealthConnectRange()
+            } else {
+                healthConnectExportPermissionLauncher.launch(healthConnectManager.exportPermissionsFor(uiState.healthConnectExportMode))
+            }
         },
+        enabled = !uiState.healthConnectExportInProgress,
+        modifier = Modifier
+            .fillMaxWidth()
+            .testTag("settings_health_connect_export_csv"),
     ) {
-        if (uiState.healthConnectExportPermissionsGranted) {
-            viewModel.exportHealthConnectRange()
-        } else {
-            healthConnectExportPermissionLauncher.launch(healthConnectManager.exportPermissionsFor(uiState.healthConnectExportMode))
-        }
+        Icon(imageVector = Icons.Default.Download, contentDescription = null, modifier = Modifier.size(18.dp))
+        Spacer(Modifier.size(8.dp))
+        Text(
+            healthConnectExportActionLabel(
+                mode = uiState.healthConnectExportMode,
+                permissionsGranted = uiState.healthConnectExportPermissionsGranted,
+                inProgress = uiState.healthConnectExportInProgress,
+            ),
+        )
     }
+    SheetNote("Exports a CSV to Downloads for the selected date range.", isError = false)
     uiState.healthConnectExportMessage?.let { message ->
         SheetNote(message, isError = message.contains("failed", ignoreCase = true) || message.contains("missing", ignoreCase = true))
     }
@@ -298,6 +314,20 @@ private fun HealthDataSheetContent(
         if (cleanupPreview != null) onConfirmCleanup() else viewModel.previewHealthConnectNutritionRange()
     }
     uiState.historicalMealImportMessage?.let { message -> SheetNote(message, isError = false) }
+}
+
+internal fun healthConnectExportActionLabel(
+    mode: HealthConnectExportMode,
+    permissionsGranted: Boolean,
+    inProgress: Boolean,
+): String {
+    return when {
+        inProgress -> "Exporting Health Connect CSV..."
+        !permissionsGranted -> "Grant export read permissions"
+        mode == HealthConnectExportMode.Full -> "Export all to CSV"
+        mode == HealthConnectExportMode.NutritionOnly -> "Export nutrition CSV"
+        else -> "Export nutrition and goals CSV"
+    }
 }
 
 @Composable

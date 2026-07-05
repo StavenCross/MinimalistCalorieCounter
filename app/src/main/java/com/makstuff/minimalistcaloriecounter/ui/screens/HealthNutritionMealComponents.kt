@@ -23,6 +23,7 @@ import androidx.compose.material.icons.filled.BakeryDining
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.EggAlt
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
@@ -36,10 +37,15 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -49,14 +55,16 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.makstuff.minimalistcaloriecounter.classes.NutritionFoodEditDraft
 import com.makstuff.minimalistcaloriecounter.essentials.toFormattedString
 import com.makstuff.minimalistcaloriecounter.health.HealthConnectNutritionMeal
 import com.makstuff.minimalistcaloriecounter.ui.model.NutritionMealGroup
+import com.makstuff.minimalistcaloriecounter.ui.model.NutritionServingGroup
 import com.makstuff.minimalistcaloriecounter.ui.model.NutritionStatItem
 import com.makstuff.minimalistcaloriecounter.ui.model.healthGroupDetailItems
 import com.makstuff.minimalistcaloriecounter.ui.model.healthMealDetailItems
+import com.makstuff.minimalistcaloriecounter.ui.model.mealServingGroups
 import com.makstuff.minimalistcaloriecounter.ui.model.supportsMacroHint
-import com.makstuff.minimalistcaloriecounter.ui.model.visibleMealFoods
 import com.makstuff.minimalistcaloriecounter.ui.reused.MacroHintBox
 import com.makstuff.minimalistcaloriecounter.ui.reused.SurfacePanel
 import java.time.format.DateTimeFormatter
@@ -75,8 +83,9 @@ internal fun MealCard(
     val carbs = group.foods.sumOf { it.totalCarbohydrate }
     val fat = group.foods.sumOf { it.totalFat }
     val fiber = group.foods.sumOf { it.dietaryFiber }
-    val visibleFoods = visibleMealFoods(group, expanded)
-    val hiddenFoodCount = group.foods.size - visibleFoods.size
+    val servingGroups = mealServingGroups(group.foods)
+    val visibleServingGroups = if (expanded || servingGroups.size <= 3) servingGroups else servingGroups.take(3)
+    val hiddenFoodCount = servingGroups.size - visibleServingGroups.size
 
     SurfacePanel(
         modifier = Modifier
@@ -91,10 +100,11 @@ internal fun MealCard(
         MealSummaryRow(group, calories, carbs, protein, fat, fiber)
 
         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            visibleFoods.forEach { food ->
+            visibleServingGroups.forEach { servingGroup ->
                 CompactFoodRow(
-                    meal = food,
-                    onClick = { onFoodClick(food) },
+                    meal = servingGroup.representative,
+                    quantity = servingGroup.quantity,
+                    onClick = { onFoodClick(servingGroup.representative) },
                 )
             }
         }
@@ -287,6 +297,7 @@ private fun MacroSummaryChip(
 @Composable
 private fun CompactFoodRow(
     meal: HealthConnectNutritionMeal,
+    quantity: Int = 1,
     onClick: () -> Unit,
 ) {
     Row(
@@ -300,14 +311,29 @@ private fun CompactFoodRow(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(
-            text = meal.name,
+        Row(
             modifier = Modifier.weight(1f),
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.SemiBold,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = meal.name,
+                modifier = Modifier.weight(1f),
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            if (quantity > 1) {
+                Text(
+                    text = "x$quantity",
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = AccentGold,
+                    maxLines = 1,
+                )
+            }
+        }
         Text(
             text = "${meal.energy.toFormattedString(true)} kcal",
             modifier = Modifier.padding(start = 10.dp),
@@ -343,6 +369,7 @@ internal fun MealDetailDialog(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
                 .padding(horizontal = 14.dp)
                 .padding(bottom = 18.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -389,10 +416,11 @@ internal fun MealDetailDialog(
                 }
                 MacroGrid(items = healthGroupDetailItems(group))
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    group.foods.forEach { food ->
+                    mealServingGroups(group.foods).forEach { servingGroup ->
                         CompactFoodRow(
-                            meal = food,
-                            onClick = { onFoodClick(food) },
+                            meal = servingGroup.representative,
+                            quantity = servingGroup.quantity,
+                            onClick = { onFoodClick(servingGroup.representative) },
                         )
                     }
                 }
@@ -445,65 +473,188 @@ internal fun MealDetailDialog(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun FoodDetailDialog(
-    meal: HealthConnectNutritionMeal,
+    servingGroup: NutritionServingGroup,
     onDismiss: () -> Unit,
     onDelete: () -> Unit,
+    onAddServing: () -> Unit,
+    onRemoveServing: () -> Unit,
+    onSaveEdit: (NutritionFoodEditDraft) -> Unit,
 ) {
+    val meal = servingGroup.representative
+    var editing by remember(servingGroup) { mutableStateOf(false) }
+    var name by remember(servingGroup) { mutableStateOf(meal.name) }
+    var calories by remember(servingGroup) { mutableStateOf(meal.energy.toFormattedString(true)) }
+    var carbs by remember(servingGroup) { mutableStateOf(meal.totalCarbohydrate.toFormattedString(true)) }
+    var protein by remember(servingGroup) { mutableStateOf(meal.protein.toFormattedString(true)) }
+    var fat by remember(servingGroup) { mutableStateOf(meal.totalFat.toFormattedString(true)) }
+    var fiber by remember(servingGroup) { mutableStateOf(meal.dietaryFiber.toFormattedString(true)) }
+    var sugar by remember(servingGroup) { mutableStateOf(meal.sugar.toFormattedString(true)) }
+    var saturatedFat by remember(servingGroup) { mutableStateOf(meal.saturatedFat.toFormattedString(true)) }
+    val draft = NutritionFoodEditDraft(
+        name = name.trim(),
+        energy = calories.toDoubleOrNull(),
+        totalCarbohydrate = carbs.toDoubleOrNull(),
+        protein = protein.toDoubleOrNull(),
+        totalFat = fat.toDoubleOrNull(),
+        dietaryFiber = fiber.toDoubleOrNull(),
+        sugar = sugar.toDoubleOrNull(),
+        saturatedFat = saturatedFat.toDoubleOrNull(),
+    )
+    val canSave = draft.isComplete
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
         containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+        modifier = Modifier.testTag("meals_food_detail_sheet"),
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
                 .padding(horizontal = 14.dp)
                 .padding(bottom = 18.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                if (editing) {
+                    OutlinedTextField(
+                        value = name,
+                        onValueChange = { name = it },
+                        label = { Text("Food") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                } else {
+                    Text(
+                        text = meal.name,
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                    )
+                }
                 Text(
-                    text = meal.name,
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                )
-                Text(
-                    text = meal.startTime.format(DateTimeFormatter.ofPattern("h:mm a")),
+                    text = listOf(
+                        meal.startTime.format(DateTimeFormatter.ofPattern("h:mm a")),
+                        if (servingGroup.quantity > 1) "x${servingGroup.quantity}" else null,
+                    ).filterNotNull().joinToString(" | "),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                MacroGrid(items = healthMealDetailItems(meal))
+            if (editing) {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                        EditNumberField("Calories", calories, { calories = it }, Modifier.weight(1f))
+                        EditNumberField("Carbs", carbs, { carbs = it }, Modifier.weight(1f))
+                    }
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                        EditNumberField("Protein", protein, { protein = it }, Modifier.weight(1f))
+                        EditNumberField("Fat", fat, { fat = it }, Modifier.weight(1f))
+                    }
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                        EditNumberField("Fiber", fiber, { fiber = it }, Modifier.weight(1f))
+                        EditNumberField("Sugar", sugar, { sugar = it }, Modifier.weight(1f))
+                    }
+                    EditNumberField("Sat fat", saturatedFat, { saturatedFat = it }, Modifier.fillMaxWidth())
+                    if (servingGroup.quantity > 1) {
+                        Text(
+                            text = "Macro edits apply to all ${servingGroup.quantity} servings.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+            } else {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    MacroGrid(items = healthMealDetailItems(meal))
+                }
+            }
+            SurfacePanel(
+                backgroundColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                borderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.14f),
+                contentPadding = 10,
+                verticalSpacing = 6,
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text("Quantity", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                        IconButton(
+                            onClick = onRemoveServing,
+                            enabled = servingGroup.quantity > 1,
+                            modifier = Modifier.testTag("meals_food_quantity_decrement"),
+                        ) {
+                            Text("-", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                        }
+                        Text(
+                            text = servingGroup.quantity.toString(),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.testTag("meals_food_quantity_value"),
+                        )
+                        IconButton(
+                            onClick = onAddServing,
+                            modifier = Modifier.testTag("meals_food_quantity_increment"),
+                        ) {
+                            Text("+", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
             }
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                horizontalArrangement = Arrangement.End,
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                TextButton(
+                IconButton(
                     onClick = onDelete,
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier.testTag("meals_food_delete"),
                 ) {
                     Icon(
                         imageVector = Icons.Default.Delete,
-                        contentDescription = null,
+                        contentDescription = "Delete food",
                         tint = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.size(18.dp),
-                    )
-                    Text(
-                        text = "Delete",
-                        color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.size(22.dp),
                     )
                 }
-                Button(
-                    onClick = onDismiss,
-                    modifier = Modifier.weight(1f),
+                IconButton(
+                    onClick = {
+                        if (editing && canSave) {
+                            onSaveEdit(draft)
+                        } else {
+                            editing = true
+                        }
+                    },
+                    enabled = !editing || canSave,
+                    modifier = Modifier.testTag("meals_food_edit_save"),
                 ) {
-                    Text("Close")
+                    Icon(
+                        imageVector = if (editing) Icons.Default.Check else Icons.Default.Edit,
+                        contentDescription = if (editing) "Save food changes" else "Edit food",
+                        modifier = Modifier.size(22.dp),
+                    )
                 }
             }
         }
     }
+}
+
+@Composable
+private fun EditNumberField(
+    label: String,
+    value: String,
+    onValueChange: (String) -> Unit,
+    modifier: Modifier,
+) {
+    OutlinedTextField(
+        value = value,
+        onValueChange = onValueChange,
+        label = { Text(label) },
+        singleLine = true,
+        modifier = modifier,
+    )
 }
 
 @Composable

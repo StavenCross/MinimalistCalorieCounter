@@ -7,8 +7,10 @@ import com.makstuff.minimalistcaloriecounter.classes.GoalMacro
 import com.makstuff.minimalistcaloriecounter.classes.GoalMeasurement
 import com.makstuff.minimalistcaloriecounter.classes.GoalSex
 import com.makstuff.minimalistcaloriecounter.classes.WeeklyWeightLossTarget
+import com.makstuff.minimalistcaloriecounter.classes.onlyIfMeaningfulComparedTo
 import com.makstuff.minimalistcaloriecounter.classes.toHistoryEntry
 import com.makstuff.minimalistcaloriecounter.health.HealthConnectGoalProfileReadResult
+import com.makstuff.minimalistcaloriecounter.health.HealthConnectGoalProfileWriteResult
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.LocalDate
@@ -61,6 +63,7 @@ internal class AppViewModelGoalsActions(private val env: AppViewModelEnvironment
             currentState.copy(goals = currentState.goals.copy(profile = updated))
         }
         writeGoals()
+        writeManualMeasurementToHealthConnect(field, value)
     }
 
     fun toggleMeasurementLock(field: GoalFieldKey) {
@@ -106,14 +109,14 @@ internal class AppViewModelGoalsActions(private val env: AppViewModelEnvironment
                 profile = currentState.goals.profile,
                 existingTargets = currentState.goals.currentTargets,
                 date = date,
-            )
+            )?.onlyIfMeaningfulComparedTo(currentState.goals.activeTargetsFor(date))
             currentState.copy(
                 goals = currentState.goals.copy(
                     recommendation = recommendation,
                     message = if (recommendation == null) {
                         val missing = currentState.goals.profile.missingRequiredFields(date)
                         if (missing.isEmpty()) {
-                            "Complete required profile fields and lean mass/body fat to calculate goals."
+                            "Complete required profile fields to calculate goals."
                         } else {
                             "Missing: ${missing.joinToString(", ")}."
                         }
@@ -163,7 +166,7 @@ internal class AppViewModelGoalsActions(private val env: AppViewModelEnvironment
                             profile = profile,
                             existingTargets = currentState.goals.currentTargets,
                             date = LocalDate.now(),
-                        )
+                        )?.onlyIfMeaningfulComparedTo(currentState.goals.activeTargetsFor(LocalDate.now()))
                         currentState.copy(
                             goals = currentState.goals.copy(
                                 profile = profile,
@@ -203,5 +206,27 @@ internal class AppViewModelGoalsActions(private val env: AppViewModelEnvironment
         env.launchRoomWrite {
             writeGoals(env.uiState.goals)
         }
+    }
+
+    private fun writeManualMeasurementToHealthConnect(field: GoalFieldKey, value: Double?) {
+        if (value == null) return
+        val heightCm = value.takeIf { field == GoalFieldKey.HeightCm }
+        val weightKg = value.takeIf { field == GoalFieldKey.WeightKg }
+        if (heightCm == null && weightKg == null) return
+        env.scope.launch {
+            when (val result = env.healthConnectManager.writeGoalProfileMeasurements(heightCm = heightCm, weightKg = weightKg)) {
+                HealthConnectGoalProfileWriteResult.Success -> Unit
+                HealthConnectGoalProfileWriteResult.HealthConnectUnavailable -> Unit
+                HealthConnectGoalProfileWriteResult.PermissionsMissing -> setGoalMessage("Health Connect profile write permissions are missing.")
+                is HealthConnectGoalProfileWriteResult.Failed -> setGoalMessage("Health Connect profile write failed: ${result.message}")
+            }
+        }
+    }
+
+    private fun setGoalMessage(message: String) {
+        env.state.update { currentState ->
+            currentState.copy(goals = currentState.goals.copy(message = message))
+        }
+        writeGoals()
     }
 }

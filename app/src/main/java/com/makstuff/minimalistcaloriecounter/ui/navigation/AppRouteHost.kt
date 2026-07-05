@@ -80,6 +80,9 @@ fun AppRouteHost(
                 onRefresh = { viewModel.readHealthConnectNutritionMeals() },
                 onDeleteMeal = { viewModel.deleteHealthConnectNutritionMeal(it) },
                 onDeleteMealGroup = { viewModel.deleteHealthConnectNutritionMeals(it) },
+                onAddFoodServing = { viewModel.addHealthConnectNutritionServing(it) },
+                onRemoveFoodServing = { viewModel.deleteHealthConnectNutritionMeal(it.recordId) },
+                onSaveFoodServingGroup = { foods, draft -> viewModel.updateHealthConnectNutritionServingGroup(foods, draft) },
                 onRepeatMealGroup = {
                     viewModel.prepareQuickImportRepeat(it)
                     navController.navigate(AppRoutes.QUICK_IMPORT) {
@@ -97,6 +100,7 @@ fun AppRouteHost(
         composable(AppRoutes.GOALS_HOME) {
             ScreenGoals(
                 uiState = uiState,
+                onSettingsOpen = { viewModel.updateGoalsSettingsVisible(true) },
                 onSettingsDismiss = { viewModel.updateGoalsSettingsVisible(false) },
                 onRefreshHealthConnect = { viewModel.refreshGoalsFromHealthConnect() },
                 onRecalculate = { viewModel.recalculateGoalRecommendation() },
@@ -131,6 +135,7 @@ fun AppRouteHost(
                 onRefreshDateTime = { viewModel.refreshQuickImportDateTime() },
                 onDateTimeChange = { viewModel.updateQuickImportDateTime(it) },
                 onMealTypeChange = { viewModel.updateQuickImportMealTypeOverride(it) },
+                onParsedFoodChange = { index, food -> viewModel.updateQuickImportParsedFood(index, food) },
                 onImport = { viewModel.quickImportCommit(context) },
                 onClear = { viewModel.resetQuickImport() },
                 onRetryOutbox = { viewModel.quickImportRetryHealthConnect(context, it) },

@@ -11,7 +11,9 @@ import com.makstuff.minimalistcaloriecounter.classes.DatabaseEntry
 import com.makstuff.minimalistcaloriecounter.classes.GoalFieldKey
 import com.makstuff.minimalistcaloriecounter.classes.GoalMacro
 import com.makstuff.minimalistcaloriecounter.classes.GoalSex
+import com.makstuff.minimalistcaloriecounter.classes.NutritionFoodEditDraft
 import com.makstuff.minimalistcaloriecounter.classes.Nutrients
+import com.makstuff.minimalistcaloriecounter.classes.QuickImportFood
 import com.makstuff.minimalistcaloriecounter.classes.QuickImportMealType
 import com.makstuff.minimalistcaloriecounter.classes.WeeklyWeightLossTarget
 import com.makstuff.minimalistcaloriecounter.health.HealthConnectNutritionMeal
@@ -111,6 +113,13 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     fun deleteHealthConnectNutritionMeals(recordIds: List<String>) = healthConnectMealActions.deleteMeals(recordIds)
 
+    fun addHealthConnectNutritionServing(food: HealthConnectNutritionMeal) = healthConnectMealActions.addServing(food)
+
+    fun updateHealthConnectNutritionServingGroup(
+        foods: List<HealthConnectNutritionMeal>,
+        draft: NutritionFoodEditDraft,
+    ) = healthConnectMealActions.updateServingGroup(foods, draft)
+
     fun previewHistoricalMealImport(rows: List<List<String>>) = healthConnectMealActions.previewHistoricalImport(rows)
 
     fun writeHistoricalMealImport() = healthConnectMealActions.writeHistoricalImport()
@@ -193,6 +202,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     fun dayAddFood(weight: String, databaseEntry: DatabaseEntry, context: Context) = archiveDayActions.addDayFood(weight, databaseEntry, context)
 
     fun updateQuickImportText(text: String) = quickImportActions.updateText(text)
+
+    fun updateQuickImportParsedFood(foodIndex: Int, food: QuickImportFood) = quickImportActions.updateParsedFood(foodIndex, food)
 
     fun resetQuickImport() = quickImportActions.reset()
 

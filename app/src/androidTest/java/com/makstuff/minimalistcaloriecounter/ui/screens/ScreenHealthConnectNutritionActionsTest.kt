@@ -5,14 +5,19 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performTextClearance
+import androidx.compose.ui.test.performTextInput
 import androidx.health.connect.client.records.MealType
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.makstuff.minimalistcaloriecounter.AppUiState
 import com.makstuff.minimalistcaloriecounter.classes.Archive
 import com.makstuff.minimalistcaloriecounter.classes.Combo
+import com.makstuff.minimalistcaloriecounter.classes.NutritionFoodEditDraft
 import com.makstuff.minimalistcaloriecounter.health.HealthConnectNutritionMeal
 import com.makstuff.minimalistcaloriecounter.ui.model.NutritionMealGroup
+import com.makstuff.minimalistcaloriecounter.ui.model.NutritionServingGroup
 import com.makstuff.minimalistcaloriecounter.ui.theme.AppTheme
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -42,13 +47,18 @@ class ScreenHealthConnectNutritionActionsTest {
                     onRefresh = {},
                     onDeleteMeal = {},
                     onDeleteMealGroup = {},
+                    onAddFoodServing = {},
+                    onRemoveFoodServing = {},
+                    onSaveFoodServingGroup = { _, _ -> },
                     onRepeatMealGroup = {},
                     onExportDaySummary = { _, _ -> },
                 )
             }
         }
 
+        composeRule.onNodeWithTag("meals_day_actions").assertIsDisplayed().performClick()
         composeRule.onNodeWithTag("meals_day_copy_summary").assertIsDisplayed().performClick()
+        composeRule.onNodeWithTag("meals_day_actions").assertIsDisplayed().performClick()
         composeRule.onNodeWithText("Day copied").assertIsDisplayed()
     }
 
@@ -136,6 +146,9 @@ class ScreenHealthConnectNutritionActionsTest {
                     onRefresh = {},
                     onDeleteMeal = {},
                     onDeleteMealGroup = {},
+                    onAddFoodServing = {},
+                    onRemoveFoodServing = {},
+                    onSaveFoodServingGroup = { _, _ -> },
                     onRepeatMealGroup = {},
                     onExportDaySummary = { date, summary ->
                         exportedDate = date
@@ -145,9 +158,65 @@ class ScreenHealthConnectNutritionActionsTest {
             }
         }
 
+        composeRule.onNodeWithTag("meals_day_actions").assertIsDisplayed().performClick()
         composeRule.onNodeWithTag("meals_day_export_summary").assertIsDisplayed().performClick()
         assertEquals(LocalDate.of(2026, 7, 2), exportedDate)
         assertTrue(exportedSummary.contains("Meals for 2026-07-02"))
+    }
+
+    @Test
+    fun foodDetailQuantityButtonsEmitServingActions() {
+        var added = false
+        var removed = false
+
+        composeRule.setContent {
+            AppTheme(dynamicColor = false) {
+                FoodDetailDialog(
+                    servingGroup = NutritionServingGroup(
+                        listOf(
+                            sampleMeal(name = "Whiskey", minuteOffset = 0),
+                            sampleMeal(name = "Whiskey", minuteOffset = 0).copy(recordId = "record-2", clientRecordId = "client-2"),
+                        )
+                    ),
+                    onDismiss = {},
+                    onDelete = {},
+                    onAddServing = { added = true },
+                    onRemoveServing = { removed = true },
+                    onSaveEdit = {},
+                )
+            }
+        }
+
+        composeRule.onNodeWithTag("meals_food_quantity_value").assertIsDisplayed()
+        composeRule.onNodeWithTag("meals_food_quantity_increment").assertIsDisplayed().performClick()
+        composeRule.onNodeWithTag("meals_food_quantity_decrement").assertIsDisplayed().performClick()
+        assertTrue(added)
+        assertTrue(removed)
+    }
+
+    @Test
+    fun foodDetailEditSavesMacroDraftForServingGroup() {
+        var savedDraft: NutritionFoodEditDraft? = null
+
+        composeRule.setContent {
+            AppTheme(dynamicColor = false) {
+                FoodDetailDialog(
+                    servingGroup = NutritionServingGroup(listOf(sampleMeal(name = "Whiskey", minuteOffset = 0))),
+                    onDismiss = {},
+                    onDelete = {},
+                    onAddServing = {},
+                    onRemoveServing = {},
+                    onSaveEdit = { savedDraft = it },
+                )
+            }
+        }
+
+        composeRule.onNodeWithTag("meals_food_edit_save").performScrollTo().assertIsDisplayed().performClick()
+        composeRule.onNodeWithText("Calories").performTextClearance()
+        composeRule.onNodeWithText("Calories").performTextInput("120")
+        composeRule.onNodeWithTag("meals_food_edit_save").performScrollTo().assertIsDisplayed().performClick()
+
+        assertEquals(120.0, savedDraft?.energy ?: 0.0, 0.001)
     }
 
     private fun baseState(): AppUiState {

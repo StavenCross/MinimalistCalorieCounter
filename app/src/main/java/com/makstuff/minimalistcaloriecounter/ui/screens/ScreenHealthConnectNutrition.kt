@@ -31,9 +31,12 @@ import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.EggAlt
 import androidx.compose.material.icons.filled.Grass
 import androidx.compose.material.icons.filled.LocalFireDepartment
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.OilBarrel
 import androidx.compose.material3.Button
 import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -67,6 +70,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.makstuff.minimalistcaloriecounter.AppUiState
 import com.makstuff.minimalistcaloriecounter.classes.MacroTargets
+import com.makstuff.minimalistcaloriecounter.classes.NutritionFoodEditDraft
 import com.makstuff.minimalistcaloriecounter.essentials.toFormattedString
 import com.makstuff.minimalistcaloriecounter.health.HealthConnectNutritionMeal
 import com.makstuff.minimalistcaloriecounter.ui.model.NutritionMealGroup
@@ -77,9 +81,11 @@ import com.makstuff.minimalistcaloriecounter.ui.model.mealGroupSummaryText
 import com.makstuff.minimalistcaloriecounter.ui.model.mealGroups
 import com.makstuff.minimalistcaloriecounter.ui.model.mealsDaySummaryText
 import com.makstuff.minimalistcaloriecounter.ui.model.nutritionDaySummary
+import com.makstuff.minimalistcaloriecounter.ui.model.servingGroupFor
 import com.makstuff.minimalistcaloriecounter.ui.model.shouldCollapseMealGroup
 import com.makstuff.minimalistcaloriecounter.ui.reused.MacroHintBox
 import com.makstuff.minimalistcaloriecounter.ui.reused.SurfacePanel
+import com.makstuff.minimalistcaloriecounter.ui.reused.pullRefreshRubberBand
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -93,6 +99,9 @@ fun ScreenHealthConnectNutrition(
     onRefresh: () -> Unit,
     onDeleteMeal: (String) -> Unit,
     onDeleteMealGroup: (List<String>) -> Unit,
+    onAddFoodServing: (HealthConnectNutritionMeal) -> Unit,
+    onRemoveFoodServing: (HealthConnectNutritionMeal) -> Unit,
+    onSaveFoodServingGroup: (List<HealthConnectNutritionMeal>, NutritionFoodEditDraft) -> Unit,
     onRepeatMealGroup: (List<HealthConnectNutritionMeal>) -> Unit,
     onExportDaySummary: (LocalDate, String) -> Unit,
 ) {
@@ -120,12 +129,23 @@ fun ScreenHealthConnectNutrition(
     }
 
     selectedFood?.let { food ->
+        val servingGroup = servingGroupFor(food, meals)
         FoodDetailDialog(
-            meal = food,
+            servingGroup = servingGroup,
             onDismiss = { selectedFood = null },
             onDelete = {
                 selectedFood = null
-                onDeleteMeal(food.recordId)
+                onDeleteMealGroup(servingGroup.foods.map { it.recordId })
+            },
+            onAddServing = {
+                onAddFoodServing(food)
+            },
+            onRemoveServing = {
+                onRemoveFoodServing(servingGroup.foods.last())
+            },
+            onSaveEdit = { draft ->
+                onSaveFoodServingGroup(servingGroup.foods, draft)
+                selectedFood = null
             },
         )
     }
@@ -155,7 +175,7 @@ fun ScreenHealthConnectNutrition(
     }
 
     if (datePickerVisible) {
-        DatePickerSheet(
+        MealDatePickerSheet(
             selectedDate = selectedDate,
             onDismiss = { datePickerVisible = false },
             onDateSelected = {
@@ -173,15 +193,17 @@ fun ScreenHealthConnectNutrition(
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
+                .pullRefreshRubberBand(uiState.healthConnectViewerLoading)
                 .padding(horizontal = 12.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
             item {
-                MealsDateHeader(
+                MealDateSelector(
                     selectedDate = selectedDate,
                     onPrevious = { onDateChange(selectedDate.minusDays(1)) },
                     onNext = { onDateChange(selectedDate.plusDays(1)) },
                     onDateClick = { datePickerVisible = true },
+                    testTagPrefix = "meals",
                 )
             }
 
@@ -253,122 +275,6 @@ fun ScreenHealthConnectNutrition(
 }
 
 @Composable
-private fun MealsDateHeader(
-    selectedDate: LocalDate,
-    onPrevious: () -> Unit,
-    onNext: () -> Unit,
-    onDateClick: () -> Unit,
-) {
-    SurfacePanel(
-        backgroundColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-        borderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.14f),
-        contentPadding = 10,
-        verticalSpacing = 8,
-        tonalElevation = 2,
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            IconButton(
-                onClick = onPrevious,
-                modifier = Modifier.testTag("meals_previous_day"),
-            ) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
-                    contentDescription = "Previous day",
-                    tint = Color(0xFF90CAF9),
-                )
-            }
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .clip(RoundedCornerShape(12.dp))
-                    .clickable(onClick = onDateClick)
-                    .testTag("meals_date_picker")
-                    .padding(vertical = 6.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(1.dp),
-            ) {
-                Text(
-                    text = selectedDate.format(DateTimeFormatter.ofPattern("EEEE")),
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Text(
-                    text = selectedDate.format(DateTimeFormatter.ofPattern("MMM d, yyyy")),
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                )
-            }
-            IconButton(
-                onClick = onNext,
-                modifier = Modifier.testTag("meals_next_day"),
-            ) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                    contentDescription = "Next day",
-                    tint = Color(0xFF90CAF9),
-                )
-            }
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun DatePickerSheet(
-    selectedDate: LocalDate,
-    onDismiss: () -> Unit,
-    onDateSelected: (LocalDate) -> Unit,
-) {
-    val zoneId = ZoneId.systemDefault()
-    val datePickerState = rememberDatePickerState(
-        initialSelectedDateMillis = selectedDate
-            .atStartOfDay(zoneId)
-            .toInstant()
-            .toEpochMilli(),
-    )
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-        containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 14.dp)
-                .padding(bottom = 18.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            DatePicker(state = datePickerState)
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-            ) {
-                TextButton(onClick = onDismiss, modifier = Modifier.weight(1f)) {
-                    Text("Cancel")
-                }
-                Button(
-                    onClick = {
-                        val millis = datePickerState.selectedDateMillis
-                        if (millis != null) {
-                            onDateSelected(Instant.ofEpochMilli(millis).atZone(zoneId).toLocalDate())
-                        }
-                    },
-                    modifier = Modifier.weight(1f),
-                ) {
-                    Text("Set date")
-                }
-            }
-        }
-    }
-}
-
-@Composable
 private fun DaySummaryCard(
     date: LocalDate,
     meals: List<HealthConnectNutritionMeal>,
@@ -381,6 +287,7 @@ private fun DaySummaryCard(
 ) {
     val summary = nutritionDaySummary(meals, targets)
     val totals = summary.totals
+    var menuExpanded by remember { mutableStateOf(false) }
 
     Box(
         modifier = Modifier
@@ -399,7 +306,7 @@ private fun DaySummaryCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.Top,
             ) {
-                Column {
+                Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = date.format(DateTimeFormatter.ofPattern("EEEE, MMM d")),
                         style = MaterialTheme.typography.labelLarge,
@@ -437,6 +344,50 @@ private fun DaySummaryCard(
                             )
                         }
                     }
+                    Box {
+                        IconButton(
+                            onClick = { menuExpanded = true },
+                            modifier = Modifier.testTag("meals_day_actions"),
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.MoreVert,
+                                contentDescription = "Day actions",
+                            )
+                        }
+                        DropdownMenu(
+                            expanded = menuExpanded,
+                            onDismissRequest = { menuExpanded = false },
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text(if (copied) "Day copied" else "Copy") },
+                                leadingIcon = {
+                                    Icon(
+                                        imageVector = if (copied) Icons.Default.Check else Icons.Default.ContentCopy,
+                                        contentDescription = null,
+                                    )
+                                },
+                                onClick = {
+                                    menuExpanded = false
+                                    onCopySummary()
+                                },
+                                modifier = Modifier.testTag("meals_day_copy_summary"),
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Export") },
+                                leadingIcon = {
+                                    Icon(
+                                        imageVector = Icons.Default.Download,
+                                        contentDescription = null,
+                                    )
+                                },
+                                onClick = {
+                                    menuExpanded = false
+                                    onExportSummary()
+                                },
+                                modifier = Modifier.testTag("meals_day_export_summary"),
+                            )
+                        }
+                    }
                 }
             }
             if (message != null && meals.isNotEmpty()) {
@@ -450,53 +401,47 @@ private fun DaySummaryCard(
                 items = macroSummaryItems(totals)
             )
             GoalProgressRow(summary.progress)
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                TextButton(
-                    onClick = onCopySummary,
-                    modifier = Modifier
-                        .weight(1f)
-                        .testTag("meals_day_copy_summary"),
-                ) {
-                    Icon(
-                        imageVector = if (copied) Icons.Default.Check else Icons.Default.ContentCopy,
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp),
-                    )
-                    Text(if (copied) "Day copied" else "Copy")
-                }
-                TextButton(
-                    onClick = onExportSummary,
-                    modifier = Modifier
-                        .weight(1f)
-                        .testTag("meals_day_export_summary"),
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Download,
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp),
-                    )
-                    Text("Export")
-                }
-            }
         }
     }
 }
 
 @Composable
 private fun GoalProgressRow(progress: MacroTargets) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        GoalArcTile(Icons.Default.LocalFireDepartment, progress.calories, AccentGold, "Calories", Modifier.weight(1f))
-        GoalArcTile(Icons.Default.EggAlt, progress.protein, MacroProtein, "Protein", Modifier.weight(1f))
-        GoalArcTile(Icons.Default.BakeryDining, progress.carbs, MacroCarbs, "Carbs", Modifier.weight(1f))
-        GoalArcTile(Icons.Default.OilBarrel, progress.fat, MacroFat, "Fat", Modifier.weight(1f))
-        GoalArcTile(Icons.Default.Grass, progress.fiber, MacroFiber, "Fiber", Modifier.weight(1f))
+    BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+        if (maxWidth < 420.dp) {
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    GoalArcTile(Icons.Default.LocalFireDepartment, progress.calories, AccentGold, "Calories", Modifier.weight(1f))
+                    GoalArcTile(Icons.Default.EggAlt, progress.protein, MacroProtein, "Protein", Modifier.weight(1f))
+                    GoalArcTile(Icons.Default.BakeryDining, progress.carbs, MacroCarbs, "Carbs", Modifier.weight(1f))
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    GoalArcTile(Icons.Default.OilBarrel, progress.fat, MacroFat, "Fat", Modifier.weight(1f))
+                    GoalArcTile(Icons.Default.Grass, progress.fiber, MacroFiber, "Fiber", Modifier.weight(1f))
+                    Box(modifier = Modifier.weight(1f))
+                }
+            }
+        } else {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                GoalArcTile(Icons.Default.LocalFireDepartment, progress.calories, AccentGold, "Calories", Modifier.weight(1f))
+                GoalArcTile(Icons.Default.EggAlt, progress.protein, MacroProtein, "Protein", Modifier.weight(1f))
+                GoalArcTile(Icons.Default.BakeryDining, progress.carbs, MacroCarbs, "Carbs", Modifier.weight(1f))
+                GoalArcTile(Icons.Default.OilBarrel, progress.fat, MacroFat, "Fat", Modifier.weight(1f))
+                GoalArcTile(Icons.Default.Grass, progress.fiber, MacroFiber, "Fiber", Modifier.weight(1f))
+            }
+        }
     }
 }
 

@@ -47,6 +47,27 @@ class QuickImportParserTest {
     }
 
     @Test
+    fun parsesFoodNamesWithTrailingWeightsAndEmbeddedCommas() {
+        val meal = QuickImportParser.parse(
+            """
+            Japanese curry, 430g; Calories 455, Protein 34.0g, Carbs 27.0g, Fat 22.0g, Fiber 5.0g, Sugar 7.0g, Sat Fat 9.0g.
+            White rice, cooked, 186g; Calories 240, Protein 5.0g, Carbs 52.1g, Fat 0.5g, Fiber 0.7g, Sugar 0.1g, Sat Fat 0.1g.
+            Meal totals; Calories 695, Protein 39.0g, Carbs 79.1g, Fat 22.5g, Fiber 5.7g, Sugar 7.1g, Sat Fat 9.1g.
+            """.trimIndent()
+        )
+
+        assertEquals(2, meal.foods.size)
+        assertEquals("Japanese curry", meal.foods[0].name)
+        assertEquals("White rice, cooked", meal.foods[1].name)
+        assertClose(430.0, meal.foods[0].grams)
+        assertClose(186.0, meal.foods[1].grams)
+        assertClose(695.0, meal.totals.energy)
+        assertClose(79.1, meal.totals.carbohydrate)
+        assertClose(73.4, meal.totals.appCarbohydrate)
+        assertClose(39.0, meal.totals.protein)
+    }
+
+    @Test
     fun computesFoodWeightsAndPer100gValuesForDatabaseEntries() {
         val meal = QuickImportParser.parse(
             "67g sourdough bread; Calories 182, Fat 1.6g, Sat Fat 0.3g, Trans Fat 0g, Cholesterol 0mg, Sodium 403mg, Carbs 34.8g, Fiber 1.5g, Sugar 3.1g, Added Sugar 0g, Protein 7.2g. " +
@@ -82,6 +103,25 @@ class QuickImportParserTest {
         assertClose(34.5, meal.totals.appCarbohydrate)
         assertClose(60.1, meal.totals.protein)
         assertClose(18.7, meal.totals.fat)
+    }
+
+    @Test
+    fun formatterRewritesEditedFoodAndRecalculatesTotals() {
+        val meal = QuickImportParser.parse(
+            "100g rice; Calories 130, Fat 0.3g, Sat Fat 0.1g, Carbs 28g, Fiber 1g, Sugar 0.1g, Protein 2.7g. " +
+                "50g chicken; Calories 80, Fat 1g, Sat Fat 0.2g, Carbs 0g, Fiber 0g, Sugar 0g, Protein 16g. " +
+                "Meal totals; Calories 999, Fat 99g, Sat Fat 9g, Carbs 99g, Fiber 9g, Sugar 9g, Protein 99g."
+        )
+        val editedFood = meal.foods[0].copy(
+            nutrients = meal.foods[0].nutrients.copy(energy = 145.0, carbohydrate = 30.0),
+        )
+        val updatedText = QuickImportFormatter.text(QuickImportFormatter.replaceFood(meal, 0, editedFood))
+        val updated = QuickImportParser.parse(updatedText)
+
+        assertClose(145.0, updated.foods[0].nutrients.energy)
+        assertClose(225.0, updated.totals.energy)
+        assertClose(30.0, updated.foods[0].nutrients.carbohydrate)
+        assertClose(30.0, updated.totals.carbohydrate)
     }
 
     @Test

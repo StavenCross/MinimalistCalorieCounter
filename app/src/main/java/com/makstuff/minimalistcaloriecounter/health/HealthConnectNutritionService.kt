@@ -49,6 +49,42 @@ internal class HealthConnectNutritionService(
         }
     }
 
+    suspend fun insertNutritionServings(payloads: List<QuickImportHealthPayload>): QuickImportHealthWriteResult {
+        return try {
+            if (payloads.isNotEmpty()) {
+                client.insertRecords(payloads.map { it.toNutritionRecord() })
+            }
+            QuickImportHealthWriteResult.Success
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
+        } catch (e: Throwable) {
+            QuickImportHealthWriteResult.Failed(e.message ?: "Unknown Health Connect error")
+        }
+    }
+
+    suspend fun replaceNutritionServings(
+        recordIds: List<String>,
+        payloads: List<QuickImportHealthPayload>,
+    ): QuickImportHealthWriteResult {
+        return try {
+            if (recordIds.isNotEmpty()) {
+                client.deleteRecords(
+                    NutritionRecord::class,
+                    recordIdsList = recordIds,
+                    clientRecordIdsList = emptyList(),
+                )
+            }
+            if (payloads.isNotEmpty()) {
+                client.insertRecords(payloads.map { it.toNutritionRecord() })
+            }
+            QuickImportHealthWriteResult.Success
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
+        } catch (e: Throwable) {
+            QuickImportHealthWriteResult.Failed(e.message ?: "Unknown Health Connect edit error")
+        }
+    }
+
     suspend fun deleteNutritionMeal(recordId: String): HealthConnectDeleteResult {
         return deleteNutritionMeals(listOf(recordId))
     }
