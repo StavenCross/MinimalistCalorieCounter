@@ -21,6 +21,7 @@ import androidx.compose.material.icons.filled.BakeryDining
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.EggAlt
+import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.Grass
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
@@ -28,6 +29,7 @@ import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.MonitorHeart
 import androidx.compose.material.icons.filled.OilBarrel
+import androidx.compose.material.icons.filled.PieChart
 import androidx.compose.material.icons.filled.QueryStats
 import androidx.compose.material.icons.filled.Scale
 import androidx.compose.material.icons.filled.TrackChanges
@@ -93,7 +95,7 @@ internal fun GoalHeroCard(
     val headline = when (statusState) {
         is GoalStatusState.ProfileIncomplete -> null
         is GoalStatusState.NewRecommendation -> "Your new plan is ready for review"
-        GoalStatusState.CurrentGoal -> targets.calories?.let { "${it.toFormattedString(true)} kcal active" } ?: "Targets are not set yet"
+        GoalStatusState.CurrentGoal -> targets.calories?.let { "${it.toFormattedString(true)} kcal" } ?: "Targets are not set yet"
     }
     val isIncomplete = statusState is GoalStatusState.ProfileIncomplete
     val headerIcon = if (isIncomplete) Icons.Default.Warning else Icons.Default.TrackChanges
@@ -251,7 +253,7 @@ internal fun GoalsDetailsSheet(
             subtitle = if (mode == GoalDetailsMode.Recommendation) {
                 "Compare the active plan against the new recommendation before applying it."
             } else {
-                "Active targets, source details, and recent goal history."
+                "Active targets, recent goal history, and body inputs."
             },
         )
         if (mode == GoalDetailsMode.Recommendation) {
@@ -269,33 +271,12 @@ internal fun GoalsDetailsSheet(
                 )
             }
         } else {
-            CurrentGoalCard(targets = targets)
             DailyMacroPlanCard(targets = targets)
             if (goals.history.isNotEmpty()) {
                 GoalHistoryCard(entries = goals.history)
             }
             BodyDetailsCard(profile = goals.profile)
         }
-    }
-}
-
-@Composable
-private fun CurrentGoalCard(targets: MacroTargets) {
-    SurfacePanel(
-        backgroundColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-        borderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.16f),
-        contentPadding = 14,
-        verticalSpacing = 10,
-    ) {
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
-            AccentIcon(Icons.Default.TrackChanges, AccentGoals, 42)
-            Text("Active targets", modifier = Modifier.weight(1f), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-        }
-        TargetValueRow(GoalMacro.Calories, targets.calories, "kcal")
-        TargetValueRow(GoalMacro.Protein, targets.protein, "g")
-        TargetValueRow(GoalMacro.Carbs, targets.carbs, "g")
-        TargetValueRow(GoalMacro.Fat, targets.fat, "g")
-        TargetValueRow(GoalMacro.Fiber, targets.fiber, "g")
     }
 }
 
@@ -385,6 +366,7 @@ internal fun GoalProgressCard(
                     verticalAlignment = Alignment.Bottom,
                 ) {
                     Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                        Text("Calories", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Text(
                             text = totals.energy.toFormattedString(true),
                             style = MaterialTheme.typography.headlineMedium,
@@ -432,6 +414,7 @@ private fun GoalProgressChip(
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                 AccentIcon(icon, color, 28)
                 Column(modifier = Modifier.weight(1f)) {
+                    Text(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Text(
                         "${value.toFormattedString(true)} / ${target.formatTarget(suffix)}",
                         style = MaterialTheme.typography.labelLarge,
@@ -591,9 +574,9 @@ private fun GoalHistoryDecisionCard(entry: GoalHistoryEntry, previous: GoalHisto
     }
     val isFirstSavedGoal = previous == null
     val contextChips = listOfNotNull(
-        entry.weightKg?.let { GoalContextChip(Icons.Default.Scale, AccentProfile, "${it.toImperialPounds()} lb") },
-        entry.leanMassKg?.let { GoalContextChip(Icons.Default.EggAlt, AccentProtein, "${it.toImperialPounds()} lb lean") },
-        entry.weightLossTarget?.let { GoalContextChip(Icons.Default.TrackChanges, AccentGoals, it.label) },
+        entry.weightKg?.let { GoalContextChip(Icons.Default.Scale, AccentProfile, "${it.toImperialPounds()} lb", "Weight") },
+        entry.leanMassKg?.let { GoalContextChip(Icons.Default.FitnessCenter, AccentProtein, "${it.toImperialPounds()} lb lean", "Lean mass") },
+        entry.weightLossTarget?.let { GoalContextChip(Icons.Default.TrackChanges, AccentGoals, it.label, "Weight loss target") },
     )
     SurfacePanel(
         backgroundColor = MaterialTheme.colorScheme.surfaceContainerHighest,
@@ -641,26 +624,37 @@ private data class GoalContextChip(
     val icon: ImageVector,
     val color: Color,
     val label: String,
+    val hintLabel: String,
 )
 
 @Composable
 private fun GoalContextChipView(chip: GoalContextChip, modifier: Modifier = Modifier) {
-    SurfacePanel(
-        backgroundColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-        borderColor = chip.color.copy(alpha = 0.16f),
-        contentPadding = 8,
-        verticalSpacing = 0,
-        modifier = modifier,
-    ) {
-        Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
-            Icon(chip.icon, contentDescription = null, tint = chip.color, modifier = Modifier.size(16.dp))
-            Text(
-                text = chip.label,
-                style = MaterialTheme.typography.labelSmall,
-                fontWeight = FontWeight.SemiBold,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
+    MacroHintBox(label = chip.hintLabel, modifier = modifier.testTag("goals_timeline_context_${chip.hintLabel.metricTag()}")) {
+        SurfacePanel(
+            backgroundColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+            borderColor = chip.color.copy(alpha = 0.16f),
+            contentPadding = 8,
+            verticalSpacing = 0,
+        ) {
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                Icon(chip.icon, contentDescription = null, tint = chip.color, modifier = Modifier.size(16.dp))
+                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(1.dp)) {
+                    Text(
+                        text = chip.hintLabel,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Text(
+                        text = chip.label,
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
         }
     }
 }
@@ -754,22 +748,6 @@ private fun TimelineBadge(delta: Double?) {
     }
 }
 
-@Composable
-private fun TargetValueRow(macro: GoalMacro, value: Double?, suffix: String) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(macro.label, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Text(
-            text = value.formatTarget(suffix),
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.SemiBold,
-        )
-    }
-}
-
 private val GoalMacro.label: String
     get() = when (this) {
         GoalMacro.Calories -> "Calories"
@@ -819,8 +797,7 @@ internal fun DailyMacroPlanCard(targets: MacroTargets) {
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
             AccentIcon(Icons.Default.MonitorHeart, AccentGoals, 42)
             Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                Text("Daily macro plan", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                Text("Targets used by Add Meal and Meals", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("Active targets", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
             }
         }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
@@ -877,15 +854,21 @@ internal fun BodyDetailsCard(profile: GoalProfile) {
                 Text("Measurements used by goal recommendations", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
-        MetricLine("Height", profile.heightCm, profile.heightCm.heightImperialLabel())
-        MetricLine("Weight", profile.weightKg, profile.weightKg.weightImperialLabel())
-        MetricLine("Body fat", profile.bodyFatPercent, profile.bodyFatPercent.value.formatTarget("%"))
-        MetricLine(
-            label = "Lean mass",
-            measurement = profile.leanMassKg,
-            displayValue = GoalMeasurement(resolvedLeanMassKg).weightImperialLabel(),
-            statusLabel = if (profile.leanMassKg.value == null && resolvedLeanMassKg != null) "Estimated" else null,
-        )
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+            BodyInputTile(Icons.Default.SelfImprovement, AccentProfile, "Height", profile.heightCm.heightImperialLabel(), profile.heightCm, Modifier.weight(1f))
+            BodyInputTile(Icons.Default.Scale, AccentProfile, "Weight", profile.weightKg.weightImperialLabel(), profile.weightKg, Modifier.weight(1f))
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+            BodyInputTile(Icons.Default.PieChart, AccentFat, "Body fat", profile.bodyFatPercent.value.formatTarget("%"), profile.bodyFatPercent, Modifier.weight(1f))
+            BodyInputTile(
+                icon = Icons.Default.FitnessCenter,
+                color = AccentProtein,
+                label = "Lean mass",
+                value = GoalMeasurement(resolvedLeanMassKg).weightImperialLabel(),
+                measurement = profile.leanMassKg,
+                modifier = Modifier.weight(1f),
+            )
+        }
     }
 }
 
@@ -915,33 +898,38 @@ internal fun ProfileSnapshotCard(uiState: AppUiState) {
                 ProfileSourceChip(profile.activityLevel.label)
             }
         }
-        SurfacePanel(
-            backgroundColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-            borderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.12f),
-            contentPadding = 12,
-            verticalSpacing = 8,
-        ) {
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
-                AccentIcon(Icons.Default.Scale, AccentProfile, 34)
-                Text(
-                    profile.weightKg.weightImperialLabel(),
-                    style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
+        MacroHintBox(label = "Weight", modifier = Modifier.testTag("goals_body_weight_card")) {
+            SurfacePanel(
+                backgroundColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                borderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.12f),
+                contentPadding = 12,
+                verticalSpacing = 8,
+            ) {
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+                    AccentIcon(Icons.Default.Scale, AccentProfile, 34)
+                    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                        Text("Weight", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(
+                            profile.weightKg.weightImperialLabel(),
+                            style = MaterialTheme.typography.headlineMedium,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                }
             }
         }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
             BodyMetricChip(
-                icon = Icons.Default.OilBarrel,
+                icon = Icons.Default.PieChart,
                 color = AccentFat,
                 label = "Body fat",
                 value = profile.bodyFatPercent.value.formatTarget("%"),
                 modifier = Modifier.weight(1f),
             )
             BodyMetricChip(
-                icon = Icons.Default.EggAlt,
+                icon = Icons.Default.FitnessCenter,
                 color = AccentProtein,
                 label = "Lean mass",
                 value = GoalMeasurement(resolvedLeanMassKg).weightImperialLabel(),
@@ -961,7 +949,7 @@ private fun BodyMetricChip(
     modifier: Modifier = Modifier,
     statusLabel: String? = null,
 ) {
-    MacroHintBox(label = label, modifier = modifier) {
+    MacroHintBox(label = label, modifier = modifier.testTag("goals_body_metric_${label.metricTag()}")) {
         SurfacePanel(
             backgroundColor = MaterialTheme.colorScheme.surfaceContainerHighest,
             borderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.12f),
@@ -971,6 +959,7 @@ private fun BodyMetricChip(
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                 AccentIcon(icon, color, 30)
                 Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Text(
                         text = value,
                         style = MaterialTheme.typography.titleSmall,
@@ -985,36 +974,39 @@ private fun BodyMetricChip(
 }
 
 @Composable
-private fun MetricLine(
+private fun BodyInputTile(
+    icon: ImageVector,
+    color: Color,
     label: String,
+    value: String,
     measurement: GoalMeasurement,
-    displayValue: String,
+    modifier: Modifier = Modifier,
     statusLabel: String? = null,
 ) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(
-            label,
-            modifier = Modifier.weight(1f),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
-            verticalAlignment = Alignment.CenterVertically,
+    MacroHintBox(label = label, modifier = modifier) {
+        SurfacePanel(
+            backgroundColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+            borderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.16f),
+            contentPadding = 10,
+            verticalSpacing = 10,
         ) {
-            Text(
-                text = displayValue,
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.SemiBold,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            if (measurement.locked) ProfileStatusIconChip("Locked")
-            statusLabel?.let { ProfileStatusIconChip(it) }
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                AccentIcon(icon, color, 32)
+                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Text(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = value,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                        if (measurement.locked) ProfileStatusIconChip("Locked")
+                        statusLabel?.let { ProfileStatusIconChip(it) }
+                    }
+                }
+            }
         }
     }
 }
@@ -1085,22 +1077,25 @@ internal fun RecentTrendCard(
                 Text("More scans will build your trend.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         } else {
-            SurfacePanel(
-                backgroundColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-                borderColor = AccentProfile.copy(alpha = 0.20f),
-                contentPadding = 12,
-                verticalSpacing = 6,
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                    verticalAlignment = Alignment.CenterVertically,
+            MacroHintBox(label = primaryTrend.label, modifier = Modifier.testTag("goals_trend_primary")) {
+                SurfacePanel(
+                    backgroundColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                    borderColor = AccentProfile.copy(alpha = 0.20f),
+                    contentPadding = 12,
+                    verticalSpacing = 6,
                 ) {
-                    AccentIcon(Icons.AutoMirrored.Filled.TrendingDown, AccentProfile, 38)
-                    Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                        Text(primaryTrend.detail, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        AccentIcon(primaryTrend.label.trendMetricIcon(), primaryTrend.label.trendMetricColor(), 38)
+                        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                            Text(primaryTrend.label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(primaryTrend.detail, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                        }
+                        Text(primaryTrend.value, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                     }
-                    Text(primaryTrend.value, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                 }
             }
             val supporting = bodyCards.filterNot { it == primaryTrend }.take(2)
@@ -1118,15 +1113,48 @@ internal fun RecentTrendCard(
 
 @Composable
 private fun TrendMetricChip(card: GoalTrendCard, modifier: Modifier = Modifier) {
-    SurfacePanel(
-        backgroundColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-        borderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.12f),
-        contentPadding = 10,
-        verticalSpacing = 3,
-        modifier = modifier,
-    ) {
-        Text(card.label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Text(card.value, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+    MacroHintBox(label = card.label, modifier = modifier.testTag("goals_trend_${card.label.metricTag()}")) {
+        SurfacePanel(
+            backgroundColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+            borderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.12f),
+            contentPadding = 10,
+            verticalSpacing = 3,
+        ) {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                AccentIcon(card.label.trendMetricIcon(), card.label.trendMetricColor(), 30)
+                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Text(card.label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(
+                        card.value,
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
+        }
+    }
+}
+
+private fun String.metricTag(): String {
+    return lowercase().replace(" ", "_")
+}
+
+private fun String.trendMetricIcon(): ImageVector {
+    return when (this) {
+        "Weight" -> Icons.Default.Scale
+        "Body fat" -> Icons.Default.PieChart
+        "Lean mass" -> Icons.Default.FitnessCenter
+        else -> Icons.AutoMirrored.Filled.TrendingDown
+    }
+}
+
+private fun String.trendMetricColor(): Color {
+    return when (this) {
+        "Body fat" -> AccentFat
+        "Lean mass" -> AccentProtein
+        else -> AccentProfile
     }
 }
 

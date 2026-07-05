@@ -287,6 +287,12 @@ class ScreenGoalsTest {
         assertTrue(composeRule.onAllNodesWithText("198 lb").fetchSemanticsNodes().isNotEmpty())
         assertTrue(composeRule.onAllNodesWithText("159 lb lean").fetchSemanticsNodes().isNotEmpty())
         assertTrue(composeRule.onAllNodesWithText("1 lb/week").fetchSemanticsNodes().isNotEmpty())
+        composeRule.onNodeWithTag("goals_timeline_context_weight").performClick()
+        composeRule.onNodeWithText("Weight is your latest body weight measurement.").assertIsDisplayed()
+        composeRule.onNodeWithTag("goals_timeline_context_lean_mass").performClick()
+        composeRule.onNodeWithText("Lean mass is your weight excluding body fat.").assertIsDisplayed()
+        composeRule.onNodeWithTag("goals_timeline_context_weight_loss_target").performClick()
+        composeRule.onNodeWithText("Weight loss target is the weekly pace used to adjust calories.").assertIsDisplayed()
     }
 
     @Test
@@ -371,14 +377,14 @@ class ScreenGoalsTest {
         assertTrue(composeRule.onAllNodesWithText("Current goal").fetchSemanticsNodes().isNotEmpty())
         assertTrue(composeRule.onAllNodesWithText("Health Connect refreshes on app load").fetchSemanticsNodes().isEmpty())
         composeRule.onNodeWithTag("goals_status_primary").performClick()
-        composeRule.onNodeWithText("Daily macro plan").fetchSemanticsNode()
+        composeRule.onNodeWithText("Active targets").fetchSemanticsNode()
+        assertTrue(composeRule.onAllNodesWithText("Daily macro plan").fetchSemanticsNodes().isEmpty())
         assertTrue(composeRule.onAllNodesWithText("Goal source").fetchSemanticsNodes().isEmpty())
         assertTrue(composeRule.onAllNodesWithText("No calculated recommendation yet").fetchSemanticsNodes().isEmpty())
         composeRule.onNodeWithText("Body inputs").performScrollTo()
         composeRule.onNodeWithContentDescription("Locked").performClick()
         composeRule.onNodeWithText("Locked values stay manual and will not be replaced by Health Connect.").assertIsDisplayed()
-        composeRule.onAllNodesWithContentDescription("Estimated").onFirst().performClick()
-        composeRule.onNodeWithText("Estimated values are calculated from your available body measurements.").assertIsDisplayed()
+        assertTrue(composeRule.onAllNodesWithContentDescription("Estimated").fetchSemanticsNodes().isEmpty())
     }
 
     @Test
@@ -565,6 +571,12 @@ class ScreenGoalsTest {
 
         assertTrue(composeRule.onAllNodesWithContentDescription("Estimated").fetchSemanticsNodes().isEmpty())
         composeRule.onNodeWithText("159 lb").assertIsDisplayed()
+        composeRule.onNodeWithTag("goals_body_weight_card", useUnmergedTree = true).performClick()
+        composeRule.onNodeWithText("Weight is your latest body weight measurement.").assertIsDisplayed()
+        composeRule.onNodeWithTag("goals_body_metric_body_fat", useUnmergedTree = true).performClick()
+        composeRule.onNodeWithText("Body fat is the percent of your body weight from fat mass.").assertIsDisplayed()
+        composeRule.onNodeWithTag("goals_body_metric_lean_mass", useUnmergedTree = true).performClick()
+        composeRule.onNodeWithText("Lean mass is your weight excluding body fat.").assertIsDisplayed()
     }
 
     private fun baseState(): AppUiState {

@@ -3,8 +3,10 @@ package com.makstuff.minimalistcaloriecounter.ui.screens
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.swipeUp
@@ -82,6 +84,11 @@ class ScreenGoalsTrendTest {
         }
         composeRule.onNodeWithText("-2.2 lb since prior check").fetchSemanticsNode()
         assertTrue(composeRule.onAllNodesWithText("196 lb").fetchSemanticsNodes().isNotEmpty())
+        assertTrue(composeRule.onAllNodesWithText("Lean mass").fetchSemanticsNodes().isNotEmpty())
+        composeRule.onNodeWithTag("goals_trend_primary", useUnmergedTree = true).performClick()
+        composeRule.onNodeWithText("Weight is your latest body weight measurement.").assertIsDisplayed()
+        composeRule.onNodeWithTag("goals_trend_lean_mass", useUnmergedTree = true).performClick()
+        composeRule.onNodeWithText("Lean mass is your weight excluding body fat.").assertIsDisplayed()
     }
 
     private fun baseState(): AppUiState {
