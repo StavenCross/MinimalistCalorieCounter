@@ -11,12 +11,13 @@ Core meal logging requests:
 - Read Weight
 - Write Weight
 - Read Height
+- Write Height
 - Read Body Fat
 - Read Lean Body Mass
 
 The export workflow also requests broad Health Connect read permissions for supported record types, plus historical-data access, so it can produce a review CSV for external analysis.
 
-Read Nutrition is needed so the app can display Meals and avoid duplicate historical-import or Add Meal writes. Weight, height, body-fat, and lean-mass reads support Goals. Health Connect permissions remain user controlled and cannot be silently granted by automation.
+Read Nutrition is needed so the app can display Meals and avoid duplicate historical-import or Add Meal writes. Weight, height, body-fat, and lean-mass reads support Goals. Weight and height writes let manual Goals values be mirrored back to Health Connect when permission is granted. Health Connect permissions remain user controlled and cannot be silently granted by automation.
 
 ## Add Meal Writes
 
@@ -71,7 +72,7 @@ Cleanup modes are:
 - Add Meal records only
 - All app-owned nutrition
 
-Cleanup must be previewed before deletion. Preview scans the selected date range and reports total matching records plus split counts for historical import records, Add Meal records, and legacy Daily Total records. Delete uses the same classifier as preview so the confirmation count and actual deletion target stay aligned.
+Cleanup must be previewed before deletion. Preview scans the selected date range and reports total matching records plus split counts for historical import records, Add Meal records, and legacy Daily Total records. Delete requires the selected start date, end date, and cleanup mode to match the preview, then uses the same classifier as preview so the confirmation count and actual deletion target stay aligned.
 
 Debug automation and the MCP server expose cleanup preview separately from deletion. This keeps automated destructive tests aligned with the Settings UI rule that a preview must happen before delete.
 

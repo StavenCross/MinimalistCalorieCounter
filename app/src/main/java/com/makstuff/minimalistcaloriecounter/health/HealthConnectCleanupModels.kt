@@ -1,5 +1,7 @@
 package com.makstuff.minimalistcaloriecounter.health
 
+import java.time.LocalDate
+
 enum class HealthConnectCleanupMode(val label: String) {
     HistoricalImports("Historical imports only"),
     AddMeal("Add Meal records only"),
@@ -11,6 +13,9 @@ data class HealthConnectCleanupPreview(
     val historicalImports: Int,
     val addMeal: Int,
     val legacyDailyTotals: Int,
+    val startDate: LocalDate? = null,
+    val endDate: LocalDate? = null,
+    val mode: HealthConnectCleanupMode? = null,
 )
 
 sealed class HealthConnectCleanupPreviewResult {

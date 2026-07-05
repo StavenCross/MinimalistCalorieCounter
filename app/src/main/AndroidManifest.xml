@@ -4,6 +4,7 @@
 
     <uses-permission android:name="android.permission.health.WRITE_NUTRITION" />
     <uses-permission android:name="android.permission.health.WRITE_WEIGHT" />
+    <uses-permission android:name="android.permission.health.WRITE_HEIGHT" />
     <uses-permission android:name="android.permission.health.READ_NUTRITION" />
     <uses-permission android:name="android.permission.health.READ_WEIGHT" />
     <uses-permission android:name="android.permission.health.READ_HEIGHT" />
@@ -18,6 +19,7 @@
     <uses-permission android:name="android.permission.health.READ_BODY_WATER_MASS" />
     <uses-permission android:name="android.permission.health.READ_BONE_MASS" />
     <uses-permission android:name="android.permission.health.READ_CERVICAL_MUCUS" />
+    <uses-permission android:name="android.permission.health.READ_CYCLING_PEDALING_CADENCE" />
     <uses-permission android:name="android.permission.health.READ_DISTANCE" />
     <uses-permission android:name="android.permission.health.READ_ELEVATION_GAINED" />
     <uses-permission android:name="android.permission.health.READ_EXERCISE" />
@@ -39,6 +41,7 @@
     <uses-permission android:name="android.permission.health.READ_SLEEP" />
     <uses-permission android:name="android.permission.health.READ_SPEED" />
     <uses-permission android:name="android.permission.health.READ_STEPS" />
+    <uses-permission android:name="android.permission.health.READ_STEPS_CADENCE" />
     <uses-permission android:name="android.permission.health.READ_TOTAL_CALORIES_BURNED" />
     <uses-permission android:name="android.permission.health.READ_VO2_MAX" />
     <uses-permission android:name="android.permission.health.READ_WHEELCHAIR_PUSHES" />
@@ -49,6 +52,7 @@
     <uses-permission android:name="androidx.health.permission.nutrition.READ" />
     <uses-permission android:name="androidx.health.permission.weight.WRITE" />
     <uses-permission android:name="androidx.health.permission.weight.READ" />
+    <uses-permission android:name="androidx.health.permission.height.WRITE" />
     <uses-permission android:name="androidx.health.permission.height.READ" />
     <uses-permission android:name="androidx.health.permission.body_fat.READ" />
     <uses-permission android:name="androidx.health.permission.lean_body_mass.READ" />

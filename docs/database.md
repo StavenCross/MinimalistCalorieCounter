@@ -34,6 +34,12 @@ On startup, each migrated surface reads Room first. If Room is empty or unavaila
 
 Android backup and device-transfer rules include both the legacy CSV files and the Room database files:
 
+- `archive.csv`
+- `database.csv`
+- `day.csv`
+- `goals.csv`
+- `options.csv`
+- `quick_import_outbox.csv`
 - `mcc.db`
 - `mcc.db-shm`
 - `mcc.db-wal`

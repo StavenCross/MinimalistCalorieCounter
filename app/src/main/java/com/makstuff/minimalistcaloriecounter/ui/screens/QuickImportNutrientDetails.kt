@@ -32,6 +32,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.text.KeyboardOptions
 import com.makstuff.minimalistcaloriecounter.classes.QuickImportFood
+import com.makstuff.minimalistcaloriecounter.classes.QuickImportAmountParser
 import com.makstuff.minimalistcaloriecounter.classes.QuickImportNutrients
 import com.makstuff.minimalistcaloriecounter.essentials.toFormattedString
 import com.makstuff.minimalistcaloriecounter.ui.model.quickNutrientDetailItems
@@ -142,6 +143,7 @@ internal fun QuickImportFoodDetailSheet(
                             food.copy(
                                 amountText = amount.trim(),
                                 name = name.trim().ifBlank { error("Food name is required.") },
+                                grams = QuickImportAmountParser.gramsFromAmountText(amount.trim()),
                                 nutrients = QuickImportNutrients(
                                     energy = calories.parseEditNumber("Calories"),
                                     carbohydrate = carbs.parseEditNumber("Carbs"),

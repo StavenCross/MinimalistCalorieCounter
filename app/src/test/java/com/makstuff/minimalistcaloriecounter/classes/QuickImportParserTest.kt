@@ -4,7 +4,9 @@ import kotlin.math.abs
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertThrows
+import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.util.Locale
 
 class QuickImportParserTest {
     @Test
@@ -68,6 +70,22 @@ class QuickImportParserTest {
     }
 
     @Test
+    fun splitsRecordsWhenCaloriesAreNotTheFirstNutrient() {
+        val meal = QuickImportParser.parse(
+            """
+            100g chicken; Protein 31g, Calories 165, Carbs 0g, Fat 3.6g, Fiber 0g, Sugar 0g, Sat Fat 1g.
+            150g rice; Protein 4g, Calories 195, Carbs 42g, Fat 0.4g, Fiber 0.6g, Sugar 0.1g, Sat Fat 0.1g.
+            Meal totals; Protein 35g, Calories 360, Carbs 42g, Fat 4.0g, Fiber 0.6g, Sugar 0.1g, Sat Fat 1.1g.
+            """.trimIndent()
+        )
+
+        assertEquals(2, meal.foods.size)
+        assertEquals("chicken", meal.foods[0].name)
+        assertEquals("rice", meal.foods[1].name)
+        assertClose(360.0, meal.totals.energy)
+    }
+
+    @Test
     fun computesFoodWeightsAndPer100gValuesForDatabaseEntries() {
         val meal = QuickImportParser.parse(
             "67g sourdough bread; Calories 182, Fat 1.6g, Sat Fat 0.3g, Trans Fat 0g, Cholesterol 0mg, Sodium 403mg, Carbs 34.8g, Fiber 1.5g, Sugar 3.1g, Added Sugar 0g, Protein 7.2g. " +
@@ -122,6 +140,31 @@ class QuickImportParserTest {
         assertClose(225.0, updated.totals.energy)
         assertClose(30.0, updated.foods[0].nutrients.carbohydrate)
         assertClose(30.0, updated.totals.carbohydrate)
+    }
+
+    @Test
+    fun formatterUsesDotDecimalsAcrossDeviceLocales() {
+        val originalLocale = Locale.getDefault()
+        try {
+            Locale.setDefault(Locale.GERMANY)
+            val meal = QuickImportParser.parse(
+                "100g rice; Calories 130.5, Fat 0.3g, Sat Fat 0.1g, Carbs 28.5g, Fiber 1g, Sugar 0.1g, Protein 2.7g."
+            )
+
+            val updatedText = QuickImportFormatter.text(meal)
+
+            assertTrue(updatedText.contains("Calories 130.5"))
+            assertTrue(updatedText.contains("Carbs 28.5g"))
+        } finally {
+            Locale.setDefault(originalLocale)
+        }
+    }
+
+    @Test
+    fun amountParserKeepsEditedServingWeightInSync() {
+        assertClose(200.0, QuickImportAmountParser.gramsFromAmountText("200g"))
+        assertClose(56.699, QuickImportAmountParser.gramsFromAmountText("2 oz"), tolerance = 0.001)
+        assertEquals(null, QuickImportAmountParser.gramsFromAmountText("one bowl"))
     }
 
     @Test

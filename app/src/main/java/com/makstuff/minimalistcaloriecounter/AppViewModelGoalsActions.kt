@@ -113,13 +113,13 @@ internal class AppViewModelGoalsActions(private val env: AppViewModelEnvironment
             currentState.copy(
                 goals = currentState.goals.copy(
                     recommendation = recommendation,
-                    message = if (recommendation == null) {
-                        val missing = currentState.goals.profile.missingRequiredFields(date)
-                        if (missing.isEmpty()) {
-                            "Complete required profile fields to calculate goals."
-                        } else {
-                            "Missing: ${missing.joinToString(", ")}."
-                        }
+	                    message = if (recommendation == null) {
+	                        val missing = currentState.goals.profile.missingRequiredFields(date)
+	                        if (missing.isEmpty()) {
+	                            "Current goal is already up to date."
+	                        } else {
+	                            "Missing: ${missing.joinToString(", ")}."
+	                        }
                     } else {
                         null
                     },
@@ -171,10 +171,14 @@ internal class AppViewModelGoalsActions(private val env: AppViewModelEnvironment
                             goals = currentState.goals.copy(
                                 profile = profile,
                                 recommendation = recommendation,
-                                message = if (recommendation == null) {
-                                    val missing = profile.missingRequiredFields(LocalDate.now())
-                                    "Updated unlocked fields. Missing: ${missing.joinToString(", ")}."
-                                } else {
+	                                message = if (recommendation == null) {
+	                                    val missing = profile.missingRequiredFields(LocalDate.now())
+	                                    if (missing.isEmpty()) {
+	                                        "Updated unlocked fields from Health Connect. Current goal is up to date."
+	                                    } else {
+	                                        "Updated unlocked fields. Missing: ${missing.joinToString(", ")}."
+	                                    }
+	                                } else {
                                     "Updated unlocked fields from Health Connect."
                                 },
                             )

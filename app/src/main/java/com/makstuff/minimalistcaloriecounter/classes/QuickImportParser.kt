@@ -1,8 +1,6 @@
 package com.makstuff.minimalistcaloriecounter.classes
 
 object QuickImportParser {
-    private const val OUNCES_TO_GRAMS = 28.3495
-
     fun parse(input: String): QuickImportMeal {
         val normalized = input.trim()
         require(normalized.isNotEmpty()) { "Paste a meal blurb before importing." }
@@ -43,37 +41,30 @@ object QuickImportParser {
             .trim()
         if (compact.isEmpty()) return emptyList()
 
-        return Regex("(?<=\\.)\\s+(?=(?:Meal totals\\s*;|[^.;]+;\\s*Calories\\b))", RegexOption.IGNORE_CASE)
+        return Regex(
+            "(?<=\\.)\\s+(?=(?:Meal totals\\s*;|[^.;]+;\\s*(?:Calories|Protein|Carbs|Fat|Fiber|Sugar|Sat Fat)\\b))",
+            RegexOption.IGNORE_CASE,
+        )
             .split(compact)
             .map { it.trim().trimEnd('.') }
             .filter { it.isNotEmpty() }
     }
 
     private fun parseFood(title: String, nutrients: QuickImportNutrients): QuickImportFood {
-        val amountMatch = Regex("^\\s*(\\d+(?:\\.\\d+)?)\\s*(g|oz)\\s+(.+)$", RegexOption.IGNORE_CASE).find(title)
-        if (amountMatch != null) {
-            val amount = amountMatch.groupValues[1].toDouble()
-            val unit = amountMatch.groupValues[2].lowercase()
-            val name = amountMatch.groupValues[3].trim()
-            val grams = if (unit == "oz") amount * OUNCES_TO_GRAMS else amount
+        QuickImportAmountParser.parseLeading(title)?.let { amount ->
             return QuickImportFood(
-                amountText = "${amountMatch.groupValues[1]} ${amountMatch.groupValues[2]}",
-                name = name,
-                grams = grams,
+                amountText = amount.amountText,
+                name = amount.name,
+                grams = amount.grams,
                 nutrients = nutrients,
             )
         }
 
-        val trailingAmountMatch = Regex("^\\s*(.+?)\\s*,?\\s+(\\d+(?:\\.\\d+)?)\\s*(g|oz)\\s*$", RegexOption.IGNORE_CASE).find(title)
-        if (trailingAmountMatch != null) {
-            val amount = trailingAmountMatch.groupValues[2].toDouble()
-            val unit = trailingAmountMatch.groupValues[3].lowercase()
-            val name = trailingAmountMatch.groupValues[1].trim().trimEnd(',')
-            val grams = if (unit == "oz") amount * OUNCES_TO_GRAMS else amount
+        QuickImportAmountParser.parseTrailing(title)?.let { amount ->
             return QuickImportFood(
-                amountText = "${trailingAmountMatch.groupValues[2]} ${trailingAmountMatch.groupValues[3]}",
-                name = name,
-                grams = grams,
+                amountText = amount.amountText,
+                name = amount.name,
+                grams = amount.grams,
                 nutrients = nutrients,
             )
         }

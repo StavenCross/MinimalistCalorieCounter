@@ -8,21 +8,23 @@ Generated output, Gradle build folders, `node_modules`, and IDE metadata are exc
 
 | File | Approx. lines | Type | Cleanup priority |
 | --- | ---: | --- | --- |
-| `app/src/main/java/com/makstuff/minimalistcaloriecounter/ui/screens/ScreenQuickImport.kt` | 340 | Compose screen orchestration | Low, UI-file exception applies |
-| `app/src/main/java/com/makstuff/minimalistcaloriecounter/ui/screens/QuickImportMealComponents.kt` | 630 | Compose Add Meal display components | Low, UI-file exception applies |
-| `app/src/main/java/com/makstuff/minimalistcaloriecounter/ui/screens/HealthNutritionMealComponents.kt` | 601 | Compose meal display components | Low, UI-file exception applies |
-| `app/src/main/java/com/makstuff/minimalistcaloriecounter/ui/screens/ScreenHealthConnectNutrition.kt` | 576 | Compose screen and components | Low, UI-file exception applies |
-| `app/src/main/java/com/makstuff/minimalistcaloriecounter/ui/screens/QuickImportControls.kt` | 517 | Compose Add Meal controls | Low, UI-file exception applies |
-| `app/src/main/java/com/makstuff/minimalistcaloriecounter/ui/screens/GoalsSettingsComponents.kt` | 500 | Compose goals settings components | Low, UI-file exception applies |
-| `app/src/main/java/com/makstuff/minimalistcaloriecounter/ui/settings/AppSettingsPage.kt` | 461 | Compose settings page | Low, UI-file exception applies |
-| `app/src/main/java/com/makstuff/minimalistcaloriecounter/ui/screens/GoalsDashboardComponents.kt` | 449 | Compose goals dashboard display components | Low, UI-file exception applies |
+| `app/src/main/java/com/makstuff/minimalistcaloriecounter/ui/screens/GoalsDashboardComponents.kt` | 1155 | Compose goals dashboard display components | Low, UI-file exception applies; candidate for future visual-component grouping |
+| `app/src/main/java/com/makstuff/minimalistcaloriecounter/ui/screens/QuickImportMealComponents.kt` | 757 | Compose Add Meal display components | Low, UI-file exception applies |
+| `app/src/main/java/com/makstuff/minimalistcaloriecounter/ui/screens/HealthNutritionMealComponents.kt` | 756 | Compose meal display components | Low, UI-file exception applies |
+| `app/src/main/java/com/makstuff/minimalistcaloriecounter/ui/screens/GoalsSettingsComponents.kt` | 608 | Compose goals settings components | Low, UI-file exception applies |
+| `app/src/main/java/com/makstuff/minimalistcaloriecounter/ui/screens/ScreenHealthConnectNutrition.kt` | 521 | Compose screen and components | Low, UI-file exception applies |
+| `app/src/main/java/com/makstuff/minimalistcaloriecounter/ui/screens/QuickImportControls.kt` | 515 | Compose Add Meal controls | Low, UI-file exception applies |
+| `app/src/main/java/com/makstuff/minimalistcaloriecounter/ui/settings/AppSettingsPage.kt` | 491 | Compose settings page | Low, UI-file exception applies |
+| `app/src/androidTest/java/com/makstuff/minimalistcaloriecounter/ui/screens/ScreenGoalsTest.kt` | 561 | Connected Compose regression tests | Low, test-file exception applies |
+| `app/src/androidTest/java/com/makstuff/minimalistcaloriecounter/ui/screens/ScreenQuickImportTest.kt` | 379 | Connected Compose regression tests | Low, test-file exception applies |
 
 All non-UI files touched in this cleanup are now under the 300-line cap:
 
 - `HealthConnectManager.kt`: 300 lines after extracting export, nutrition, archive sync, mapper, goal-profile reader, and permission-scope policy helpers.
 - `AutomationBootstrap.kt`: 298 lines after extracting HTTP helpers, JSON serializers, and route aliases.
 - `tools/mcc-mcp/src/server.ts`: 23 lines after splitting tool registration groups.
-- `AppViewModel.kt`: 297 lines after extracting feature action classes for Health Connect, Goals, Add Meal, persistence, database, archive/day, and UI chrome.
+- `AppViewModel.kt`: 192 lines after extracting feature action classes for Health Connect, Goals, Add Meal, persistence, database, archive/day, and UI chrome.
+- `AppViewModelHealthConnectExportActions.kt`: under 300 lines after moving cleanup preview/delete behavior to `AppViewModelHealthConnectCleanupActions.kt`.
 - `AppViewModelQuickImportActions.kt`: 300 lines after moving outbox persistence helpers into `AppViewModelQuickImportHelpers.kt`.
 
 ## Cleanup Completed In This Pass

@@ -1,40 +1,10 @@
 package com.makstuff.minimalistcaloriecounter
 import com.makstuff.minimalistcaloriecounter.health.HealthConnectExportResult
 import com.makstuff.minimalistcaloriecounter.health.HealthConnectExportMode
-import com.makstuff.minimalistcaloriecounter.health.HealthConnectCleanupMode
-import com.makstuff.minimalistcaloriecounter.health.HealthConnectCleanupPreviewResult
-import com.makstuff.minimalistcaloriecounter.health.HistoricalMealHealthConnectResult
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 internal class AppViewModelHealthConnectExportActions(private val env: AppViewModelEnvironment, private val viewModel: AppViewModel) {
-    fun updateCleanupStartDate(date: LocalDate) {
-        env.state.update {
-            it.copy(
-                healthConnectNutritionCleanupStartDate = date,
-                healthConnectNutritionCleanupPreview = null,
-                historicalMealImportMessage = null,
-            )
-        }
-    }
-    fun updateCleanupEndDate(date: LocalDate) {
-        env.state.update {
-            it.copy(
-                healthConnectNutritionCleanupEndDate = date,
-                healthConnectNutritionCleanupPreview = null,
-                historicalMealImportMessage = null,
-            )
-        }
-    }
-    fun updateCleanupMode(mode: HealthConnectCleanupMode) {
-        env.state.update {
-            it.copy(
-                healthConnectNutritionCleanupMode = mode,
-                healthConnectNutritionCleanupPreview = null,
-                historicalMealImportMessage = null,
-            )
-        }
-    }
     fun updateExportStartDate(date: LocalDate) {
         env.state.update {
             it.copy(
@@ -52,14 +22,16 @@ internal class AppViewModelHealthConnectExportActions(private val env: AppViewMo
         }
     }
     fun updateExportMode(mode: HealthConnectExportMode) {
+        env.state.update {
+            it.copy(
+                healthConnectExportMode = mode,
+                healthConnectExportMessage = null,
+            )
+        }
         env.scope.launch {
             val exportGranted = env.healthConnectManager.hasExportReadPermissions(mode)
             env.state.update {
-                it.copy(
-                    healthConnectExportMode = mode,
-                    healthConnectExportPermissionsGranted = exportGranted,
-                    healthConnectExportMessage = null,
-                )
+                if (it.healthConnectExportMode == mode) it.copy(healthConnectExportPermissionsGranted = exportGranted) else it
             }
         }
     }
@@ -141,154 +113,6 @@ internal class AppViewModelHealthConnectExportActions(private val env: AppViewMo
                             healthConnectExportMessage = "Health Connect export failed: ${result.message}",
                             healthConnectSyncProgress = null,
                             healthConnectSyncMessage = null,
-                        )
-                    }
-                }
-            }
-        }
-    }
-    fun removeNutritionRange() {
-        val state = env.uiState
-        val preview = state.healthConnectNutritionCleanupPreview
-        if (preview == null) {
-            env.state.update { it.copy(historicalMealImportMessage = "Preview Health Connect records before removing.") }
-            return
-        }
-        if (preview.total == 0) {
-            env.state.update { it.copy(historicalMealImportMessage = "No matching Health Connect meal/nutrition records to remove.") }
-            return
-        }
-        val startedAt = java.time.LocalDateTime.now()
-        env.state.update {
-            it.copy(
-                historicalMealImportInProgress = true,
-                historicalMealImportMessage = "Removing Health Connect meals and nutrition.",
-                healthConnectSyncProgress = 0f,
-                healthConnectSyncCurrentCount = 0,
-                healthConnectSyncTotalCount = 0,
-            )
-        }
-        env.scope.launch {
-            val result = env.healthConnectManager.deleteNutritionRecordsInRange(
-                startDate = state.healthConnectNutritionCleanupStartDate,
-                endDate = state.healthConnectNutritionCleanupEndDate,
-                mode = state.healthConnectNutritionCleanupMode,
-                onProgress = { progress, current, total ->
-                    env.state.update {
-                        it.copy(
-                            healthConnectSyncProgress = progress,
-                            healthConnectSyncCurrentCount = current,
-                            healthConnectSyncTotalCount = total,
-                        )
-                    }
-                },
-            )
-            env.recordHealthConnectDeleteJob(state.healthConnectNutritionCleanupStartDate, state.healthConnectNutritionCleanupEndDate, state.healthConnectNutritionCleanupMode, result, startedAt)
-            when (result) {
-                is HistoricalMealHealthConnectResult.Success -> {
-                    env.state.update {
-                        it.copy(
-                            historicalMealImportInProgress = false,
-                            healthConnectSyncProgress = null,
-                            healthConnectNutritionCleanupPreview = null,
-                            historicalMealImportMessage = "Removed ${result.deleted} Health Connect meal/nutrition records.",
-                        )
-                    }
-                    viewModel.readHealthConnectNutritionMeals()
-                }
-                HistoricalMealHealthConnectResult.HealthConnectUnavailable -> {
-                    env.state.update {
-                        it.copy(
-                            historicalMealImportInProgress = false,
-                            healthConnectSyncProgress = null,
-                            historicalMealImportMessage = env.application.getString(R.string.toast_hc_not_available),
-                        )
-                    }
-                }
-                HistoricalMealHealthConnectResult.PermissionsMissing -> {
-                    env.state.update {
-                        it.copy(
-                            historicalMealImportInProgress = false,
-                            healthConnectSyncProgress = null,
-                            historicalMealImportMessage = env.application.getString(R.string.health_connect_permissions_missing),
-                        )
-                    }
-                }
-                is HistoricalMealHealthConnectResult.Failed -> {
-                    env.state.update {
-                        it.copy(
-                            historicalMealImportInProgress = false,
-                            healthConnectSyncProgress = null,
-                            historicalMealImportMessage = result.message,
-                        )
-                    }
-                }
-            }
-        }
-    }
-    fun previewNutritionRange() {
-        val state = env.uiState
-        env.state.update {
-            it.copy(
-                historicalMealImportInProgress = true,
-                historicalMealImportMessage = "Scanning Health Connect records.",
-                healthConnectNutritionCleanupPreview = null,
-                healthConnectSyncProgress = 0f,
-                healthConnectSyncCurrentCount = 0,
-                healthConnectSyncTotalCount = 0,
-            )
-        }
-        env.scope.launch {
-            when (val result = env.healthConnectManager.previewNutritionRecordsInRange(
-                startDate = state.healthConnectNutritionCleanupStartDate,
-                endDate = state.healthConnectNutritionCleanupEndDate,
-                mode = state.healthConnectNutritionCleanupMode,
-                onProgress = { progress, current, total ->
-                    env.state.update {
-                        it.copy(
-                            healthConnectSyncProgress = progress,
-                            healthConnectSyncCurrentCount = current,
-                            healthConnectSyncTotalCount = total,
-                        )
-                    }
-                },
-            )) {
-                is HealthConnectCleanupPreviewResult.Success -> {
-                    val preview = result.preview
-                    env.state.update {
-                        it.copy(
-                            historicalMealImportInProgress = false,
-                            healthConnectSyncProgress = null,
-                            healthConnectNutritionCleanupPreview = preview,
-                            historicalMealImportMessage =
-                                "Preview found ${preview.total} matching records.",
-                        )
-                    }
-                }
-                HealthConnectCleanupPreviewResult.HealthConnectUnavailable -> {
-                    env.state.update {
-                        it.copy(
-                            historicalMealImportInProgress = false,
-                            healthConnectSyncProgress = null,
-                            historicalMealImportMessage = env.application.getString(R.string.toast_hc_not_available),
-                        )
-                    }
-                }
-                HealthConnectCleanupPreviewResult.PermissionsMissing -> {
-                    env.state.update {
-                        it.copy(
-                            historicalMealImportInProgress = false,
-                            healthConnectSyncProgress = null,
-                            historicalMealImportMessage = env.application.getString(R.string.health_connect_permissions_missing),
-                        )
-                    }
-                }
-                is HealthConnectCleanupPreviewResult.Failed -> {
-                    env.state.update {
-                        it.copy(
-                            historicalMealImportInProgress = false,
-                            healthConnectSyncProgress = null,
-                            historicalMealImportMessage = result.message,
                         )
                     }
                 }

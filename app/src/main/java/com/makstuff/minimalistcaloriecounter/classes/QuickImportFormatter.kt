@@ -1,6 +1,7 @@
 package com.makstuff.minimalistcaloriecounter.classes
 
 import kotlin.math.abs
+import java.util.Locale
 
 object QuickImportFormatter {
     fun text(meal: QuickImportMeal): String {
@@ -44,6 +45,6 @@ object QuickImportFormatter {
     private fun format(value: Double): String {
         val roundedWhole = kotlin.math.round(value).toLong()
         if (abs(value - roundedWhole) < 0.0001) return roundedWhole.toString()
-        return "%.1f".format(value)
+        return String.format(Locale.US, "%.1f", value)
     }
 }

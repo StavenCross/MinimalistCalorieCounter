@@ -67,15 +67,19 @@ internal class HealthConnectNutritionService(
         payloads: List<QuickImportHealthPayload>,
     ): QuickImportHealthWriteResult {
         return try {
-            if (recordIds.isNotEmpty()) {
-                client.deleteRecords(
-                    NutritionRecord::class,
-                    recordIdsList = recordIds,
-                    clientRecordIdsList = emptyList(),
-                )
-            }
-            if (payloads.isNotEmpty()) {
-                client.insertRecords(payloads.map { it.toNutritionRecord() })
+            nutritionReplaceSteps(recordIds, payloads.size).forEach { step ->
+                when (step) {
+                    HealthConnectReplaceStep.InsertReplacement -> {
+                        client.insertRecords(payloads.map { it.toNutritionRecord() })
+                    }
+                    HealthConnectReplaceStep.DeleteOriginal -> {
+                        client.deleteRecords(
+                            NutritionRecord::class,
+                            recordIdsList = recordIds,
+                            clientRecordIdsList = emptyList(),
+                        )
+                    }
+                }
             }
             QuickImportHealthWriteResult.Success
         } catch (e: kotlinx.coroutines.CancellationException) {

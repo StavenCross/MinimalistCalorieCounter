@@ -60,7 +60,7 @@ class HealthConnectManager(private val context: Context) {
         HealthPermission.getReadPermission(LeanBodyMassRecord::class),
     )
 
-    val permissions = writeNutritionPermissions + readNutritionPermissions + readGoalProfilePermissions
+    val permissions = writeNutritionPermissions + readNutritionPermissions + readGoalProfilePermissions + writeGoalProfilePermissions
 
     fun exportPermissionsFor(mode: HealthConnectExportMode): Set<String> = mode.recordTypes()
         .map { HealthPermission.getReadPermission(it) }
