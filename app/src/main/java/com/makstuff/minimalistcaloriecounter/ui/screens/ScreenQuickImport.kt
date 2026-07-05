@@ -160,14 +160,6 @@ fun ScreenQuickImport(
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
             item {
-                CapturePanel(
-                    value = uiState.inputQuickImportText,
-                    onValueChange = onTextChange,
-                    onClear = onClear,
-                )
-            }
-
-            item {
                 MealDateSelector(
                     selectedDate = uiState.inputQuickImportDateTime.toLocalDate(),
                     onPrevious = {
@@ -178,6 +170,14 @@ fun ScreenQuickImport(
                     },
                     onDateClick = { datePickerVisible = true },
                     testTagPrefix = "add_meal",
+                )
+            }
+
+            item {
+                CapturePanel(
+                    value = uiState.inputQuickImportText,
+                    onValueChange = onTextChange,
+                    onClear = onClear,
                 )
             }
 
