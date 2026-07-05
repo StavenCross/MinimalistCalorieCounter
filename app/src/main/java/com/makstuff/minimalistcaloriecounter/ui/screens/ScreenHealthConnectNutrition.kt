@@ -24,19 +24,17 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.BakeryDining
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.ContentCopy
-import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.EggAlt
 import androidx.compose.material.icons.filled.Grass
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.LocalFireDepartment
-import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.OilBarrel
+import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material3.Button
 import androidx.compose.material3.DatePicker
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -71,6 +69,8 @@ import androidx.compose.ui.unit.dp
 import com.makstuff.minimalistcaloriecounter.AppUiState
 import com.makstuff.minimalistcaloriecounter.classes.MacroTargets
 import com.makstuff.minimalistcaloriecounter.classes.NutritionFoodEditDraft
+import com.makstuff.minimalistcaloriecounter.classes.QuickImportFood
+import com.makstuff.minimalistcaloriecounter.classes.QuickImportMealType
 import com.makstuff.minimalistcaloriecounter.essentials.toFormattedString
 import com.makstuff.minimalistcaloriecounter.health.HealthConnectNutritionMeal
 import com.makstuff.minimalistcaloriecounter.ui.model.NutritionMealGroup
@@ -88,8 +88,10 @@ import com.makstuff.minimalistcaloriecounter.ui.reused.SurfacePanel
 import com.makstuff.minimalistcaloriecounter.ui.reused.pullRefreshRubberBand
 import java.time.Instant
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -102,8 +104,21 @@ fun ScreenHealthConnectNutrition(
     onAddFoodServing: (HealthConnectNutritionMeal) -> Unit,
     onRemoveFoodServing: (HealthConnectNutritionMeal) -> Unit,
     onSaveFoodServingGroup: (List<HealthConnectNutritionMeal>, NutritionFoodEditDraft) -> Unit,
-    onRepeatMealGroup: (List<HealthConnectNutritionMeal>) -> Unit,
+    onPrepareAddMeal: (LocalDate) -> Unit = {},
+    onRepeatMealGroup: (LocalDate, List<HealthConnectNutritionMeal>) -> Unit,
+    onTextChange: (String) -> Unit = {},
+    onRefreshDateTime: () -> Unit = {},
+    onDateTimeChange: (LocalDateTime) -> Unit = {},
+    onMealTypeChange: (QuickImportMealType) -> Unit = {},
+    onParsedFoodChange: (Int, QuickImportFood) -> Unit = { _, _ -> },
+    onParsedFoodGroupChange: (Int, QuickImportFood) -> Unit = onParsedFoodChange,
+    onParsedFoodServingAdd: (Int) -> Unit = {},
+    onParsedFoodServingRemove: (Int) -> Unit = {},
+    onImport: () -> Unit = {},
+    onClear: () -> Unit = {},
+    onRetryOutbox: (String) -> Unit = {},
     onExportDaySummary: (LocalDate, String) -> Unit,
+    onReviewHealthConnectPermissions: () -> Unit = {},
 ) {
     LaunchedEffect(Unit) {
         onRefresh()
@@ -111,27 +126,44 @@ fun ScreenHealthConnectNutrition(
 
     val selectedDate = uiState.healthConnectViewerDate
     val meals = uiState.healthConnectViewerMeals
+    val isSelectedDateLoading = uiState.healthConnectViewerLoading &&
+        (uiState.healthConnectViewerLoadingDate == null || uiState.healthConnectViewerLoadingDate == selectedDate)
+    val hasVisibleMealContent = meals.isNotEmpty() || uiState.healthConnectViewerMessage != null
+    val hasSelectedDateContent = uiState.healthConnectViewerMealsDate == selectedDate && hasVisibleMealContent
+    val hasStablePreviousContent = isSelectedDateLoading &&
+        uiState.healthConnectViewerMealsDate != selectedDate &&
+        hasVisibleMealContent
+    val contentDate = if (hasStablePreviousContent) uiState.healthConnectViewerMealsDate else selectedDate
+    val showInlineLoading = isSelectedDateLoading && !hasStablePreviousContent && !hasSelectedDateContent
     var selectedFood by remember { mutableStateOf<HealthConnectNutritionMeal?>(null) }
     var selectedMealGroup by remember { mutableStateOf<NutritionMealGroup?>(null) }
     var datePickerVisible by remember { mutableStateOf(false) }
+    var addMealVisible by remember { mutableStateOf(false) }
     var expandedMealKeys by remember(selectedDate) { mutableStateOf(emptySet<String>()) }
     val clipboard = LocalClipboardManager.current
-    var daySummaryCopied by remember { mutableStateOf(false) }
     var mealSummaryCopied by remember { mutableStateOf(false) }
-    val targets = uiState.goals.activeTargetsFor(selectedDate)
-    val daySummaryText = mealsDaySummaryText(selectedDate, meals, targets)
-
-    LaunchedEffect(daySummaryText) {
-        daySummaryCopied = false
+    var foodSaveNoticeKey by remember { mutableStateOf<Long?>(null) }
+    val targets = uiState.goals.activeTargetsFor(contentDate)
+    fun openAddMeal() {
+        onPrepareAddMeal(selectedDate)
+        addMealVisible = true
     }
+
     LaunchedEffect(selectedMealGroup) {
         mealSummaryCopied = false
+    }
+    LaunchedEffect(foodSaveNoticeKey) {
+        if (foodSaveNoticeKey != null) {
+            delay(1_800)
+            foodSaveNoticeKey = null
+        }
     }
 
     selectedFood?.let { food ->
         val servingGroup = servingGroupFor(food, meals)
         FoodDetailDialog(
             servingGroup = servingGroup,
+            saveNoticeVisible = foodSaveNoticeKey != null,
             onDismiss = { selectedFood = null },
             onDelete = {
                 selectedFood = null
@@ -145,7 +177,7 @@ fun ScreenHealthConnectNutrition(
             },
             onSaveEdit = { draft ->
                 onSaveFoodServingGroup(servingGroup.foods, draft)
-                selectedFood = null
+                foodSaveNoticeKey = System.currentTimeMillis()
             },
         )
     }
@@ -165,7 +197,8 @@ fun ScreenHealthConnectNutrition(
             },
             onRepeat = {
                 selectedMealGroup = null
-                onRepeatMealGroup(group.foods)
+                onRepeatMealGroup(selectedDate, group.foods)
+                addMealVisible = true
             },
             onFoodClick = {
                 selectedMealGroup = null
@@ -185,91 +218,172 @@ fun ScreenHealthConnectNutrition(
         )
     }
 
-    PullToRefreshBox(
-        isRefreshing = uiState.healthConnectViewerLoading,
-        onRefresh = onRefresh,
-        modifier = Modifier.fillMaxSize(),
-    ) {
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .pullRefreshRubberBand(uiState.healthConnectViewerLoading)
-                .padding(horizontal = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp),
+    if (addMealVisible) {
+        MealsAddMealDrawer(
+            uiState = uiState,
+            onDismiss = { addMealVisible = false },
+            onTextChange = onTextChange,
+            onRefreshDateTime = onRefreshDateTime,
+            onDateTimeChange = onDateTimeChange,
+            onMealTypeChange = onMealTypeChange,
+            onParsedFoodChange = onParsedFoodChange,
+            onParsedFoodGroupChange = onParsedFoodGroupChange,
+            onParsedFoodServingAdd = onParsedFoodServingAdd,
+            onParsedFoodServingRemove = onParsedFoodServingRemove,
+            onImport = onImport,
+            onClear = {
+                val currentDrawerDateTime = uiState.inputQuickImportDateTime
+                onClear()
+                onDateTimeChange(currentDrawerDateTime)
+            },
+            onRetryOutbox = onRetryOutbox,
+        )
+    }
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        PullToRefreshBox(
+            isRefreshing = uiState.healthConnectViewerLoading,
+            onRefresh = onRefresh,
+            modifier = Modifier.fillMaxSize(),
         ) {
-            item {
-                MealDateSelector(
-                    selectedDate = selectedDate,
-                    onPrevious = { onDateChange(selectedDate.minusDays(1)) },
-                    onNext = { onDateChange(selectedDate.plusDays(1)) },
-                    onDateClick = { datePickerVisible = true },
-                    testTagPrefix = "meals",
-                )
-            }
-
-            item {
-                DaySummaryCard(
-                    date = selectedDate,
-                    meals = meals,
-                    targets = targets,
-                    isLoading = uiState.healthConnectViewerLoading,
-                    message = uiState.healthConnectViewerMessage,
-                    copied = daySummaryCopied,
-                    onCopySummary = {
-                        clipboard.setText(AnnotatedString(daySummaryText))
-                        daySummaryCopied = true
-                    },
-                    onExportSummary = { onExportDaySummary(selectedDate, daySummaryText) },
-                )
-            }
-
-            if (uiState.healthConnectViewerLoading) {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .pullRefreshRubberBand(uiState.healthConnectViewerLoading)
+                    .padding(horizontal = 12.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp),
+            ) {
                 item {
-                    StatusCard("Reading Health Connect")
-                }
-            } else if (uiState.healthConnectViewerMessage != null && meals.isEmpty()) {
-                item {
-                    StatusCard(uiState.healthConnectViewerMessage)
-                }
-            }
-
-            val groups = mealGroups(meals)
-            if (!uiState.healthConnectViewerLoading && groups.isEmpty() && uiState.healthConnectViewerMessage == null) {
-                item {
-                    StatusCard("No foods logged for this day.")
-                }
-            }
-
-            if (groups.isNotEmpty()) {
-                item {
-                    SectionTitle("Meals")
-                }
-                groups.forEach { group ->
-                    val groupKey = mealGroupKey(group)
-                    val canExpand = shouldCollapseMealGroup(group)
-                    val expanded = !canExpand || groupKey in expandedMealKeys
-                    item {
-                        MealCard(
-                            group = group,
-                            expanded = expanded,
-                            canToggleExpand = canExpand,
-                            onToggleExpanded = {
-                                expandedMealKeys = if (expanded) {
-                                    expandedMealKeys - groupKey
-                                } else {
-                                    expandedMealKeys + groupKey
-                                }
-                            },
-                            onMealClick = { selectedMealGroup = group },
-                            onFoodClick = { selectedFood = it },
+                    Column(verticalArrangement = Arrangement.spacedBy(0.dp)) {
+                        MealDateSelector(
+                            selectedDate = selectedDate,
+                            onPrevious = { onDateChange(selectedDate.minusDays(1)) },
+                            onNext = { onDateChange(selectedDate.plusDays(1)) },
+                            onDateClick = { datePickerVisible = true },
+                            testTagPrefix = "meals",
+                            shape = RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp),
+                        )
+                        AddMealAttachedAction(
+                            onClick = ::openAddMeal,
                         )
                     }
                 }
-            }
 
-            item {
-                Spacer(Modifier.height(8.dp))
+                item {
+                    DaySummaryCard(
+                        date = contentDate,
+                        meals = meals,
+                        targets = targets,
+                        isLoading = showInlineLoading,
+                        message = uiState.healthConnectViewerMessage,
+                    )
+                }
+
+                val groups = if (showInlineLoading) emptyList() else mealGroups(meals)
+                val viewerMessage = uiState.healthConnectViewerMessage
+                val isEmptyNutritionMessage = viewerMessage?.isEmptyNutritionMessage() == true
+                if (showInlineLoading) {
+                    item {
+                        StatusCard("Reading Health Connect")
+                    }
+                } else if (
+                    viewerMessage != null &&
+                    groups.isEmpty() &&
+                    !uiState.healthConnectPermissionsGranted
+                ) {
+                    item {
+                        PermissionEmptyStateCard(onReviewPermissions = onReviewHealthConnectPermissions)
+                    }
+                } else if (viewerMessage != null && groups.isEmpty()) {
+                    if (isEmptyNutritionMessage) {
+                        item {
+                            SectionTitle("Meals")
+                        }
+                        item {
+                            EmptyMealsCard()
+                        }
+                    } else {
+                        item {
+                            StatusCard(viewerMessage)
+                        }
+                    }
+                }
+
+                if (groups.isNotEmpty()) {
+                    item {
+                        SectionTitle("Meals")
+                    }
+                    groups.forEach { group ->
+                        val groupKey = mealGroupKey(group)
+                        val canExpand = shouldCollapseMealGroup(group)
+                        val expanded = !canExpand || groupKey in expandedMealKeys
+                        item {
+                            MealCard(
+                                group = group,
+                                expanded = expanded,
+                                canToggleExpand = canExpand,
+                                onToggleExpanded = {
+                                    expandedMealKeys = if (expanded) {
+                                        expandedMealKeys - groupKey
+                                    } else {
+                                        expandedMealKeys + groupKey
+                                    }
+                                },
+                                onMealClick = { selectedMealGroup = group },
+                                onFoodClick = { selectedFood = it },
+                            )
+                        }
+                    }
+                } else if (!showInlineLoading && viewerMessage == null) {
+                    item {
+                        SectionTitle("Meals")
+                    }
+                    item {
+                        EmptyMealsCard()
+                    }
+                }
+
+                item {
+                    Spacer(Modifier.height(8.dp))
+                }
             }
+        }
+        if (foodSaveNoticeKey != null) {
+            ChangesSavedChip(
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .padding(top = 12.dp)
+                    .testTag("meals_changes_saved"),
+            )
+        }
+    }
+}
+
+@Composable
+private fun ChangesSavedChip(modifier: Modifier = Modifier) {
+    Surface(
+        modifier = modifier,
+        shape = RoundedCornerShape(999.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerHighest,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.34f)),
+        tonalElevation = 4.dp,
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                imageVector = Icons.Default.Check,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(16.dp),
+            )
+            Text(
+                text = "Changes saved",
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Bold,
+            )
         }
     }
 }
@@ -281,13 +395,9 @@ private fun DaySummaryCard(
     targets: MacroTargets,
     isLoading: Boolean,
     message: String?,
-    copied: Boolean,
-    onCopySummary: () -> Unit,
-    onExportSummary: () -> Unit,
 ) {
     val summary = nutritionDaySummary(meals, targets)
     val totals = summary.totals
-    var menuExpanded by remember { mutableStateOf(false) }
 
     Box(
         modifier = Modifier
@@ -332,59 +442,15 @@ private fun DaySummaryCard(
                             horizontalArrangement = Arrangement.spacedBy(5.dp),
                         ) {
                             Icon(
-                                imageVector = Icons.Default.LocalFireDepartment,
+                                imageVector = Icons.Default.Restaurant,
                                 contentDescription = null,
                                 tint = AccentGold,
                                 modifier = Modifier.size(18.dp),
                             )
                             Text(
-                                text = "${summary.foodCount} foods",
+                                text = if (isLoading) "Loading" else "${summary.foodCount} foods",
                                 style = MaterialTheme.typography.labelLarge,
                                 color = MaterialTheme.colorScheme.onSurface,
-                            )
-                        }
-                    }
-                    Box {
-                        IconButton(
-                            onClick = { menuExpanded = true },
-                            modifier = Modifier.testTag("meals_day_actions"),
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.MoreVert,
-                                contentDescription = "Day actions",
-                            )
-                        }
-                        DropdownMenu(
-                            expanded = menuExpanded,
-                            onDismissRequest = { menuExpanded = false },
-                        ) {
-                            DropdownMenuItem(
-                                text = { Text(if (copied) "Day copied" else "Copy") },
-                                leadingIcon = {
-                                    Icon(
-                                        imageVector = if (copied) Icons.Default.Check else Icons.Default.ContentCopy,
-                                        contentDescription = null,
-                                    )
-                                },
-                                onClick = {
-                                    menuExpanded = false
-                                    onCopySummary()
-                                },
-                                modifier = Modifier.testTag("meals_day_copy_summary"),
-                            )
-                            DropdownMenuItem(
-                                text = { Text("Export") },
-                                leadingIcon = {
-                                    Icon(
-                                        imageVector = Icons.Default.Download,
-                                        contentDescription = null,
-                                    )
-                                },
-                                onClick = {
-                                    menuExpanded = false
-                                    onExportSummary()
-                                },
-                                modifier = Modifier.testTag("meals_day_export_summary"),
                             )
                         }
                     }
@@ -397,10 +463,157 @@ private fun DaySummaryCard(
                     color = MaterialTheme.colorScheme.error,
                 )
             }
-            MacroGrid(
-                items = macroSummaryItems(totals)
+            if (!isLoading) {
+                MacroGrid(
+                    items = macroSummaryItems(totals)
+                )
+                GoalProgressRow(summary.progress)
+            }
+        }
+    }
+}
+
+private fun String.isEmptyNutritionMessage(): Boolean {
+    return contains("No Health Connect nutrition records", ignoreCase = true)
+}
+
+@Composable
+private fun EmptyMealsCard() {
+    MealsInfoCard(
+        icon = Icons.Default.Restaurant,
+        body = "This day is empty so far. Add a meal when you're ready.",
+        modifier = Modifier.testTag("meals_empty_state"),
+    )
+}
+
+@Composable
+private fun PermissionEmptyStateCard(
+    onReviewPermissions: () -> Unit,
+) {
+    MealsInfoCard(
+        icon = Icons.Default.Info,
+        title = "Health Connect needs permission",
+        body = "Allow nutrition access so Meals can read and update your log.",
+        actionText = "Review permissions",
+        onAction = onReviewPermissions,
+        actionTestTag = "meals_review_permissions",
+        modifier = Modifier.testTag("meals_permissions_state"),
+    )
+}
+
+@Composable
+private fun MealsInfoCard(
+    icon: ImageVector,
+    body: String,
+    modifier: Modifier = Modifier,
+    title: String? = null,
+    actionText: String? = null,
+    actionIcon: ImageVector? = null,
+    onAction: (() -> Unit)? = null,
+    actionTestTag: String? = null,
+) {
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(14.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        border = BorderStroke(1.dp, FoodCaloriesBlue.copy(alpha = 0.32f)),
+    ) {
+        Column(
+            modifier = Modifier.padding(14.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(38.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(FoodCaloriesBlue.copy(alpha = 0.16f)),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = null,
+                        tint = FoodCaloriesBlue,
+                        modifier = Modifier.size(21.dp),
+                    )
+                }
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(2.dp),
+                ) {
+                    title?.let {
+                        Text(
+                            text = it,
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface,
+                        )
+                    }
+                    Text(
+                        text = body,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+            if (actionText != null && onAction != null) {
+                Button(
+                    onClick = onAction,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .then(if (actionTestTag != null) Modifier.testTag(actionTestTag) else Modifier),
+                ) {
+                    actionIcon?.let {
+                        Icon(
+                            imageVector = it,
+                            contentDescription = null,
+                            modifier = Modifier
+                                .padding(end = 8.dp)
+                                .size(18.dp),
+                        )
+                    }
+                    Text(actionText)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun AddMealAttachedAction(
+    onClick: () -> Unit,
+) {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .testTag("meals_add_meal")
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(bottomStart = 18.dp, bottomEnd = 18.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerHighest,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.18f)),
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 18.dp, vertical = 15.dp),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                imageVector = Icons.Default.Add,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(20.dp),
             )
-            GoalProgressRow(summary.progress)
+            Spacer(Modifier.size(10.dp))
+            Text(
+                text = "Add meal",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
         }
     }
 }

@@ -11,6 +11,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.unit.dp
 
 @Composable
@@ -22,11 +23,12 @@ fun SurfacePanel(
     contentPadding: Int = 8,
     verticalSpacing: Int = 6,
     tonalElevation: Int = 0,
+    shape: Shape = MaterialTheme.shapes.medium,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     Surface(
         modifier = modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.medium,
+        shape = shape,
         color = backgroundColor,
         border = BorderStroke(1.dp, borderColor),
         tonalElevation = tonalElevation.dp,

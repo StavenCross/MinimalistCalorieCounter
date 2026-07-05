@@ -38,6 +38,24 @@ internal class AppViewModelQuickImportActions(
         updateText(updatedText)
     }
 
+    fun updateParsedFoodGroup(foodIndex: Int, food: QuickImportFood) {
+        val meal = env.uiState.quickImportMeal ?: return
+        val updatedText = QuickImportFormatter.text(QuickImportFormatter.replaceFoodGroup(meal, foodIndex, food))
+        updateText(updatedText)
+    }
+
+    fun addParsedFoodServing(foodIndex: Int) {
+        val meal = env.uiState.quickImportMeal ?: return
+        val updatedText = QuickImportFormatter.text(QuickImportFormatter.addFoodServing(meal, foodIndex))
+        updateText(updatedText)
+    }
+
+    fun removeParsedFoodServing(foodIndex: Int) {
+        val meal = env.uiState.quickImportMeal ?: return
+        val updatedText = QuickImportFormatter.text(QuickImportFormatter.removeFoodServing(meal, foodIndex))
+        updateText(updatedText)
+    }
+
     fun reset() {
         env.state.update { currentState ->
             currentState.copy(

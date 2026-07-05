@@ -9,10 +9,10 @@ Generated output, Gradle build folders, `node_modules`, and IDE metadata are exc
 | File | Approx. lines | Type | Cleanup priority |
 | --- | ---: | --- | --- |
 | `app/src/main/java/com/makstuff/minimalistcaloriecounter/ui/screens/GoalsDashboardComponents.kt` | 1155 | Compose goals dashboard display components | Low, UI-file exception applies; candidate for future visual-component grouping |
-| `app/src/main/java/com/makstuff/minimalistcaloriecounter/ui/screens/QuickImportMealComponents.kt` | 757 | Compose Add Meal display components | Low, UI-file exception applies |
+| `app/src/main/java/com/makstuff/minimalistcaloriecounter/ui/screens/QuickImportMealComponents.kt` | 761 | Compose Add Meal display components | Low, UI-file exception applies |
 | `app/src/main/java/com/makstuff/minimalistcaloriecounter/ui/screens/HealthNutritionMealComponents.kt` | 756 | Compose meal display components | Low, UI-file exception applies |
 | `app/src/main/java/com/makstuff/minimalistcaloriecounter/ui/screens/GoalsSettingsComponents.kt` | 608 | Compose goals settings components | Low, UI-file exception applies |
-| `app/src/main/java/com/makstuff/minimalistcaloriecounter/ui/screens/ScreenHealthConnectNutrition.kt` | 521 | Compose screen and components | Low, UI-file exception applies |
+| `app/src/main/java/com/makstuff/minimalistcaloriecounter/ui/screens/ScreenHealthConnectNutrition.kt` | 570 | Compose screen and components | Low, UI-file exception applies |
 | `app/src/main/java/com/makstuff/minimalistcaloriecounter/ui/screens/QuickImportControls.kt` | 515 | Compose Add Meal controls | Low, UI-file exception applies |
 | `app/src/main/java/com/makstuff/minimalistcaloriecounter/ui/settings/AppSettingsPage.kt` | 491 | Compose settings page | Low, UI-file exception applies |
 | `app/src/androidTest/java/com/makstuff/minimalistcaloriecounter/ui/screens/ScreenGoalsTest.kt` | 561 | Connected Compose regression tests | Low, test-file exception applies |
@@ -156,6 +156,9 @@ All non-UI files touched in this cleanup are now under the 300-line cap:
 - Added Meals review collapse helpers so long meals start compact and expand inline without moving that logic into the screen.
 - Added meal-level Health Connect deletes by forwarding the selected meal group's app-owned record ids through the existing delete path.
 - Added meal repeat preparation through Add Meal so repeat writes reuse the existing parser, outbox, and Health Connect commit flow.
+- Added the Meals-hosted Add Meal drawer:
+  - `ui/screens/MealsAddMealDrawer.kt`
+  - the primary add workflow now opens from the Meals day card while preserving the legacy hidden Quick Import route for automation and fallback.
 - Added day check-in text export to Downloads and extracted a shared Downloads text writer for Health Connect CSV and check-in exports.
 - Added richer Goals recommendation history metadata and a compact history card so applied targets show their BMR/TDEE and measurement context.
 - Replaced the visible Goals recalculation card with a state-driven Goal Status surface. Health Connect profile values refresh quietly, recommendations appear only when target changes are meaningful, and review/apply details live in the bottom drawer.

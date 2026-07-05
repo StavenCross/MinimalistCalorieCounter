@@ -11,59 +11,91 @@ import com.makstuff.minimalistcaloriecounter.health.toEditedHealthPayload
 import com.makstuff.minimalistcaloriecounter.health.toHealthPayload
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.time.LocalDate
 import java.util.UUID
 
 internal class AppViewModelHealthConnectMealActions(
     private val env: AppViewModelEnvironment,
     private val viewModel: AppViewModel,
 ) {
-    fun readMeals() {
+    fun readMeals(date: LocalDate? = null, showLoading: Boolean = true) {
+        val requestedDate = date ?: env.uiState.healthConnectViewerDate
         env.state.update { currentState ->
             currentState.copy(
-                healthConnectViewerLoading = true,
-                healthConnectViewerMessage = null,
+                healthConnectViewerLoading = if (showLoading) true else currentState.healthConnectViewerLoading,
+                healthConnectViewerLoadingDate = requestedDate,
+                healthConnectViewerMessage = if (showLoading) null else currentState.healthConnectViewerMessage,
             )
         }
         env.scope.launch {
-            when (val result = env.healthConnectManager.readNutritionMeals(env.uiState.healthConnectViewerDate)) {
+            when (val result = env.healthConnectManager.readNutritionMeals(requestedDate)) {
                 is HealthConnectNutritionReadResult.Success -> {
-                    env.state.update {
-                        it.copy(
-                            healthConnectViewerLoading = false,
-                            healthConnectViewerMeals = result.meals,
-                            healthConnectViewerMessage = if (result.meals.isEmpty()) {
-                                "No Health Connect nutrition records found for this app on this date."
-                            } else {
-                                null
-                            },
+                    env.state.update { currentState ->
+                        val message = if (result.meals.isEmpty()) {
+                            "No Health Connect nutrition records found for this app on this date."
+                        } else {
+                            null
+                        }
+                        val cachedState = currentState.copy(
+                            healthConnectViewerMealsByDate = currentState.healthConnectViewerMealsByDate + (requestedDate to result.meals),
+                            healthConnectViewerMessagesByDate = currentState.healthConnectViewerMessagesByDate + (requestedDate to message),
                         )
+                        if (currentState.healthConnectViewerDate != requestedDate) {
+                            cachedState
+                        } else {
+                            cachedState.copy(
+                                healthConnectViewerLoading = false,
+                                healthConnectViewerLoadingDate = null,
+                                healthConnectViewerMeals = result.meals,
+                                healthConnectViewerMealsDate = requestedDate,
+                                healthConnectViewerMessage = message,
+                            )
+                        }
                     }
                 }
                 HealthConnectNutritionReadResult.HealthConnectUnavailable -> {
-                    env.state.update {
-                        it.copy(
-                            healthConnectViewerLoading = false,
-                            healthConnectViewerMeals = emptyList(),
-                            healthConnectViewerMessage = env.application.getString(R.string.toast_hc_not_available),
-                        )
+                    env.state.update { currentState ->
+                        if (currentState.healthConnectViewerDate != requestedDate) {
+                            currentState
+                        } else {
+                            currentState.copy(
+                                healthConnectViewerLoading = false,
+                                healthConnectViewerLoadingDate = null,
+                                healthConnectViewerMeals = emptyList(),
+                                healthConnectViewerMealsDate = requestedDate,
+                                healthConnectViewerMessage = env.application.getString(R.string.toast_hc_not_available),
+                            )
+                        }
                     }
                 }
                 HealthConnectNutritionReadResult.PermissionsMissing -> {
-                    env.state.update {
-                        it.copy(
-                            healthConnectViewerLoading = false,
-                            healthConnectViewerMeals = emptyList(),
-                            healthConnectViewerMessage = env.application.getString(R.string.health_connect_permissions_missing),
-                        )
+                    env.state.update { currentState ->
+                        if (currentState.healthConnectViewerDate != requestedDate) {
+                            currentState
+                        } else {
+                            currentState.copy(
+                                healthConnectViewerLoading = false,
+                                healthConnectViewerLoadingDate = null,
+                                healthConnectViewerMeals = emptyList(),
+                                healthConnectViewerMealsDate = requestedDate,
+                                healthConnectViewerMessage = env.application.getString(R.string.health_connect_permissions_missing),
+                            )
+                        }
                     }
                 }
                 is HealthConnectNutritionReadResult.Failed -> {
-                    env.state.update {
-                        it.copy(
-                            healthConnectViewerLoading = false,
-                            healthConnectViewerMeals = emptyList(),
-                            healthConnectViewerMessage = result.message,
-                        )
+                    env.state.update { currentState ->
+                        if (currentState.healthConnectViewerDate != requestedDate) {
+                            currentState
+                        } else {
+                            currentState.copy(
+                                healthConnectViewerLoading = false,
+                                healthConnectViewerLoadingDate = null,
+                                healthConnectViewerMeals = emptyList(),
+                                healthConnectViewerMealsDate = requestedDate,
+                                healthConnectViewerMessage = result.message,
+                            )
+                        }
                     }
                 }
             }

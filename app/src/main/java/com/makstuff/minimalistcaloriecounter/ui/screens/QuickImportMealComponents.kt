@@ -1,10 +1,13 @@
 package com.makstuff.minimalistcaloriecounter.ui.screens
 
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -20,6 +23,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.BakeryDining
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ContentCopy
@@ -93,6 +97,15 @@ internal fun ParsedMealPreviewCard(
         contentPadding = 12,
     ) {
         ParsedMealSummaryRow(meal, mealType)
+        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            meal.foods.forEachIndexed { index, food ->
+                CompactQuickFoodRow(
+                    food = food,
+                    testTag = "quick_import_food_row_$index",
+                    onClick = { onFoodClick(index) },
+                )
+            }
+        }
         Button(
             onClick = onSaveMeal,
             enabled = canSave && !isSaving,
@@ -114,16 +127,6 @@ internal fun ParsedMealPreviewCard(
                 )
             }
             Text("Save meal", modifier = Modifier.padding(start = 8.dp))
-        }
-
-        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            meal.foods.forEachIndexed { index, food ->
-                CompactQuickFoodRow(
-                    food = food,
-                    reserveActionSpace = true,
-                    onClick = { onFoodClick(index) },
-                )
-            }
         }
     }
 }
@@ -343,8 +346,8 @@ private fun QuickCaloriesChip(
         Row(
             modifier = Modifier
                 .clip(RoundedCornerShape(999.dp))
-                .background(QuickAccentSend.copy(alpha = 0.18f))
-                .border(BorderStroke(1.dp, QuickAccentSend.copy(alpha = 0.24f)), RoundedCornerShape(999.dp))
+                .background(AccentGold.copy(alpha = 0.18f))
+                .border(BorderStroke(1.dp, AccentGold.copy(alpha = 0.24f)), RoundedCornerShape(999.dp))
                 .padding(horizontal = 10.dp, vertical = 7.dp),
             horizontalArrangement = Arrangement.spacedBy(6.dp),
             verticalAlignment = Alignment.CenterVertically,
@@ -352,11 +355,11 @@ private fun QuickCaloriesChip(
             Icon(
                 imageVector = Icons.Default.LocalFireDepartment,
                 contentDescription = null,
-                tint = QuickAccentSend,
+                tint = AccentGold,
                 modifier = Modifier.size(17.dp),
             )
             Text(
-                text = "${calories.toFormattedString(true)} kcal",
+                text = calories.toFormattedString(true),
                 style = MaterialTheme.typography.labelLarge,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface,
@@ -457,21 +460,32 @@ private fun QuickMacroSummaryChip(
 @Composable
 private fun CompactQuickFoodRow(
     food: QuickImportFood,
-    reserveActionSpace: Boolean = false,
+    testTag: String? = null,
     onClick: () -> Unit,
 ) {
-    val endPadding = if (reserveActionSpace) 132.dp else 10.dp
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    val rowColor by animateColorAsState(
+        targetValue = if (isPressed) {
+            MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.98f)
+        } else {
+            MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.74f)
+        },
+        label = "quickFoodRowColor",
+    )
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .then(if (testTag != null) Modifier.testTag(testTag) else Modifier)
             .clip(RoundedCornerShape(8.dp))
-            .background(MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.70f))
+            .background(rowColor)
             .border(
-                BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.12f)),
+                BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = if (isPressed) 0.22f else 0.14f)),
                 RoundedCornerShape(8.dp),
             )
-            .clickable(onClick = onClick)
-            .padding(start = 10.dp, top = 9.dp, end = endPadding, bottom = 9.dp),
+            .clickable(interactionSource = interactionSource, indication = null, onClick = onClick)
+            .padding(start = 10.dp, top = 8.dp, end = 7.dp, bottom = 8.dp),
         horizontalArrangement = Arrangement.spacedBy(10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -483,13 +497,35 @@ private fun CompactQuickFoodRow(
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f),
         )
-        Text(
-            text = "${food.nutrients.energy.toFormattedString(true)} kcal",
-            style = MaterialTheme.typography.labelLarge,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            maxLines = 1,
-        )
+        Row(
+            modifier = Modifier
+                .clip(RoundedCornerShape(999.dp))
+                .background(QuickAccentSend.copy(alpha = if (isPressed) 0.24f else 0.18f))
+                .border(BorderStroke(1.dp, QuickAccentSend.copy(alpha = if (isPressed) 0.38f else 0.26f)), RoundedCornerShape(999.dp))
+                .padding(start = 9.dp, top = 5.dp, end = 4.dp, bottom = 5.dp),
+            horizontalArrangement = Arrangement.spacedBy(2.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                imageVector = Icons.Default.LocalFireDepartment,
+                contentDescription = null,
+                tint = QuickAccentSend,
+                modifier = Modifier.size(16.dp),
+            )
+            Text(
+                text = food.nutrients.energy.toFormattedString(true),
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 1,
+            )
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                contentDescription = null,
+                tint = QuickAccentSend,
+                modifier = Modifier.size(18.dp),
+            )
+        }
     }
 }
 
@@ -551,6 +587,7 @@ internal fun QuickImportMealDetailSheet(
                     meal.foods.forEachIndexed { index, food ->
                         CompactQuickFoodRow(
                             food = food,
+                            testTag = "quick_import_meal_detail_food_row_$index",
                             onClick = { onFoodClick(index) },
                         )
                     }

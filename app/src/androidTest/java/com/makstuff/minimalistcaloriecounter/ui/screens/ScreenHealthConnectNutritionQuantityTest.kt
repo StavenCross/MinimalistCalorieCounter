@@ -50,7 +50,7 @@ class ScreenHealthConnectNutritionQuantityTest {
                     },
                     onRemoveFoodServing = {},
                     onSaveFoodServingGroup = { _, _ -> },
-                    onRepeatMealGroup = {},
+                    onRepeatMealGroup = { _, _ -> },
                     onExportDaySummary = { _, _ -> },
                 )
             }

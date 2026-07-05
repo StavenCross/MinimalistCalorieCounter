@@ -15,6 +15,30 @@ object QuickImportFormatter {
         return QuickImportMeal(foods = foods, totals = sumFoods(foods))
     }
 
+    fun replaceFoodGroup(meal: QuickImportMeal, foodIndex: Int, food: QuickImportFood): QuickImportMeal {
+        require(foodIndex in meal.foods.indices) { "Food could not be found in the parsed meal." }
+        val originalFood = meal.foods[foodIndex]
+        val foods = meal.foods.map { if (it == originalFood) food else it }
+        return QuickImportMeal(foods = foods, totals = sumFoods(foods))
+    }
+
+    fun addFoodServing(meal: QuickImportMeal, foodIndex: Int): QuickImportMeal {
+        require(foodIndex in meal.foods.indices) { "Food could not be found in the parsed meal." }
+        val food = meal.foods[foodIndex]
+        val insertAfter = meal.foods.indexOfLast { it == food }
+        val foods = meal.foods.toMutableList().also { it.add(insertAfter + 1, food) }
+        return QuickImportMeal(foods = foods, totals = sumFoods(foods))
+    }
+
+    fun removeFoodServing(meal: QuickImportMeal, foodIndex: Int): QuickImportMeal {
+        require(foodIndex in meal.foods.indices) { "Food could not be found in the parsed meal." }
+        val food = meal.foods[foodIndex]
+        val matchingIndexes = meal.foods.mapIndexedNotNull { index, candidate -> if (candidate == food) index else null }
+        require(matchingIndexes.size > 1) { "At least one serving is required." }
+        val foods = meal.foods.toMutableList().also { it.removeAt(matchingIndexes.last()) }
+        return QuickImportMeal(foods = foods, totals = sumFoods(foods))
+    }
+
     private fun foodLine(food: QuickImportFood): String {
         val title = listOf(food.amountText, food.name).filter { it.isNotBlank() }.joinToString(" ")
         return "$title; ${nutrientText(food.nutrients)}."

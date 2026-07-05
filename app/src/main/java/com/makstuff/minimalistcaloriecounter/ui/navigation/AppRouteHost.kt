@@ -21,6 +21,7 @@ import com.makstuff.minimalistcaloriecounter.ui.screens.ScreenGoals
 import com.makstuff.minimalistcaloriecounter.ui.screens.ScreenHealthConnectNutrition
 import com.makstuff.minimalistcaloriecounter.ui.screens.ScreenQuickImport
 import com.makstuff.minimalistcaloriecounter.ui.settings.AppSettingsPage
+import java.time.LocalDateTime
 
 /**
  * Registers the app's navigation graph.
@@ -47,7 +48,7 @@ fun AppRouteHost(
     NavHost(
         modifier = modifier,
         navController = navController,
-        startDestination = AppRoutes.QUICK_IMPORT,
+        startDestination = AppRoutes.HEALTH_CONNECT_NUTRITION,
     ) {
         legacyDayRoutes(
             uiState = uiState,
@@ -83,17 +84,31 @@ fun AppRouteHost(
                 onAddFoodServing = { viewModel.addHealthConnectNutritionServing(it) },
                 onRemoveFoodServing = { viewModel.deleteHealthConnectNutritionMeal(it.recordId) },
                 onSaveFoodServingGroup = { foods, draft -> viewModel.updateHealthConnectNutritionServingGroup(foods, draft) },
-                onRepeatMealGroup = {
-                    viewModel.prepareQuickImportRepeat(it)
-                    navController.navigate(AppRoutes.QUICK_IMPORT) {
-                        launchSingleTop = true
-                        restoreState = true
-                    }
+                onPrepareAddMeal = { date ->
+                    viewModel.resetQuickImport()
+                    viewModel.updateQuickImportDateTime(LocalDateTime.of(date, LocalDateTime.now().toLocalTime()))
                 },
+                onRepeatMealGroup = { date, foods ->
+                    viewModel.prepareQuickImportRepeat(foods, date)
+                },
+                onTextChange = { viewModel.updateQuickImportText(it) },
+                onRefreshDateTime = { viewModel.refreshQuickImportDateTime() },
+                onDateTimeChange = { viewModel.updateQuickImportDateTime(it) },
+                onMealTypeChange = { viewModel.updateQuickImportMealTypeOverride(it) },
+                onParsedFoodChange = { index, food -> viewModel.updateQuickImportParsedFood(index, food) },
+                onParsedFoodGroupChange = { index, food -> viewModel.updateQuickImportParsedFoodGroup(index, food) },
+                onParsedFoodServingAdd = { index -> viewModel.addQuickImportParsedFoodServing(index) },
+                onParsedFoodServingRemove = { index -> viewModel.removeQuickImportParsedFoodServing(index) },
+                onImport = { viewModel.quickImportCommit(context) },
+                onClear = { viewModel.resetQuickImport() },
+                onRetryOutbox = { viewModel.quickImportRetryHealthConnect(context, it) },
                 onExportDaySummary = { date, summary ->
                     runCatching { DayCheckInExporter(context).export(date, summary) }
                         .onSuccess { Toast.makeText(context, "Exported check-in to $it", Toast.LENGTH_LONG).show() }
                         .onFailure { Toast.makeText(context, "Check-in export failed: ${it.message}", Toast.LENGTH_LONG).show() }
+                },
+                onReviewHealthConnectPermissions = {
+                    viewModel.setAlertDialogHealthConnectPermissions(true)
                 },
             )
         }
@@ -136,6 +151,9 @@ fun AppRouteHost(
                 onDateTimeChange = { viewModel.updateQuickImportDateTime(it) },
                 onMealTypeChange = { viewModel.updateQuickImportMealTypeOverride(it) },
                 onParsedFoodChange = { index, food -> viewModel.updateQuickImportParsedFood(index, food) },
+                onParsedFoodGroupChange = { index, food -> viewModel.updateQuickImportParsedFoodGroup(index, food) },
+                onParsedFoodServingAdd = { index -> viewModel.addQuickImportParsedFoodServing(index) },
+                onParsedFoodServingRemove = { index -> viewModel.removeQuickImportParsedFoodServing(index) },
                 onImport = { viewModel.quickImportCommit(context) },
                 onClear = { viewModel.resetQuickImport() },
                 onRetryOutbox = { viewModel.quickImportRetryHealthConnect(context, it) },

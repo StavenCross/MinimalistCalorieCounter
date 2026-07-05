@@ -12,7 +12,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material3.Button
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -20,14 +19,19 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -44,6 +48,7 @@ internal fun MealDateSelector(
     onNext: () -> Unit,
     onDateClick: () -> Unit,
     testTagPrefix: String,
+    shape: Shape = MaterialTheme.shapes.medium,
 ) {
     SurfacePanel(
         backgroundColor = MaterialTheme.colorScheme.surfaceContainerHigh,
@@ -51,6 +56,7 @@ internal fun MealDateSelector(
         contentPadding = 10,
         verticalSpacing = 8,
         tonalElevation = 2,
+        shape = shape,
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -107,6 +113,14 @@ internal fun MealDatePickerSheet(
     val datePickerState = rememberDatePickerState(
         initialSelectedDateMillis = selectedDate.atStartOfDay(zoneId).toInstant().toEpochMilli(),
     )
+    var lastCommittedMillis by remember { mutableStateOf(datePickerState.selectedDateMillis) }
+    LaunchedEffect(datePickerState.selectedDateMillis) {
+        val selectedMillis = datePickerState.selectedDateMillis ?: return@LaunchedEffect
+        if (selectedMillis != lastCommittedMillis) {
+            lastCommittedMillis = selectedMillis
+            onDateSelected(Instant.ofEpochMilli(selectedMillis).atZone(zoneId).toLocalDate())
+        }
+    }
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
@@ -122,21 +136,6 @@ internal fun MealDatePickerSheet(
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             DatePicker(state = datePickerState)
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                TextButton(onClick = onDismiss, modifier = Modifier.weight(1f)) {
-                    Text("Cancel")
-                }
-                Button(
-                    onClick = {
-                        datePickerState.selectedDateMillis?.let {
-                            onDateSelected(Instant.ofEpochMilli(it).atZone(zoneId).toLocalDate())
-                        }
-                    },
-                    modifier = Modifier.weight(1f),
-                ) {
-                    Text("Set date")
-                }
-            }
         }
     }
 }

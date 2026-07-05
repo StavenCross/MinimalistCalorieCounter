@@ -102,6 +102,26 @@ class QuickImportParserTest {
     }
 
     @Test
+    fun defaultsOmittedMacroFieldsToZero() {
+        val meal = QuickImportParser.parse(
+            """
+            Woodford Reserve bourbon whiskey, 3 fl oz; Calories 220, Protein 0.0g, Carbs 0.0g, Fat 0.0g, Sugar 0.0g.
+            Snack totals; Calories 220, Protein 0.0g, Carbs 0.0g, Fat 0.0g, Sugar 0.0g.
+            """.trimIndent()
+        )
+
+        assertEquals(1, meal.foods.size)
+        assertEquals("Woodford Reserve bourbon whiskey", meal.foods.single().name)
+        assertEquals("3 fl oz", meal.foods.single().amountText)
+        assertClose(88.721, meal.foods.single().grams, tolerance = 0.001)
+        assertClose(220.0, meal.foods.single().nutrients.energy)
+        assertClose(0.0, meal.foods.single().nutrients.saturatedFat)
+        assertClose(0.0, meal.foods.single().nutrients.fiber)
+        assertClose(0.0, meal.totals.saturatedFat)
+        assertClose(0.0, meal.totals.fiber)
+    }
+
+    @Test
     fun computesFoodWeightsAndPer100gValuesForDatabaseEntries() {
         val meal = QuickImportParser.parse(
             "67g sourdough bread; Calories 182, Fat 1.6g, Sat Fat 0.3g, Trans Fat 0g, Cholesterol 0mg, Sodium 403mg, Carbs 34.8g, Fiber 1.5g, Sugar 3.1g, Added Sugar 0g, Protein 7.2g. " +
@@ -159,6 +179,38 @@ class QuickImportParserTest {
     }
 
     @Test
+    fun formatterDuplicatesAndRemovesParsedFoodServings() {
+        val meal = QuickImportParser.parse(
+            "3 fl oz Woodford Reserve bourbon whiskey; Calories 220, Protein 0g, Carbs 0g, Fat 0g, Fiber 0g, Sugar 0g, Sat Fat 0g. " +
+                "Meal totals; Calories 220, Protein 0g, Carbs 0g, Fat 0g, Fiber 0g, Sugar 0g, Sat Fat 0g."
+        )
+
+        val doubled = QuickImportFormatter.addFoodServing(meal, 0)
+        assertEquals(2, doubled.foods.size)
+        assertClose(440.0, doubled.totals.energy)
+
+        val backToOne = QuickImportFormatter.removeFoodServing(doubled, 0)
+        assertEquals(1, backToOne.foods.size)
+        assertClose(220.0, backToOne.totals.energy)
+    }
+
+    @Test
+    fun formatterAppliesGroupEditsToDuplicateServings() {
+        val meal = QuickImportParser.parse(
+            "3 fl oz Woodford Reserve bourbon whiskey; Calories 220, Protein 0g, Carbs 0g, Fat 0g, Fiber 0g, Sugar 0g, Sat Fat 0g. " +
+                "Meal totals; Calories 220, Protein 0g, Carbs 0g, Fat 0g, Fiber 0g, Sugar 0g, Sat Fat 0g."
+        )
+        val doubled = QuickImportFormatter.addFoodServing(meal, 0)
+        val editedFood = doubled.foods[0].copy(nutrients = doubled.foods[0].nutrients.copy(energy = 225.0))
+
+        val updated = QuickImportFormatter.replaceFoodGroup(doubled, 0, editedFood)
+
+        assertEquals(2, updated.foods.size)
+        assertTrue(updated.foods.all { it.nutrients.energy == 225.0 })
+        assertClose(450.0, updated.totals.energy)
+    }
+
+    @Test
     fun formatterUsesDotDecimalsAcrossDeviceLocales() {
         val originalLocale = Locale.getDefault()
         try {
@@ -180,6 +232,7 @@ class QuickImportParserTest {
     fun amountParserKeepsEditedServingWeightInSync() {
         assertClose(200.0, QuickImportAmountParser.gramsFromAmountText("200g"))
         assertClose(56.699, QuickImportAmountParser.gramsFromAmountText("2 oz"), tolerance = 0.001)
+        assertClose(88.721, QuickImportAmountParser.gramsFromAmountText("3 fl oz"), tolerance = 0.001)
         assertEquals(null, QuickImportAmountParser.gramsFromAmountText("one bowl"))
     }
 
@@ -191,9 +244,9 @@ class QuickImportParserTest {
     }
 
     @Test
-    fun rejectsFoodWithoutRequiredNutrients() {
+    fun rejectsFoodWithoutCalories() {
         assertThrows(IllegalArgumentException::class.java) {
-            QuickImportParser.parse("200g chicken; Calories 300, Protein 50g.")
+            QuickImportParser.parse("200g chicken; Protein 50g.")
         }
     }
 

@@ -28,6 +28,7 @@ import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.MonitorHeart
 import androidx.compose.material.icons.filled.OilBarrel
+import androidx.compose.material.icons.filled.QueryStats
 import androidx.compose.material.icons.filled.Scale
 import androidx.compose.material.icons.filled.TrackChanges
 import androidx.compose.material.icons.filled.SelfImprovement
@@ -361,7 +362,7 @@ internal fun GoalProgressCard(
             horizontalArrangement = Arrangement.spacedBy(10.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            AccentIcon(Icons.Default.LocalFireDepartment, AccentGoals, 42)
+            AccentIcon(Icons.Default.QueryStats, AccentGoals, 42)
             Text("Today's progress", modifier = Modifier.weight(1f), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
             Text(
                 text = calorieTarget?.let { "${(calorieProgress * 100.0).toFormattedString(true)}%" } ?: "Unset",
@@ -370,32 +371,35 @@ internal fun GoalProgressCard(
                 color = if (targets.calories.isOver(totals.energy)) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
             )
         }
-        SurfacePanel(
-            backgroundColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-            borderColor = AccentGoals.copy(alpha = 0.22f),
-            contentPadding = 12,
-            verticalSpacing = 8,
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-                verticalAlignment = Alignment.Bottom,
+        MacroHintBox(label = "Calories") {
+            SurfacePanel(
+                modifier = Modifier.testTag("goals_calories_progress"),
+                backgroundColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                borderColor = AccentGoals.copy(alpha = 0.22f),
+                contentPadding = 12,
+                verticalSpacing = 8,
             ) {
-                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                    Text(
-                        text = totals.energy.toFormattedString(true),
-                        style = MaterialTheme.typography.headlineMedium,
-                        fontWeight = FontWeight.Bold,
-                    )
-                    Text(
-                        text = remainingCalories?.let { "${it.toFormattedString(true)} left" } ?: "Set target",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    verticalAlignment = Alignment.Bottom,
+                ) {
+                    Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                        Text(
+                            text = totals.energy.toFormattedString(true),
+                            style = MaterialTheme.typography.headlineMedium,
+                            fontWeight = FontWeight.Bold,
+                        )
+                        Text(
+                            text = remainingCalories?.let { "${it.toFormattedString(true)} left" } ?: "Set target",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    AccentIcon(Icons.Default.LocalFireDepartment, AccentGoals, 38)
                 }
-                AccentIcon(Icons.Default.LocalFireDepartment, AccentGoals, 38)
+                GoalProgressBar(value = totals.energy, target = calorieTarget, color = AccentGoals)
             }
-            GoalProgressBar(value = totals.energy, target = calorieTarget, color = AccentGoals)
         }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
             GoalProgressChip(Icons.Default.EggAlt, AccentProtein, "Protein", totals.protein, targets.protein, "g", Modifier.weight(1f))
@@ -900,7 +904,7 @@ internal fun ProfileSnapshotCard(uiState: AppUiState) {
             horizontalArrangement = Arrangement.spacedBy(10.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            AccentIcon(Icons.Default.Scale, AccentProfile, 42)
+            AccentIcon(Icons.Default.SelfImprovement, AccentProfile, 42)
             Text("Body profile", modifier = Modifier.weight(1f), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
             Row(
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
@@ -918,7 +922,7 @@ internal fun ProfileSnapshotCard(uiState: AppUiState) {
             verticalSpacing = 8,
         ) {
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
-                AccentIcon(Icons.Default.SelfImprovement, AccentProfile, 34)
+                AccentIcon(Icons.Default.Scale, AccentProfile, 34)
                 Text(
                     profile.weightKg.weightImperialLabel(),
                     style = MaterialTheme.typography.headlineMedium,

@@ -29,6 +29,7 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
@@ -39,12 +40,14 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.font.FontWeight
@@ -63,10 +66,12 @@ import com.makstuff.minimalistcaloriecounter.ui.navigation.AppRouteHost
 import com.makstuff.minimalistcaloriecounter.ui.navigation.AppRoutes
 import com.makstuff.minimalistcaloriecounter.ui.navigation.AppTopBar
 import com.makstuff.minimalistcaloriecounter.ui.navigation.navigateApp
+import com.makstuff.minimalistcaloriecounter.ui.model.mealsDaySummaryText
 import com.makstuff.minimalistcaloriecounter.ui.reused.ButtonText
 import com.makstuff.minimalistcaloriecounter.ui.reused.DropdownMenu
 import com.makstuff.minimalistcaloriecounter.ui.reused.TextField
 import com.makstuff.minimalistcaloriecounter.ui.screens.QuickImportDestinationDialogHost
+import com.makstuff.minimalistcaloriecounter.health.DayCheckInExporter
 import com.makstuff.minimalistcaloriecounter.health.HealthConnectManager
 import androidx.health.connect.client.HealthConnectClient
 import androidx.health.connect.client.PermissionController
@@ -79,6 +84,7 @@ fun App(
     navController: NavHostController = rememberNavController()
 ) {
     val context = LocalContext.current
+    val clipboard = LocalClipboardManager.current
     context.findActivity() // Use the proper unwrap function!
     val focusManager = LocalFocusManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
@@ -86,7 +92,17 @@ fun App(
     val currentBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = currentBackStackEntry?.destination?.route
     var mainMenuExpanded by remember { mutableStateOf(false) }
+    var mealsDayCopied by remember { mutableStateOf(false) }
     val fileLaunchers = rememberAppFileLaunchers(viewModel)
+    val mealsDaySummary = mealsDaySummaryText(
+        date = uiState.healthConnectViewerDate,
+        meals = uiState.healthConnectViewerMeals,
+        targets = uiState.goals.activeTargetsFor(uiState.healthConnectViewerDate),
+    )
+
+    LaunchedEffect(currentRoute, mealsDaySummary) {
+        mealsDayCopied = false
+    }
 
     val healthConnectRequestPermissionLauncher = rememberLauncherForActivityResult(
         contract = PermissionController.createRequestPermissionResultContract(),
@@ -149,6 +165,16 @@ fun App(
                     onOpenMenu = { mainMenuExpanded = true },
                     onOpenQuickImportSettings = { viewModel.updateQuickImportSettingsVisible(true) },
                     onOpenGoalsSettings = { viewModel.updateGoalsSettingsVisible(true) },
+                    mealsDayCopied = mealsDayCopied,
+                    onCopyMealsDay = {
+                        clipboard.setText(AnnotatedString(mealsDaySummary))
+                        mealsDayCopied = true
+                    },
+                    onExportMealsDay = {
+                        runCatching { DayCheckInExporter(context).export(uiState.healthConnectViewerDate, mealsDaySummary) }
+                            .onSuccess { Toast.makeText(context, "Exported check-in to $it", Toast.LENGTH_LONG).show() }
+                            .onFailure { Toast.makeText(context, "Check-in export failed: ${it.message}", Toast.LENGTH_LONG).show() }
+                    },
                 )
             },
             bottomBar = {

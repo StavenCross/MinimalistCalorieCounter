@@ -41,7 +41,6 @@ class AppRoutesTest {
         assertEquals(
             listOf(
                 AppRoutes.HEALTH_CONNECT_NUTRITION,
-                AppRoutes.QUICK_IMPORT,
                 AppRoutes.GOALS_HOME,
             ),
             AppDestinations.bottomBar.map { it.route },

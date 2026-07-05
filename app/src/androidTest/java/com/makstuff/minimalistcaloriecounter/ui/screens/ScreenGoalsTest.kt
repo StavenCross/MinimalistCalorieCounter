@@ -29,6 +29,7 @@ import com.makstuff.minimalistcaloriecounter.classes.GoalRecommendation
 import com.makstuff.minimalistcaloriecounter.classes.GoalSex
 import com.makstuff.minimalistcaloriecounter.classes.Goals
 import com.makstuff.minimalistcaloriecounter.classes.MacroTargets
+import com.makstuff.minimalistcaloriecounter.classes.QuickImportNutrients
 import com.makstuff.minimalistcaloriecounter.classes.WeeklyWeightLossTarget
 import com.makstuff.minimalistcaloriecounter.ui.theme.AppTheme
 import org.junit.Assert.assertEquals
@@ -518,6 +519,30 @@ class ScreenGoalsTest {
         composeRule.onNodeWithText("62 g").assertIsDisplayed()
         composeRule.onNodeWithText("30 g").assertIsDisplayed()
         assertTrue(composeRule.onAllNodesWithText("No target changes need review right now.").fetchSemanticsNodes().isEmpty())
+    }
+
+    @Test
+    fun todayProgressCaloriesCardShowsMacroHint() {
+        composeRule.setContent {
+            AppTheme(dynamicColor = false) {
+                GoalProgressCard(
+                    totals = QuickImportNutrients(
+                        energy = 650.0,
+                        protein = 70.0,
+                        carbohydrate = 80.0,
+                        fat = 20.0,
+                        fiber = 12.0,
+                        sugar = 8.0,
+                        saturatedFat = 4.0,
+                    ),
+                    targets = MacroTargets(calories = 2100.0, protein = 160.0, carbs = 220.0, fat = 60.0, fiber = 30.0),
+                    date = LocalDate.of(2026, 7, 5),
+                )
+            }
+        }
+
+        composeRule.onNodeWithTag("goals_calories_progress", useUnmergedTree = true).performClick()
+        composeRule.onNodeWithText("Calories are the meal's usable energy.").assertIsDisplayed()
     }
 
     @Test

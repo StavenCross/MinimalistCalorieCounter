@@ -9,20 +9,27 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.testTag
@@ -49,8 +56,11 @@ import com.makstuff.minimalistcaloriecounter.ui.reused.MacroHintBox
 @Composable
 internal fun QuickImportFoodDetailSheet(
     food: QuickImportFood,
+    quantity: Int = 1,
     onDismiss: () -> Unit,
     onSave: (QuickImportFood) -> Unit,
+    onIncrementQuantity: () -> Unit = {},
+    onDecrementQuantity: () -> Unit = {},
 ) {
     var amount by remember(food) { mutableStateOf(food.amountText) }
     var name by remember(food) { mutableStateOf(food.name) }
@@ -71,6 +81,7 @@ internal fun QuickImportFoodDetailSheet(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
                 .padding(horizontal = 14.dp)
                 .padding(bottom = 18.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -106,6 +117,11 @@ internal fun QuickImportFoodDetailSheet(
                     numeric = false,
                 )
             }
+            QuickImportQuantityRow(
+                quantity = quantity,
+                onIncrement = onIncrementQuantity,
+                onDecrement = onDecrementQuantity,
+            )
             EditableFoodField(
                 value = calories,
                 onValueChange = { calories = it },
@@ -133,39 +149,91 @@ internal fun QuickImportFoodDetailSheet(
                     modifier = Modifier.testTag("quick_food_edit_error"),
                 )
             }
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
-                TextButton(onClick = onDismiss, modifier = Modifier.weight(1f)) {
-                    Text("Cancel")
-                }
-                Button(
-                    onClick = {
-                        val updated = runCatching {
-                            food.copy(
-                                amountText = amount.trim(),
-                                name = name.trim().ifBlank { error("Food name is required.") },
-                                grams = QuickImportAmountParser.gramsFromAmountText(amount.trim()),
-                                nutrients = QuickImportNutrients(
-                                    energy = calories.parseEditNumber("Calories"),
-                                    carbohydrate = carbs.parseEditNumber("Carbs"),
-                                    sugar = sugar.parseEditNumber("Sugar"),
-                                    protein = protein.parseEditNumber("Protein"),
-                                    fat = fat.parseEditNumber("Fat"),
-                                    saturatedFat = saturatedFat.parseEditNumber("Sat fat"),
-                                    fiber = fiber.parseEditNumber("Fiber"),
-                                ),
-                            )
-                        }
-                        updated.fold(
-                            onSuccess = onSave,
-                            onFailure = { error = it.message ?: "Food values are invalid." },
+            Button(
+                onClick = {
+                    val updated = runCatching {
+                        food.copy(
+                            amountText = amount.trim(),
+                            name = name.trim().ifBlank { error("Food name is required.") },
+                            grams = QuickImportAmountParser.gramsFromAmountText(amount.trim()),
+                            nutrients = QuickImportNutrients(
+                                energy = calories.parseEditNumber("Calories"),
+                                carbohydrate = carbs.parseEditNumber("Carbs"),
+                                sugar = sugar.parseEditNumber("Sugar"),
+                                protein = protein.parseEditNumber("Protein"),
+                                fat = fat.parseEditNumber("Fat"),
+                                saturatedFat = saturatedFat.parseEditNumber("Sat fat"),
+                                fiber = fiber.parseEditNumber("Fiber"),
+                            ),
                         )
-                    },
-                    modifier = Modifier
-                        .weight(1f)
-                        .testTag("quick_food_edit_save"),
-                ) {
-                    Text("Save")
-                }
+                    }
+                    updated.fold(
+                        onSuccess = onSave,
+                        onFailure = { error = it.message ?: "Food values are invalid." },
+                    )
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("quick_food_edit_save"),
+            ) {
+                Text("Save")
+            }
+        }
+    }
+}
+
+/**
+ * Lets Add Meal duplicate or remove parsed servings before the meal is saved.
+ *
+ * Parsed foods do not carry a separate quantity field; changing this control rewrites the parsed
+ * meal text with one food line per serving so local backup and Health Connect writes stay explicit.
+ */
+@Composable
+private fun QuickImportQuantityRow(
+    quantity: Int,
+    onIncrement: () -> Unit,
+    onDecrement: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+            .border(
+                BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.14f)),
+                RoundedCornerShape(12.dp),
+            )
+            .padding(horizontal = 10.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = "Quantity",
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.Bold,
+        )
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            IconButton(
+                onClick = onDecrement,
+                enabled = quantity > 1,
+                modifier = Modifier.testTag("quick_food_quantity_decrement"),
+            ) {
+                Icon(Icons.Default.Remove, contentDescription = "Remove serving")
+            }
+            Text(
+                text = quantity.toString(),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.testTag("quick_food_quantity_value"),
+            )
+            IconButton(
+                onClick = onIncrement,
+                modifier = Modifier.testTag("quick_food_quantity_increment"),
+            ) {
+                Icon(Icons.Default.Add, contentDescription = "Add serving")
             }
         }
     }

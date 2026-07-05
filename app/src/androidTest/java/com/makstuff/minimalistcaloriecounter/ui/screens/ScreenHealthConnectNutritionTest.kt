@@ -2,6 +2,10 @@ package com.makstuff.minimalistcaloriecounter.ui.screens
 
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertCountEquals
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
@@ -11,6 +15,8 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performTextClearance
+import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipeDown
 import androidx.health.connect.client.records.MealType
@@ -55,7 +61,7 @@ class ScreenHealthConnectNutritionTest {
                     onAddFoodServing = {},
                     onRemoveFoodServing = {},
                     onSaveFoodServingGroup = { _, _ -> },
-                    onRepeatMealGroup = {},
+                    onRepeatMealGroup = { _, _ -> },
                     onExportDaySummary = { _, _ -> },
                 )
             }
@@ -89,14 +95,220 @@ class ScreenHealthConnectNutritionTest {
                     onAddFoodServing = {},
                     onRemoveFoodServing = {},
                     onSaveFoodServingGroup = { _, _ -> },
-                    onRepeatMealGroup = {},
+                    onRepeatMealGroup = { _, _ -> },
                     onExportDaySummary = { _, _ -> },
                 )
             }
         }
 
         composeRule.onNodeWithTag("meals_date_picker").performClick()
-        composeRule.onNodeWithText("Set date").assertIsDisplayed()
+        composeRule.onAllNodesWithText("Set date").assertCountEquals(0)
+        composeRule.onAllNodesWithText("Cancel").assertCountEquals(0)
+    }
+
+    @Test
+    fun emptyDayShowsWarmAddMealPrompt() {
+        var preparedDate: LocalDate? = null
+
+        composeRule.setContent {
+            AppTheme(dynamicColor = false) {
+                ScreenHealthConnectNutrition(
+                    uiState = baseState().copy(
+                        healthConnectViewerDate = LocalDate.of(2026, 7, 2),
+                        healthConnectViewerLoading = false,
+                        healthConnectViewerMessage = null,
+                        healthConnectViewerMeals = emptyList(),
+                    ),
+                    onDateChange = {},
+                    onRefresh = {},
+                    onDeleteMeal = {},
+                    onDeleteMealGroup = {},
+                    onAddFoodServing = {},
+                    onRemoveFoodServing = {},
+                    onSaveFoodServingGroup = { _, _ -> },
+                    onPrepareAddMeal = { preparedDate = it },
+                    onRepeatMealGroup = { _, _ -> },
+                    onExportDaySummary = { _, _ -> },
+                )
+            }
+        }
+
+        composeRule.onNodeWithTag("meals_empty_state").assertIsDisplayed()
+        composeRule.onNodeWithText("This day is empty so far. Add a meal when you're ready.").assertIsDisplayed()
+        assertTrue(composeRule.onAllNodesWithTag("meals_empty_add_meal").fetchSemanticsNodes().isEmpty())
+        composeRule.onNodeWithTag("meals_add_meal").performClick()
+
+        assertTrue(preparedDate == LocalDate.of(2026, 7, 2))
+        composeRule.onNodeWithTag("meals_add_meal_drawer").assertIsDisplayed()
+    }
+
+    @Test
+    fun emptyDayWithHealthConnectEmptyMessageShowsWarmAddMealPrompt() {
+        composeRule.setContent {
+            AppTheme(dynamicColor = false) {
+                ScreenHealthConnectNutrition(
+                    uiState = baseState().copy(
+                        healthConnectViewerDate = LocalDate.of(2026, 7, 2),
+                        healthConnectViewerLoading = false,
+                        healthConnectViewerMessage = "No Health Connect nutrition records found for this app on this date.",
+                        healthConnectViewerMeals = emptyList(),
+                        healthConnectPermissionsGranted = true,
+                    ),
+                    onDateChange = {},
+                    onRefresh = {},
+                    onDeleteMeal = {},
+                    onDeleteMealGroup = {},
+                    onAddFoodServing = {},
+                    onRemoveFoodServing = {},
+                    onSaveFoodServingGroup = { _, _ -> },
+                    onRepeatMealGroup = { _, _ -> },
+                    onExportDaySummary = { _, _ -> },
+                )
+            }
+        }
+
+        composeRule.onNodeWithTag("meals_empty_state").assertIsDisplayed()
+        composeRule.onNodeWithText("Meals").assertIsDisplayed()
+        composeRule.onNodeWithText("This day is empty so far. Add a meal when you're ready.").assertIsDisplayed()
+        assertTrue(
+            composeRule
+                .onAllNodesWithText("No Health Connect nutrition records found for this app on this date.")
+                .fetchSemanticsNodes()
+                .isEmpty()
+        )
+    }
+
+    @Test
+    fun selectedDateLoadingShowsLoadingInsteadOfZeroTotals() {
+        composeRule.setContent {
+            AppTheme(dynamicColor = false) {
+                ScreenHealthConnectNutrition(
+                    uiState = baseState().copy(
+                        healthConnectViewerDate = LocalDate.of(2026, 7, 3),
+                        healthConnectViewerLoading = true,
+                        healthConnectViewerLoadingDate = LocalDate.of(2026, 7, 3),
+                        healthConnectViewerMessage = null,
+                        healthConnectViewerMeals = emptyList(),
+                    ),
+                    onDateChange = {},
+                    onRefresh = {},
+                    onDeleteMeal = {},
+                    onDeleteMealGroup = {},
+                    onAddFoodServing = {},
+                    onRemoveFoodServing = {},
+                    onSaveFoodServingGroup = { _, _ -> },
+                    onRepeatMealGroup = { _, _ -> },
+                    onExportDaySummary = { _, _ -> },
+                )
+            }
+        }
+
+        assertTrue(composeRule.onAllNodesWithText("Loading").fetchSemanticsNodes().isNotEmpty())
+        composeRule.onNodeWithText("Reading Health Connect").assertIsDisplayed()
+        assertTrue(composeRule.onAllNodesWithText("0 kcal").fetchSemanticsNodes().isEmpty())
+        assertTrue(composeRule.onAllNodesWithTag("meals_empty_state").fetchSemanticsNodes().isEmpty())
+    }
+
+    @Test
+    fun daySwitchLoadingKeepsPreviousContentMounted() {
+        composeRule.setContent {
+            AppTheme(dynamicColor = false) {
+                ScreenHealthConnectNutrition(
+                    uiState = baseState().copy(
+                        healthConnectViewerDate = LocalDate.of(2026, 7, 3),
+                        healthConnectViewerMealsDate = LocalDate.of(2026, 7, 2),
+                        healthConnectViewerLoading = true,
+                        healthConnectViewerLoadingDate = LocalDate.of(2026, 7, 3),
+                        healthConnectViewerMessage = null,
+                        healthConnectViewerMeals = listOf(sampleMeal()),
+                    ),
+                    onDateChange = {},
+                    onRefresh = {},
+                    onDeleteMeal = {},
+                    onDeleteMealGroup = {},
+                    onAddFoodServing = {},
+                    onRemoveFoodServing = {},
+                    onSaveFoodServingGroup = { _, _ -> },
+                    onRepeatMealGroup = { _, _ -> },
+                    onExportDaySummary = { _, _ -> },
+                )
+            }
+        }
+
+        composeRule.onNodeWithText("100 g test oats").assertIsDisplayed()
+        composeRule.onNodeWithText("389 kcal").assertIsDisplayed()
+        assertTrue(composeRule.onAllNodesWithText("Reading Health Connect").fetchSemanticsNodes().isEmpty())
+        assertTrue(composeRule.onAllNodesWithText("Loading").fetchSemanticsNodes().isEmpty())
+        assertTrue(composeRule.onAllNodesWithTag("meals_empty_state").fetchSemanticsNodes().isEmpty())
+    }
+
+    @Test
+    fun cachedSelectedDateContentStaysMountedWhileRefreshing() {
+        composeRule.setContent {
+            AppTheme(dynamicColor = false) {
+                ScreenHealthConnectNutrition(
+                    uiState = baseState().copy(
+                        healthConnectViewerDate = LocalDate.of(2026, 7, 2),
+                        healthConnectViewerMealsDate = LocalDate.of(2026, 7, 2),
+                        healthConnectViewerLoading = true,
+                        healthConnectViewerLoadingDate = LocalDate.of(2026, 7, 2),
+                        healthConnectViewerMessage = null,
+                        healthConnectViewerMeals = listOf(sampleMeal()),
+                    ),
+                    onDateChange = {},
+                    onRefresh = {},
+                    onDeleteMeal = {},
+                    onDeleteMealGroup = {},
+                    onAddFoodServing = {},
+                    onRemoveFoodServing = {},
+                    onSaveFoodServingGroup = { _, _ -> },
+                    onRepeatMealGroup = { _, _ -> },
+                    onExportDaySummary = { _, _ -> },
+                )
+            }
+        }
+
+        composeRule.onNodeWithText("100 g test oats").assertIsDisplayed()
+        composeRule.onNodeWithText("389 kcal").assertIsDisplayed()
+        assertTrue(composeRule.onAllNodesWithText("Reading Health Connect").fetchSemanticsNodes().isEmpty())
+        assertTrue(composeRule.onAllNodesWithText("Loading").fetchSemanticsNodes().isEmpty())
+        assertTrue(composeRule.onAllNodesWithTag("meals_empty_state").fetchSemanticsNodes().isEmpty())
+    }
+
+    @Test
+    fun missingPermissionsShowsReviewAction() {
+        var reviewClicked = false
+
+        composeRule.setContent {
+            AppTheme(dynamicColor = false) {
+                ScreenHealthConnectNutrition(
+                    uiState = baseState().copy(
+                        healthConnectViewerDate = LocalDate.of(2026, 7, 2),
+                        healthConnectViewerLoading = false,
+                        healthConnectViewerMessage = "Health Connect permissions are missing.",
+                        healthConnectViewerMeals = emptyList(),
+                        healthConnectPermissionsGranted = false,
+                    ),
+                    onDateChange = {},
+                    onRefresh = {},
+                    onDeleteMeal = {},
+                    onDeleteMealGroup = {},
+                    onAddFoodServing = {},
+                    onRemoveFoodServing = {},
+                    onSaveFoodServingGroup = { _, _ -> },
+                    onRepeatMealGroup = { _, _ -> },
+                    onExportDaySummary = { _, _ -> },
+                    onReviewHealthConnectPermissions = { reviewClicked = true },
+                )
+            }
+        }
+
+        composeRule.onNodeWithTag("meals_permissions_state").assertIsDisplayed()
+        composeRule.onNodeWithText("Health Connect needs permission").assertIsDisplayed()
+        composeRule.onNodeWithText("Allow nutrition access so Meals can read and update your log.").assertIsDisplayed()
+        composeRule.onNodeWithTag("meals_review_permissions").performClick()
+
+        assertTrue(reviewClicked)
     }
 
     @Test
@@ -117,16 +329,93 @@ class ScreenHealthConnectNutritionTest {
                     onAddFoodServing = {},
                     onRemoveFoodServing = {},
                     onSaveFoodServingGroup = { _, _ -> },
-                    onRepeatMealGroup = {},
+                    onRepeatMealGroup = { _, _ -> },
                     onExportDaySummary = { _, _ -> },
                 )
             }
         }
 
         composeRule.onNodeWithText("100 g test oats").assertIsDisplayed().performClick()
-        composeRule.onNodeWithContentDescription("Delete food").assertIsDisplayed()
-        composeRule.onNodeWithContentDescription("Edit food").assertIsDisplayed()
+        composeRule.onNodeWithTag("meals_food_delete").assertIsDisplayed()
+        composeRule.onNodeWithText("Calories").assertIsDisplayed()
+        composeRule.onAllNodesWithContentDescription("Edit food").assertCountEquals(0)
+        composeRule.onAllNodesWithText("Delete food").assertCountEquals(0)
         composeRule.onAllNodesWithText("Close").assertCountEquals(0)
+    }
+
+    @Test
+    fun foodEditDismissShowsChangesSavedChip() {
+        var saved = false
+
+        composeRule.setContent {
+            AppTheme(dynamicColor = false) {
+                ScreenHealthConnectNutrition(
+                    uiState = baseState().copy(
+                        healthConnectViewerDate = LocalDate.of(2026, 7, 2),
+                        healthConnectViewerLoading = false,
+                        healthConnectViewerMessage = null,
+                        healthConnectViewerMeals = listOf(sampleMeal()),
+                    ),
+                    onDateChange = {},
+                    onRefresh = {},
+                    onDeleteMeal = {},
+                    onDeleteMealGroup = {},
+                    onAddFoodServing = {},
+                    onRemoveFoodServing = {},
+                    onSaveFoodServingGroup = { _, _ -> saved = true },
+                    onRepeatMealGroup = { _, _ -> },
+                    onExportDaySummary = { _, _ -> },
+                )
+            }
+        }
+
+        composeRule.onNodeWithText("100 g test oats").assertIsDisplayed().performClick()
+        composeRule.onNodeWithText("Calories").performTextClearance()
+        composeRule.onNodeWithText("Calories").performTextInput("405")
+        composeRule.onNodeWithTag("meals_food_detail_sheet").performTouchInput { swipeDown() }
+
+        composeRule.waitUntil(timeoutMillis = 2_000) { saved }
+        composeRule.onNodeWithTag("meals_changes_saved").assertIsDisplayed()
+    }
+
+    @Test
+    fun foodEditBlurKeepsDrawerOpenAfterMealsRefresh() {
+        var saved = false
+        var meals by mutableStateOf(listOf(sampleMeal()))
+
+        composeRule.setContent {
+            AppTheme(dynamicColor = false) {
+                ScreenHealthConnectNutrition(
+                    uiState = baseState().copy(
+                        healthConnectViewerDate = LocalDate.of(2026, 7, 2),
+                        healthConnectViewerLoading = false,
+                        healthConnectViewerMessage = null,
+                        healthConnectViewerMeals = meals,
+                    ),
+                    onDateChange = {},
+                    onRefresh = {},
+                    onDeleteMeal = {},
+                    onDeleteMealGroup = {},
+                    onAddFoodServing = {},
+                    onRemoveFoodServing = {},
+                    onSaveFoodServingGroup = { _, _ ->
+                        saved = true
+                        meals = listOf(sampleMeal().copy(recordId = "record-refreshed", energy = 405.0))
+                    },
+                    onRepeatMealGroup = { _, _ -> },
+                    onExportDaySummary = { _, _ -> },
+                )
+            }
+        }
+
+        composeRule.onNodeWithText("100 g test oats").assertIsDisplayed().performClick()
+        composeRule.onNodeWithText("Calories").performTextClearance()
+        composeRule.onNodeWithText("Calories").performTextInput("405")
+        composeRule.onAllNodesWithText("Carbs")[1].performClick()
+
+        composeRule.waitUntil(timeoutMillis = 2_000) { saved }
+        composeRule.onNodeWithTag("meals_food_detail_sheet").assertIsDisplayed()
+        composeRule.onNodeWithTag("meals_food_changes_saved").assertIsDisplayed()
     }
 
     @Test
@@ -147,7 +436,7 @@ class ScreenHealthConnectNutritionTest {
                     onAddFoodServing = {},
                     onRemoveFoodServing = {},
                     onSaveFoodServingGroup = { _, _ -> },
-                    onRepeatMealGroup = {},
+                    onRepeatMealGroup = { _, _ -> },
                     onExportDaySummary = { _, _ -> },
                 )
             }
@@ -178,7 +467,7 @@ class ScreenHealthConnectNutritionTest {
                     onAddFoodServing = {},
                     onRemoveFoodServing = {},
                     onSaveFoodServingGroup = { _, _ -> },
-                    onRepeatMealGroup = {},
+                    onRepeatMealGroup = { _, _ -> },
                     onExportDaySummary = { _, _ -> },
                 )
             }
@@ -213,7 +502,7 @@ class ScreenHealthConnectNutritionTest {
                     onAddFoodServing = {},
                     onRemoveFoodServing = {},
                     onSaveFoodServingGroup = { _, _ -> },
-                    onRepeatMealGroup = {},
+                    onRepeatMealGroup = { _, _ -> },
                     onExportDaySummary = { _, _ -> },
                 )
             }
@@ -244,7 +533,7 @@ class ScreenHealthConnectNutritionTest {
                     onAddFoodServing = {},
                     onRemoveFoodServing = {},
                     onSaveFoodServingGroup = { _, _ -> },
-                    onRepeatMealGroup = {},
+                    onRepeatMealGroup = { _, _ -> },
                     onExportDaySummary = { _, _ -> },
                 )
             }

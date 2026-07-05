@@ -1,9 +1,8 @@
 # Minimalist Calorie Counter
 
-Minimalist Calorie Counter is a private, local-first Android nutrition app centered on a ChatGPT-assisted meal logging workflow. The current build focuses on three daily surfaces:
+Minimalist Calorie Counter is a private, local-first Android nutrition app centered on a ChatGPT-assisted meal logging workflow. The current build focuses on two primary daily tabs plus settings:
 
-- Add Meal: paste a nutrition blurb, preview foods/macros, and write the meal.
-- Meals: review Health Connect meals by day, inspect foods, repeat meals, delete app-owned meal records, and export a day check-in.
+- Meals: review Health Connect meals by day, add meals from ChatGPT blurbs, inspect foods, repeat meals, delete app-owned meal records, and export a day check-in.
 - Goals: maintain calorie and macro targets from Health Connect metrics plus locked manual overrides.
 
 Settings contains Health Connect permissions, CSV export, Health Connect cleanup, theme, debug status, and legacy maintenance tools.
@@ -11,12 +10,12 @@ Settings contains Health Connect permissions, CSV export, Health Connect cleanup
 ## Daily Workflow
 
 1. Describe a meal to ChatGPT and ask for the app's nutrition blurb format.
-2. Paste the blurb into Add Meal.
-3. Confirm the inferred meal type and timestamp.
-4. Send the meal.
-5. Review the day in Meals or use Goals to adjust targets.
+2. Open Meals, choose the target day, and tap the add action on the day card.
+3. Paste the blurb into the Add Meal drawer.
+4. Confirm the inferred meal type and timestamp.
+5. Save the meal, then review the updated day in Meals or use Goals to adjust targets.
 
-Add Meal writes one Health Connect Nutrition record per parsed food. Each food includes calories, carbohydrates, protein, fat, fiber, sugar, saturated fat, energy from fat, meal type, and timestamp when those values are available in the blurb.
+The Add Meal drawer writes one Health Connect Nutrition record per parsed food. Each food includes calories, carbohydrates, protein, fat, fiber, sugar, saturated fat, energy from fat, meal type, and timestamp when those values are available in the blurb.
 
 Health Connect does not expose a serving-weight field for Nutrition records, so serving amount stays in the food name.
 
@@ -24,7 +23,7 @@ Health Connect does not expose a serving-weight field for Nutrition records, so 
 
 Health Connect is the main integration target. The app can:
 
-- write Add Meal and historical import Nutrition records;
+- write Add Meal drawer and historical import Nutrition records;
 - read app-owned Nutrition records for Meals review and duplicate prevention;
 - read authorized body metrics for Goals defaults;
 - export authorized Health Connect data to CSV in Downloads;

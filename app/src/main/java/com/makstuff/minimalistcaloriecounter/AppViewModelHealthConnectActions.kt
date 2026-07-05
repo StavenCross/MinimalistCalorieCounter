@@ -108,11 +108,20 @@ internal class AppViewModelHealthConnectActions(
 
     fun updateViewerDate(date: LocalDate) {
         env.state.update { currentState ->
+            val cachedMeals = currentState.healthConnectViewerMealsByDate[date]
+            val hasCachedMeals = currentState.healthConnectViewerMealsByDate.containsKey(date)
             currentState.copy(
                 healthConnectViewerDate = date,
-                healthConnectViewerMessage = null,
+                healthConnectViewerMeals = if (hasCachedMeals) cachedMeals.orEmpty() else currentState.healthConnectViewerMeals,
+                healthConnectViewerMealsDate = if (hasCachedMeals) date else currentState.healthConnectViewerMealsDate,
+                healthConnectViewerLoadingDate = date,
+                healthConnectViewerMessage = if (hasCachedMeals) {
+                    currentState.healthConnectViewerMessagesByDate[date]
+                } else {
+                    currentState.healthConnectViewerMessage
+                },
             )
         }
-        viewModel.readHealthConnectNutritionMeals()
+        viewModel.readHealthConnectNutritionMeals(date, showLoading = false)
     }
 }

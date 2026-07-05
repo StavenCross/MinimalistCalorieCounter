@@ -62,6 +62,9 @@ fun ScreenQuickImport(
     onDateTimeChange: (LocalDateTime) -> Unit,
     onMealTypeChange: (QuickImportMealType) -> Unit,
     onParsedFoodChange: (Int, QuickImportFood) -> Unit,
+    onParsedFoodGroupChange: (Int, QuickImportFood) -> Unit = onParsedFoodChange,
+    onParsedFoodServingAdd: (Int) -> Unit = {},
+    onParsedFoodServingRemove: (Int) -> Unit = {},
     onImport: () -> Unit,
     onClear: () -> Unit,
     onRetryOutbox: (String) -> Unit = {},
@@ -143,11 +146,14 @@ fun ScreenQuickImport(
             }
             QuickImportFoodDetailSheet(
                 food = previewFood,
+                quantity = meal.foods.count { it == previewFood },
                 onDismiss = { selectedPreviewFoodIndex = null },
                 onSave = { updatedFood ->
                     selectedPreviewFoodIndex = null
-                    onParsedFoodChange(foodIndex, updatedFood)
+                    onParsedFoodGroupChange(foodIndex, updatedFood)
                 },
+                onIncrementQuantity = { onParsedFoodServingAdd(foodIndex) },
+                onDecrementQuantity = { onParsedFoodServingRemove(foodIndex) },
             )
         }
 

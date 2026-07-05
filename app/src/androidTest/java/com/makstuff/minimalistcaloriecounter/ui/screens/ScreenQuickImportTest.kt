@@ -5,6 +5,7 @@ import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.onAllNodesWithContentDescription
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -15,6 +16,9 @@ import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.makstuff.minimalistcaloriecounter.AppUiState
@@ -23,6 +27,7 @@ import com.makstuff.minimalistcaloriecounter.classes.Combo
 import com.makstuff.minimalistcaloriecounter.classes.Goals
 import com.makstuff.minimalistcaloriecounter.classes.MacroTargets
 import com.makstuff.minimalistcaloriecounter.classes.QuickImportHealthPayload
+import com.makstuff.minimalistcaloriecounter.classes.QuickImportFormatter
 import com.makstuff.minimalistcaloriecounter.classes.QuickImportMealType
 import com.makstuff.minimalistcaloriecounter.classes.QuickImportOutboxItem
 import com.makstuff.minimalistcaloriecounter.classes.QuickImportOutboxState
@@ -302,12 +307,78 @@ class ScreenQuickImportTest {
         }
 
         composeRule.onNodeWithTag("quick_import_list").performScrollToNode(hasTestTag("quick_import_preview_totals"))
-        composeRule.onNodeWithText("100 g rice").performClick()
+        composeRule.onNodeWithTag("quick_import_food_row_0").performClick()
+        composeRule.onAllNodesWithText("Cancel").assertCountEquals(0)
         composeRule.onNodeWithTag("quick_food_edit_calories").performTextClearance()
         composeRule.onNodeWithTag("quick_food_edit_calories").performTextInput("145")
-        composeRule.onNodeWithTag("quick_food_edit_save").performClick()
+        composeRule.onNodeWithTag("quick_food_edit_save").performScrollTo().performClick()
+        composeRule.waitUntil(timeoutMillis = 2_000) { editedIndex != null }
         assertEquals(0, editedIndex)
         assertEquals(145.0, editedCalories!!, 0.01)
+    }
+
+    @Test
+    fun parsedFoodDrawerQuantityUpdatesParsedMeal() {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val sample = "3 fl oz Woodford Reserve bourbon whiskey; Calories 220, Protein 0g, Carbs 0g, Fat 0g, Fiber 0g, Sugar 0g, Sat Fat 0g. " +
+            "Meal totals; Calories 220, Protein 0g, Carbs 0g, Fat 0g, Fiber 0g, Sugar 0g, Sat Fat 0g."
+        var state by mutableStateOf(
+            baseState(context).copy(
+                inputQuickImportText = sample,
+                quickImportMeal = QuickImportParser.parse(sample),
+            ),
+        )
+
+        fun applyMealUpdate(updatedText: String) {
+            state = state.copy(
+                inputQuickImportText = updatedText,
+                quickImportMeal = QuickImportParser.parse(updatedText),
+            )
+        }
+
+        composeRule.setContent {
+            AppTheme {
+                ScreenQuickImport(
+                    uiState = state,
+                    onTextChange = {},
+                    onToggleAddDatabase = {},
+                    onToggleAddDay = {},
+                    onToggleHealthConnect = {},
+                    onRefreshDateTime = {},
+                    onDateTimeChange = {},
+                    onMealTypeChange = { _: QuickImportMealType -> },
+                    onParsedFoodChange = { _, _ -> },
+                    onParsedFoodGroupChange = { index, food ->
+                        state.quickImportMeal?.let {
+                            applyMealUpdate(QuickImportFormatter.text(QuickImportFormatter.replaceFoodGroup(it, index, food)))
+                        }
+                    },
+                    onParsedFoodServingAdd = { index ->
+                        state.quickImportMeal?.let {
+                            applyMealUpdate(QuickImportFormatter.text(QuickImportFormatter.addFoodServing(it, index)))
+                        }
+                    },
+                    onParsedFoodServingRemove = { index ->
+                        state.quickImportMeal?.let {
+                            applyMealUpdate(QuickImportFormatter.text(QuickImportFormatter.removeFoodServing(it, index)))
+                        }
+                    },
+                    onImport = {},
+                    onClear = {},
+                )
+            }
+        }
+
+        composeRule.onNodeWithTag("quick_import_list").performScrollToNode(hasTestTag("quick_import_preview_totals"))
+        composeRule.onNodeWithTag("quick_import_food_row_0").performClick()
+        composeRule.onNodeWithTag("quick_food_quantity_value").assertIsDisplayed()
+        composeRule.onNodeWithTag("quick_food_quantity_increment").performClick()
+        composeRule.waitUntil(timeoutMillis = 2_000) { state.quickImportMeal?.foods?.size == 2 }
+        composeRule.onNodeWithTag("quick_food_quantity_value").assertIsDisplayed()
+        assertEquals(440.0, state.quickImportMeal!!.totals.energy, 0.01)
+        composeRule.onNodeWithTag("quick_food_quantity_decrement").performClick()
+        composeRule.waitUntil(timeoutMillis = 2_000) { state.quickImportMeal?.foods?.size == 1 }
+        assertEquals(220.0, state.quickImportMeal!!.totals.energy, 0.01)
     }
 
     @Test

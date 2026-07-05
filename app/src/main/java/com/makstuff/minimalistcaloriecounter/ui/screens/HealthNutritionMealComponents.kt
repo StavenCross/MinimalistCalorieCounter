@@ -1,9 +1,12 @@
 package com.makstuff.minimalistcaloriecounter.ui.screens
 
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -19,11 +22,11 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.BakeryDining
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.EggAlt
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
@@ -49,6 +52,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
@@ -62,7 +66,6 @@ import com.makstuff.minimalistcaloriecounter.ui.model.NutritionMealGroup
 import com.makstuff.minimalistcaloriecounter.ui.model.NutritionServingGroup
 import com.makstuff.minimalistcaloriecounter.ui.model.NutritionStatItem
 import com.makstuff.minimalistcaloriecounter.ui.model.healthGroupDetailItems
-import com.makstuff.minimalistcaloriecounter.ui.model.healthMealDetailItems
 import com.makstuff.minimalistcaloriecounter.ui.model.mealServingGroups
 import com.makstuff.minimalistcaloriecounter.ui.model.supportsMacroHint
 import com.makstuff.minimalistcaloriecounter.ui.reused.MacroHintBox
@@ -196,7 +199,7 @@ private fun MealCaloriesChip(calories: Double) {
                 modifier = Modifier.size(17.dp),
             )
             Text(
-                text = "${calories.toFormattedString(true)} kcal",
+                text = calories.toFormattedString(true),
                 style = MaterialTheme.typography.labelLarge,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface,
@@ -300,15 +303,29 @@ private fun CompactFoodRow(
     quantity: Int = 1,
     onClick: () -> Unit,
 ) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    val rowColor by animateColorAsState(
+        targetValue = if (isPressed) {
+            MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.98f)
+        } else {
+            MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.78f)
+        },
+        label = "mealFoodRowColor",
+    )
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(8.dp))
-            .background(MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.78f))
-            .border(BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.12f)), RoundedCornerShape(8.dp))
-            .clickable(onClick = onClick)
-            .padding(horizontal = 10.dp, vertical = 9.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
+            .background(rowColor)
+            .border(
+                BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = if (isPressed) 0.22f else 0.14f)),
+                RoundedCornerShape(8.dp),
+            )
+            .clickable(interactionSource = interactionSource, indication = null, onClick = onClick)
+            .padding(start = 10.dp, top = 8.dp, end = 7.dp, bottom = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Row(
@@ -334,12 +351,11 @@ private fun CompactFoodRow(
                 )
             }
         }
-        Text(
-            text = "${meal.energy.toFormattedString(true)} kcal",
-            modifier = Modifier.padding(start = 10.dp),
-            style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            maxLines = 1,
+        Icon(
+            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+            contentDescription = null,
+            tint = FoodCaloriesBlue.copy(alpha = if (isPressed) 1f else 0.84f),
+            modifier = Modifier.size(24.dp),
         )
     }
 }
@@ -474,6 +490,7 @@ internal fun MealDetailDialog(
 @Composable
 internal fun FoodDetailDialog(
     servingGroup: NutritionServingGroup,
+    saveNoticeVisible: Boolean = false,
     onDismiss: () -> Unit,
     onDelete: () -> Unit,
     onAddServing: () -> Unit,
@@ -481,7 +498,6 @@ internal fun FoodDetailDialog(
     onSaveEdit: (NutritionFoodEditDraft) -> Unit,
 ) {
     val meal = servingGroup.representative
-    var editing by remember(servingGroup) { mutableStateOf(false) }
     var name by remember(servingGroup) { mutableStateOf(meal.name) }
     var calories by remember(servingGroup) { mutableStateOf(meal.energy.toFormattedString(true)) }
     var carbs by remember(servingGroup) { mutableStateOf(meal.totalCarbohydrate.toFormattedString(true)) }
@@ -490,6 +506,19 @@ internal fun FoodDetailDialog(
     var fiber by remember(servingGroup) { mutableStateOf(meal.dietaryFiber.toFormattedString(true)) }
     var sugar by remember(servingGroup) { mutableStateOf(meal.sugar.toFormattedString(true)) }
     var saturatedFat by remember(servingGroup) { mutableStateOf(meal.saturatedFat.toFormattedString(true)) }
+    val initialDraft = remember(servingGroup) {
+        NutritionFoodEditDraft(
+            name = meal.name,
+            energy = meal.energy,
+            totalCarbohydrate = meal.totalCarbohydrate,
+            protein = meal.protein,
+            totalFat = meal.totalFat,
+            dietaryFiber = meal.dietaryFiber,
+            sugar = meal.sugar,
+            saturatedFat = meal.saturatedFat,
+        )
+    }
+    var lastSubmittedDraft by remember(servingGroup) { mutableStateOf(initialDraft) }
     val draft = NutritionFoodEditDraft(
         name = name.trim(),
         energy = calories.toDoubleOrNull(),
@@ -500,61 +529,65 @@ internal fun FoodDetailDialog(
         sugar = sugar.toDoubleOrNull(),
         saturatedFat = saturatedFat.toDoubleOrNull(),
     )
-    val canSave = draft.isComplete
+    fun submitDraftIfReady() {
+        if (!draft.isComplete || draft == lastSubmittedDraft) return
+        lastSubmittedDraft = draft
+        onSaveEdit(draft)
+    }
     ModalBottomSheet(
-        onDismissRequest = onDismiss,
+        onDismissRequest = {
+            submitDraftIfReady()
+            onDismiss()
+        },
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
         containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
         modifier = Modifier.testTag("meals_food_detail_sheet"),
     ) {
-        Column(
+        Box(
             modifier = Modifier
-                .fillMaxWidth()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 14.dp)
-                .padding(bottom = 18.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+                .fillMaxWidth(),
         ) {
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                if (editing) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 14.dp)
+                    .padding(top = 4.dp, bottom = 18.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     OutlinedTextField(
                         value = name,
                         onValueChange = { name = it },
                         label = { Text("Food") },
                         singleLine = true,
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .onFocusChanged { if (!it.isFocused) submitDraftIfReady() },
                     )
-                } else {
                     Text(
-                        text = meal.name,
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
+                        text = listOf(
+                            meal.startTime.format(DateTimeFormatter.ofPattern("h:mm a")),
+                            if (servingGroup.quantity > 1) "x${servingGroup.quantity}" else null,
+                        ).filterNotNull().joinToString(" | "),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
-                Text(
-                    text = listOf(
-                        meal.startTime.format(DateTimeFormatter.ofPattern("h:mm a")),
-                        if (servingGroup.quantity > 1) "x${servingGroup.quantity}" else null,
-                    ).filterNotNull().joinToString(" | "),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-            if (editing) {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                        EditNumberField("Calories", calories, { calories = it }, Modifier.weight(1f))
-                        EditNumberField("Carbs", carbs, { carbs = it }, Modifier.weight(1f))
+                        EditNumberField("Calories", calories, { calories = it }, Modifier.weight(1f), onBlur = ::submitDraftIfReady)
+                        EditNumberField("Carbs", carbs, { carbs = it }, Modifier.weight(1f), onBlur = ::submitDraftIfReady)
                     }
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                        EditNumberField("Protein", protein, { protein = it }, Modifier.weight(1f))
-                        EditNumberField("Fat", fat, { fat = it }, Modifier.weight(1f))
+                        EditNumberField("Protein", protein, { protein = it }, Modifier.weight(1f), onBlur = ::submitDraftIfReady)
+                        EditNumberField("Fat", fat, { fat = it }, Modifier.weight(1f), onBlur = ::submitDraftIfReady)
                     }
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                        EditNumberField("Fiber", fiber, { fiber = it }, Modifier.weight(1f))
-                        EditNumberField("Sugar", sugar, { sugar = it }, Modifier.weight(1f))
+                        EditNumberField("Fiber", fiber, { fiber = it }, Modifier.weight(1f), onBlur = ::submitDraftIfReady)
+                        EditNumberField("Sugar", sugar, { sugar = it }, Modifier.weight(1f), onBlur = ::submitDraftIfReady)
                     }
-                    EditNumberField("Sat fat", saturatedFat, { saturatedFat = it }, Modifier.fillMaxWidth())
+                    EditNumberField("Sat fat", saturatedFat, { saturatedFat = it }, Modifier.fillMaxWidth(), onBlur = ::submitDraftIfReady)
                     if (servingGroup.quantity > 1) {
                         Text(
                             text = "Macro edits apply to all ${servingGroup.quantity} servings.",
@@ -563,81 +596,91 @@ internal fun FoodDetailDialog(
                         )
                     }
                 }
-            } else {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    MacroGrid(items = healthMealDetailItems(meal))
-                }
-            }
-            SurfacePanel(
-                backgroundColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                borderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.14f),
-                contentPadding = 10,
-                verticalSpacing = 6,
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
+                SurfacePanel(
+                    backgroundColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                    borderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.14f),
+                    contentPadding = 10,
+                    verticalSpacing = 6,
                 ) {
-                    Text("Quantity", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                        IconButton(
-                            onClick = onRemoveServing,
-                            enabled = servingGroup.quantity > 1,
-                            modifier = Modifier.testTag("meals_food_quantity_decrement"),
-                        ) {
-                            Text("-", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-                        }
-                        Text(
-                            text = servingGroup.quantity.toString(),
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.testTag("meals_food_quantity_value"),
-                        )
-                        IconButton(
-                            onClick = onAddServing,
-                            modifier = Modifier.testTag("meals_food_quantity_increment"),
-                        ) {
-                            Text("+", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text("Quantity", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                            IconButton(
+                                onClick = onRemoveServing,
+                                enabled = servingGroup.quantity > 1,
+                                modifier = Modifier.testTag("meals_food_quantity_decrement"),
+                            ) {
+                                Text("-", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                            }
+                            Text(
+                                text = servingGroup.quantity.toString(),
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.testTag("meals_food_quantity_value"),
+                            )
+                            IconButton(
+                                onClick = onAddServing,
+                                modifier = Modifier.testTag("meals_food_quantity_increment"),
+                            ) {
+                                Text("+", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                            }
                         }
                     }
                 }
-            }
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                IconButton(
+                TextButton(
                     onClick = onDelete,
-                    modifier = Modifier.testTag("meals_food_delete"),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("meals_food_delete"),
                 ) {
                     Icon(
                         imageVector = Icons.Default.Delete,
-                        contentDescription = "Delete food",
+                        contentDescription = null,
                         tint = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.size(22.dp),
-                    )
-                }
-                IconButton(
-                    onClick = {
-                        if (editing && canSave) {
-                            onSaveEdit(draft)
-                        } else {
-                            editing = true
-                        }
-                    },
-                    enabled = !editing || canSave,
-                    modifier = Modifier.testTag("meals_food_edit_save"),
-                ) {
-                    Icon(
-                        imageVector = if (editing) Icons.Default.Check else Icons.Default.Edit,
-                        contentDescription = if (editing) "Save food changes" else "Edit food",
-                        modifier = Modifier.size(22.dp),
+                        modifier = Modifier.size(18.dp),
                     )
                 }
             }
+            if (saveNoticeVisible) {
+                ChangesSavedInlineChip(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(end = 14.dp)
+                        .testTag("meals_food_changes_saved"),
+                )
+            }
         }
+    }
+}
+
+@Composable
+private fun ChangesSavedInlineChip(modifier: Modifier = Modifier) {
+    Row(
+        modifier = modifier
+            .clip(RoundedCornerShape(999.dp))
+            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.14f))
+            .border(BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.26f)), RoundedCornerShape(999.dp))
+            .padding(horizontal = 10.dp, vertical = 7.dp),
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            imageVector = Icons.Default.Check,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(16.dp),
+        )
+        Text(
+            text = "Changes saved",
+            style = MaterialTheme.typography.labelLarge,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface,
+            maxLines = 1,
+        )
     }
 }
 
@@ -647,13 +690,14 @@ private fun EditNumberField(
     value: String,
     onValueChange: (String) -> Unit,
     modifier: Modifier,
+    onBlur: () -> Unit,
 ) {
     OutlinedTextField(
         value = value,
         onValueChange = onValueChange,
         label = { Text(label) },
         singleLine = true,
-        modifier = modifier,
+        modifier = modifier.onFocusChanged { if (!it.isFocused) onBlur() },
     )
 }
 
@@ -749,6 +793,7 @@ internal fun SectionTitle(text: String) {
 }
 
 internal val AccentGold = Color(0xFFFBBC04)
+internal val FoodCaloriesBlue = Color(0xFF4FC3F7)
 internal val MacroCarbs = Color(0xFFFFB74D)
 internal val MacroProtein = Color(0xFFFF6E7F)
 internal val MacroFat = Color(0xFF64B5F6)

@@ -19,8 +19,8 @@ data class AppDestination(
 
 object AppDestinations {
     private val all = listOf(
-        AppDestination(AppRoutes.HEALTH_CONNECT_NUTRITION, "Meals", R.drawable.archive, NAV_ARCHIVE, 0xFFFFB74D, true, false),
-        AppDestination(AppRoutes.QUICK_IMPORT, "Add Meal", R.drawable.plus, NAV_DAY, 0xFF4FC3F7, true, false),
+        AppDestination(AppRoutes.HEALTH_CONNECT_NUTRITION, "Meals", R.drawable.meals, NAV_ARCHIVE, 0xFFFFB74D, true, false),
+        AppDestination(AppRoutes.QUICK_IMPORT, "Add Meal", R.drawable.plus, NAV_DAY, 0xFF4FC3F7, false, false),
         AppDestination(AppRoutes.GOALS_HOME, "Goals", R.drawable.goals, NAV_GOALS, 0xFFFF6E7F, true, false),
         AppDestination(AppRoutes.DATABASE_HOME, "Database", R.drawable.archive, NAV_DATABASE, 0xFF90CAF9, false, true),
         AppDestination(AppRoutes.SETTINGS_HOME, "Options", R.drawable.goals, NAV_DAY, 0xFFFFD166, false, true),

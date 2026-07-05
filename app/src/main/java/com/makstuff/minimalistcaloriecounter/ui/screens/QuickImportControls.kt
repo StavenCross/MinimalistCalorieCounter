@@ -18,6 +18,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.CloudDone
@@ -49,6 +50,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
@@ -141,12 +143,22 @@ internal fun CapturePanel(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
-                IconButton(onClick = onClear) {
-                    Icon(
-                        imageVector = Icons.Default.Clear,
-                        contentDescription = "Clear nutrition blurb",
-                        tint = QuickAccentClear,
-                    )
+                val canClear = value.isNotBlank()
+                Box(
+                    modifier = Modifier.size(48.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    IconButton(
+                        onClick = { if (canClear) onClear() },
+                        modifier = Modifier.size(48.dp),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Clear,
+                            contentDescription = if (canClear) "Clear nutrition blurb" else null,
+                            tint = QuickAccentClear,
+                            modifier = Modifier.alpha(if (canClear) 1f else 0f),
+                        )
+                    }
                 }
             }
             OutlinedTextField(
@@ -222,6 +234,9 @@ internal fun MealTimePanel(
     onDateTimeChange: (LocalDateTime) -> Unit,
     onRefreshDateTime: () -> Unit,
     onMealTypeChange: (QuickImportMealType) -> Unit,
+    showActions: Boolean = true,
+    wholeCardSelectsMeal: Boolean = false,
+    compactHeader: Boolean = false,
 ) {
     var timeSheetVisible by remember { mutableStateOf(false) }
     var mealTypeSheetVisible by remember { mutableStateOf(false) }
@@ -351,57 +366,96 @@ internal fun MealTimePanel(
         }
     }
 
-    SurfacePanel(
-        contentPadding = 10,
-        borderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.14f),
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .testTag("quick_import_meal_time_panel")
+            .then(if (wholeCardSelectsMeal) Modifier.clickable { mealTypeSheetVisible = true } else Modifier),
+        shape = RoundedCornerShape(if (compactHeader) 18.dp else 14.dp),
+        color = if (compactHeader) {
+            MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.62f)
+        } else {
+            MaterialTheme.colorScheme.surfaceContainerHigh
+        },
+        border = BorderStroke(
+            1.dp,
+            MaterialTheme.colorScheme.outline.copy(alpha = if (compactHeader) 0.08f else 0.14f),
+        ),
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = if (compactHeader) 12.dp else 10.dp, vertical = if (compactHeader) 8.dp else 10.dp),
+            verticalArrangement = Arrangement.spacedBy(if (compactHeader) 7.dp else 0.dp),
         ) {
             Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.weight(1f),
             ) {
-                Box(
-                    modifier = Modifier
-                        .size(38.dp)
-                        .clip(CircleShape)
-                        .background(QuickAccentMeal.copy(alpha = 0.18f)),
-                    contentAlignment = Alignment.Center,
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.weight(1f),
                 ) {
-                    Icon(
-                        Icons.Default.Restaurant,
-                        contentDescription = null,
-                        tint = QuickAccentMeal,
-                        modifier = Modifier.size(20.dp),
-                    )
+                    Box(
+                        modifier = Modifier
+                            .size(if (compactHeader) 34.dp else 38.dp)
+                            .clip(CircleShape)
+                            .background(QuickAccentMeal.copy(alpha = 0.18f)),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(
+                            Icons.Default.Restaurant,
+                            contentDescription = null,
+                            tint = QuickAccentMeal,
+                            modifier = Modifier.size(if (compactHeader) 18.dp else 20.dp),
+                        )
+                    }
+                    Column(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(10.dp))
+                            .then(if (wholeCardSelectsMeal) Modifier else Modifier.clickable { mealTypeSheetVisible = true })
+                            .padding(horizontal = 4.dp, vertical = 2.dp),
+                    ) {
+                        Text(
+                            text = "Meal",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Text(
+                            text = mealType.label,
+                            style = if (compactHeader) MaterialTheme.typography.titleMedium else MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                        )
+                    }
                 }
-                Column(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(10.dp))
-                        .clickable { mealTypeSheetVisible = true }
-                        .padding(horizontal = 4.dp, vertical = 2.dp),
-                ) {
-                    Text(
-                        text = "Meal",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    Text(
-                        text = mealType.label,
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
+                if (showActions) {
+                    IconButton(onClick = { mealActionsSheetVisible = true }) {
+                        Icon(
+                            imageVector = Icons.Default.MoreVert,
+                            contentDescription = "Meal time actions",
+                            tint = QuickAccentEdit,
+                        )
+                    }
+                } else if (wholeCardSelectsMeal) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                        contentDescription = "Edit meal type",
+                        tint = QuickAccentEdit,
+                        modifier = Modifier
+                            .padding(end = 8.dp)
+                            .size(if (compactHeader) 22.dp else 24.dp),
                     )
                 }
             }
-            IconButton(onClick = { mealActionsSheetVisible = true }) {
-                Icon(
-                    imageVector = Icons.Default.MoreVert,
-                    contentDescription = "Meal time actions",
-                    tint = QuickAccentEdit,
+            if (compactHeader) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(2.dp)
+                        .clip(RoundedCornerShape(999.dp))
+                        .background(QuickAccentEdit.copy(alpha = 0.54f)),
                 )
             }
         }
@@ -505,7 +559,7 @@ private fun MealTypeWheel(
                     Icon(
                         imageVector = Icons.Default.Check,
                         contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
+                        tint = QuickAccentEdit,
                         modifier = Modifier.size(22.dp),
                     )
                 }

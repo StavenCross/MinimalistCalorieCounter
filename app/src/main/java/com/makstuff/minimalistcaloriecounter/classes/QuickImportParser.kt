@@ -98,7 +98,7 @@ object QuickImportParser {
 object QuickImportNutritionReader {
     fun parse(text: String): QuickImportNutrients {
         return QuickImportNutrients(
-            energy = readField(text, "Calories"),
+            energy = readField(text, "Calories", required = true),
             carbohydrate = readField(text, "Carbs"),
             sugar = readField(text, "Sugar"),
             protein = readField(text, "Protein"),
@@ -108,13 +108,16 @@ object QuickImportNutritionReader {
         )
     }
 
-    private fun readField(text: String, label: String): Double {
+    private fun readField(text: String, label: String, required: Boolean = false): Double {
         val pattern = Regex(
             "(?:^|[,;])\\s*${Regex.escape(label)}\\s+(-?\\d+(?:\\.\\d+)?)\\s*(?:g|mg|kcal)?\\b",
             RegexOption.IGNORE_CASE,
         )
         val match = pattern.find(text)
-        require(match != null) { "Missing $label." }
+        if (match == null) {
+            require(!required) { "Missing $label." }
+            return 0.0
+        }
         return match.groupValues[1].toDouble()
     }
 }
