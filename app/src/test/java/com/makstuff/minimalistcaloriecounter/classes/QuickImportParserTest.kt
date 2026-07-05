@@ -86,6 +86,22 @@ class QuickImportParserTest {
     }
 
     @Test
+    fun recognizesMealTypeTotalsAsTotalsRows() {
+        val meal = QuickImportParser.parse(
+            """
+            Kettle Brand Air Fried Kettle Cooked Chips, Himalayan Salt assumed, 90g; Calories 414, Protein 7.2g, Carbs 57.6g, Fat 18.0g, Fiber 3.6g, Sugar 0.0g, Sat Fat 1.8g.
+            Snack totals; Calories 414, Protein 7.2g, Carbs 57.6g, Fat 18.0g, Fiber 3.6g, Sugar 0.0g, Sat Fat 1.8g.
+            """.trimIndent()
+        )
+
+        assertEquals(1, meal.foods.size)
+        assertEquals("Kettle Brand Air Fried Kettle Cooked Chips, Himalayan Salt assumed", meal.foods.single().name)
+        assertClose(90.0, meal.foods.single().grams)
+        assertClose(414.0, meal.totals.energy)
+        assertClose(7.2, meal.totals.protein)
+    }
+
+    @Test
     fun computesFoodWeightsAndPer100gValuesForDatabaseEntries() {
         val meal = QuickImportParser.parse(
             "67g sourdough bread; Calories 182, Fat 1.6g, Sat Fat 0.3g, Trans Fat 0g, Cholesterol 0mg, Sodium 403mg, Carbs 34.8g, Fiber 1.5g, Sugar 3.1g, Added Sugar 0g, Protein 7.2g. " +

@@ -19,7 +19,7 @@ object QuickImportParser {
             val nutrientText = record.substring(semicolonIndex + 1).trim()
             val nutrients = QuickImportNutritionReader.parse(nutrientText)
 
-            if (title.equals("Meal totals", ignoreCase = true)) {
+            if (isTotalsTitle(title)) {
                 mealTotals = nutrients
             } else {
                 foods.add(parseFood(title, nutrients))
@@ -48,6 +48,11 @@ object QuickImportParser {
             .split(compact)
             .map { it.trim().trimEnd('.') }
             .filter { it.isNotEmpty() }
+    }
+
+    private fun isTotalsTitle(title: String): Boolean {
+        return Regex("^(?:Meal|Breakfast|Lunch|Dinner|Snack)\\s+totals?$", RegexOption.IGNORE_CASE)
+            .matches(title.trim())
     }
 
     private fun parseFood(title: String, nutrients: QuickImportNutrients): QuickImportFood {
