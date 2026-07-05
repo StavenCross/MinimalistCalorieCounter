@@ -2,6 +2,8 @@ package com.makstuff.minimalistcaloriecounter
 
 import android.content.Context
 import com.makstuff.minimalistcaloriecounter.classes.QuickImportCommitOptions
+import com.makstuff.minimalistcaloriecounter.classes.QuickImportFood
+import com.makstuff.minimalistcaloriecounter.classes.QuickImportFormatter
 import com.makstuff.minimalistcaloriecounter.classes.QuickImportHealthWriteResult
 import com.makstuff.minimalistcaloriecounter.classes.QuickImportMealType
 import com.makstuff.minimalistcaloriecounter.classes.QuickImportOutbox
@@ -29,6 +31,13 @@ internal class AppViewModelQuickImportActions(
             ).withoutQuickImportOutcome()
         }
     }
+
+    fun updateParsedFood(foodIndex: Int, food: QuickImportFood) {
+        val meal = env.uiState.quickImportMeal ?: return
+        val updatedText = QuickImportFormatter.text(QuickImportFormatter.replaceFood(meal, foodIndex, food))
+        updateText(updatedText)
+    }
+
     fun reset() {
         env.state.update { currentState ->
             currentState.copy(
@@ -85,11 +94,7 @@ internal class AppViewModelQuickImportActions(
         env.state.update { currentState ->
             currentState.copy(
                 quickImportSnackOverride = enabled,
-                quickImportMealTypeOverride = if (enabled) {
-                    QuickImportMealType.Snack
-                } else {
-                    null
-                },
+                quickImportMealTypeOverride = if (enabled) QuickImportMealType.Snack else null,
             ).withoutQuickImportOutcome()
         }
     }
@@ -106,51 +111,40 @@ internal class AppViewModelQuickImportActions(
 
     fun toggleAddFoodsToDatabase() {
         env.state.update { currentState ->
-            currentState.copy(
-                quickImportAddFoodsToDatabase = !currentState.quickImportAddFoodsToDatabase,
-            ).withoutQuickImportOutcome()
+            currentState.copy(quickImportAddFoodsToDatabase = !currentState.quickImportAddFoodsToDatabase).withoutQuickImportOutcome()
         }
     }
 
     fun updateAddFoodsToDatabase(enabled: Boolean) {
         env.state.update { currentState ->
-            currentState.copy(
-                quickImportAddFoodsToDatabase = enabled,
-            ).withoutQuickImportOutcome()
+            currentState.copy(quickImportAddFoodsToDatabase = enabled).withoutQuickImportOutcome()
         }
     }
 
     fun toggleAddFoodsToDay() {
         env.state.update { currentState ->
-            currentState.copy(
-                quickImportAddFoodsToDay = !currentState.quickImportAddFoodsToDay,
-            ).withoutQuickImportOutcome()
+            currentState.copy(quickImportAddFoodsToDay = !currentState.quickImportAddFoodsToDay).withoutQuickImportOutcome()
         }
     }
 
     fun updateAddFoodsToDay(enabled: Boolean) {
         env.state.update { currentState ->
-            currentState.copy(
-                quickImportAddFoodsToDay = enabled,
-            ).withoutQuickImportOutcome()
+            currentState.copy(quickImportAddFoodsToDay = enabled).withoutQuickImportOutcome()
         }
     }
 
     fun toggleWriteHealthConnect() {
         env.state.update { currentState ->
-            currentState.copy(
-                quickImportWriteHealthConnect = !currentState.quickImportWriteHealthConnect,
-            ).withoutQuickImportOutcome()
+            currentState.copy(quickImportWriteHealthConnect = !currentState.quickImportWriteHealthConnect).withoutQuickImportOutcome()
         }
     }
 
     fun updateWriteHealthConnect(enabled: Boolean) {
         env.state.update { currentState ->
-            currentState.copy(
-                quickImportWriteHealthConnect = enabled,
-            ).withoutQuickImportOutcome()
+            currentState.copy(quickImportWriteHealthConnect = enabled).withoutQuickImportOutcome()
         }
     }
+
     fun commit(context: Context) {
         val state = env.uiState
         val meal = state.quickImportMeal ?: run {

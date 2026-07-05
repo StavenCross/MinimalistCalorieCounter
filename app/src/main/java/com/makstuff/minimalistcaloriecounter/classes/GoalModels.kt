@@ -140,15 +140,17 @@ data class GoalProfile(
         if (sex == null) missing += "sex"
         if (heightCm.value == null) missing += "height"
         if (weightKg.value == null) missing += "weight"
-        if (leanMassOrCalculatedKg() == null) missing += "lean mass or body fat"
         return missing
     }
 
     fun leanMassOrCalculatedKg(): Double? {
         leanMassKg.value?.let { return it }
-        val weight = weightKg.value ?: return null
-        val bodyFat = bodyFatPercent.value ?: return null
-        return weight * (1.0 - bodyFat / 100.0)
+        return estimateLeanMassKg(
+            weightKg = weightKg.value,
+            heightCm = heightCm.value,
+            sex = sex,
+            bodyFatPercent = bodyFatPercent.value,
+        )
     }
 }
 
@@ -221,9 +223,55 @@ data class HealthConnectGoalSnapshot(
     val heightUpdatedAt: LocalDateTime? = null,
     val bodyFatPercent: Double? = null,
     val bodyFatUpdatedAt: LocalDateTime? = null,
+    val bodyWaterMassKg: Double? = null,
+    val bodyWaterMassUpdatedAt: LocalDateTime? = null,
+    val boneMassKg: Double? = null,
+    val boneMassUpdatedAt: LocalDateTime? = null,
     val leanMassKg: Double? = null,
     val leanMassUpdatedAt: LocalDateTime? = null,
-)
+) {
+    fun resolvedLeanMassKg(profile: GoalProfile): Double? {
+        leanMassKg?.let { return it }
+        return estimateLeanMassKg(
+            weightKg = weightKg ?: profile.weightKg.value,
+            heightCm = heightCm ?: profile.heightCm.value,
+            sex = profile.sex,
+            bodyFatPercent = bodyFatPercent ?: profile.bodyFatPercent.value,
+            bodyWaterMassKg = bodyWaterMassKg,
+        )
+    }
+
+    fun resolvedLeanMassUpdatedAt(): LocalDateTime? {
+        return leanMassUpdatedAt
+            ?: latestOf(bodyFatUpdatedAt, weightUpdatedAt)
+            ?: bodyWaterMassUpdatedAt
+            ?: latestOf(weightUpdatedAt, heightUpdatedAt)
+    }
+}
+
+fun estimateLeanMassKg(
+    weightKg: Double?,
+    heightCm: Double? = null,
+    sex: GoalSex? = null,
+    bodyFatPercent: Double? = null,
+    bodyWaterMassKg: Double? = null,
+): Double? {
+    if (weightKg != null && bodyFatPercent != null) {
+        return weightKg * (1.0 - bodyFatPercent / 100.0)
+    }
+    if (bodyWaterMassKg != null) {
+        return bodyWaterMassKg / 0.73
+    }
+    if (weightKg == null || heightCm == null || sex == null) return null
+    return when (sex) {
+        GoalSex.Male -> 0.407 * weightKg + 0.267 * heightCm - 19.2
+        GoalSex.Female -> 0.252 * weightKg + 0.473 * heightCm - 48.3
+    }.coerceAtLeast(0.0)
+}
+
+private fun latestOf(first: LocalDateTime?, second: LocalDateTime?): LocalDateTime? {
+    return listOfNotNull(first, second).maxOrNull()
+}
 
 data class MealTargetAllocation(
     val calories: Double?,

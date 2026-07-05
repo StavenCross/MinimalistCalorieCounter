@@ -2,7 +2,6 @@ package com.makstuff.minimalistcaloriecounter.classes
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
-import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.time.LocalDate
@@ -52,10 +51,12 @@ class GoalCalculatorTest {
     }
 
     @Test
-    fun `recommendation requires lean mass or body fat for macro generation`() {
+    fun `recommendation can use estimated lean mass when lean mass and body fat are unavailable`() {
         val profile = completeProfile(leanMassKg = null, bodyFatPercent = null)
 
-        assertNull(GoalCalculator.recommendTargets(profile, date = today))
+        val recommendation = GoalCalculator.recommendTargets(profile, date = today)
+
+        assertEquals(144.4, recommendation!!.targets.protein!!, 0.1)
     }
 
     @Test
@@ -91,6 +92,61 @@ class GoalCalculatorTest {
         assertEquals(GoalValueSource.Manual, updated.weightKg.source)
         assertEquals(181.0, updated.heightCm.value!!, 0.01)
         assertEquals(GoalValueSource.HealthConnect, updated.heightCm.source)
+    }
+
+    @Test
+    fun `health connect direct lean mass wins when available`() {
+        val profile = completeProfile(leanMassKg = null, bodyFatPercent = null)
+        val snapshot = HealthConnectGoalSnapshot(
+            weightKg = 90.0,
+            heightCm = 180.0,
+            bodyFatPercent = 18.0,
+            bodyWaterMassKg = 53.0,
+            leanMassKg = 75.5,
+            leanMassUpdatedAt = LocalDateTime.of(2026, 7, 1, 8, 0),
+        )
+
+        val updated = GoalCalculator.applyHealthSnapshot(profile, snapshot)
+
+        assertEquals(75.5, updated.leanMassKg.value!!, 0.01)
+        assertEquals(GoalValueSource.HealthConnect, updated.leanMassKg.source)
+    }
+
+    @Test
+    fun `health connect derives lean mass from body fat and weight before estimate formulas`() {
+        val profile = completeProfile(leanMassKg = null, bodyFatPercent = null)
+        val snapshot = HealthConnectGoalSnapshot(
+            weightKg = 90.0,
+            heightCm = 180.0,
+            bodyFatPercent = 18.0,
+            bodyWaterMassKg = 53.0,
+        )
+
+        val updated = GoalCalculator.applyHealthSnapshot(profile, snapshot)
+
+        assertEquals(73.8, updated.leanMassKg.value!!, 0.01)
+        assertEquals(GoalValueSource.HealthConnect, updated.leanMassKg.source)
+    }
+
+    @Test
+    fun `health connect estimates lean mass from body water when body fat is unavailable`() {
+        val profile = completeProfile(leanMassKg = null, bodyFatPercent = null)
+        val snapshot = HealthConnectGoalSnapshot(
+            weightKg = 90.0,
+            heightCm = 180.0,
+            bodyWaterMassKg = 53.0,
+        )
+
+        val updated = GoalCalculator.applyHealthSnapshot(profile, snapshot)
+
+        assertEquals(72.6, updated.leanMassKg.value!!, 0.1)
+    }
+
+    @Test
+    fun `profile can estimate lean mass from boer formula as final fallback`() {
+        val profile = completeProfile(leanMassKg = null, bodyFatPercent = null)
+
+        assertEquals(65.5, profile.leanMassOrCalculatedKg()!!, 0.1)
     }
 
     @Test
@@ -187,6 +243,76 @@ class GoalCalculatorTest {
         assertEquals(ActivityLevel.Sedentary, history.activityLevel)
         assertEquals(WeeklyWeightLossTarget.Maintain, history.weightLossTarget)
         assertTrue(history.applied)
+    }
+
+    @Test
+    fun `goal status prioritizes incomplete profile`() {
+        val goals = Goals(
+            currentTargets = completeTargets(2000.0),
+            recommendation = GoalRecommendation(
+                generatedDate = today,
+                targets = completeTargets(2200.0),
+                bmr = 1800.0,
+                tdee = 2500.0,
+            ),
+        )
+
+        val state = goals.statusState(today)
+
+        assertTrue(state is GoalStatusState.ProfileIncomplete)
+    }
+
+    @Test
+    fun `goal status suppresses tiny recommendation drift`() {
+        val recommendation = GoalRecommendation(
+            generatedDate = today,
+            targets = completeTargets(2040.0).copy(protein = 183.0, carbs = 223.0, fat = 72.0, fiber = 31.0),
+            bmr = 1800.0,
+            tdee = 2500.0,
+        )
+        val goals = Goals(
+            profile = completeProfile(),
+            currentTargets = completeTargets(2000.0),
+            recommendation = recommendation.onlyIfMeaningfulComparedTo(completeTargets(2000.0)),
+        )
+
+        assertEquals(null, goals.recommendation)
+        assertEquals(GoalStatusState.CurrentGoal, goals.statusState(today))
+    }
+
+    @Test
+    fun `goal status surfaces meaningful unlocked recommendation differences`() {
+        val recommendation = GoalRecommendation(
+            generatedDate = today,
+            targets = completeTargets(2100.0).copy(protein = 190.0),
+            bmr = 1800.0,
+            tdee = 2500.0,
+        )
+        val goals = Goals(
+            profile = completeProfile(),
+            currentTargets = completeTargets(2000.0),
+            recommendation = recommendation.onlyIfMeaningfulComparedTo(completeTargets(2000.0)),
+        )
+
+        val state = goals.statusState(today)
+
+        assertTrue(state is GoalStatusState.NewRecommendation)
+        assertEquals(2, (state as GoalStatusState.NewRecommendation).differences.size)
+    }
+
+    @Test
+    fun `locked macro differences do not create recommendations`() {
+        val currentTargets = completeTargets(2000.0).withValue(GoalMacro.Calories, 2000.0)
+        val recommendation = GoalRecommendation(
+            generatedDate = today,
+            targets = completeTargets(2200.0),
+            bmr = 1800.0,
+            tdee = 2500.0,
+        )
+
+        val filtered = recommendation.onlyIfMeaningfulComparedTo(currentTargets)
+
+        assertEquals(null, filtered)
     }
 
     @Test

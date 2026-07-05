@@ -4,6 +4,7 @@ import androidx.health.connect.client.records.NutritionRecord
 import androidx.health.connect.client.records.metadata.Metadata
 import androidx.health.connect.client.units.Energy
 import androidx.health.connect.client.units.Mass
+import com.makstuff.minimalistcaloriecounter.classes.NutritionFoodEditDraft
 import com.makstuff.minimalistcaloriecounter.classes.QuickImportHealthPayload
 import java.time.LocalDateTime
 import java.time.ZoneId
@@ -46,5 +47,42 @@ internal fun NutritionRecord.toHealthConnectNutritionMeal(zoneId: ZoneId = ZoneI
         saturatedFat = saturatedFat?.inGrams ?: 0.0,
         dietaryFiber = dietaryFiber?.inGrams ?: 0.0,
         mealType = mealType,
+    )
+}
+
+internal fun HealthConnectNutritionMeal.toHealthPayload(clientRecordId: String? = null): QuickImportHealthPayload {
+    return QuickImportHealthPayload(
+        dateTime = startTime,
+        mealType = mealType,
+        energy = energy,
+        energyFromFat = energyFromFat ?: totalFat * 9.0,
+        totalCarbohydrate = totalCarbohydrate,
+        sugar = sugar,
+        protein = protein,
+        totalFat = totalFat,
+        saturatedFat = saturatedFat,
+        dietaryFiber = dietaryFiber,
+        name = name,
+        clientRecordId = clientRecordId,
+    )
+}
+
+internal fun HealthConnectNutritionMeal.toEditedHealthPayload(
+    draft: NutritionFoodEditDraft,
+    clientRecordId: String? = null,
+): QuickImportHealthPayload {
+    return QuickImportHealthPayload(
+        dateTime = startTime,
+        mealType = mealType,
+        energy = draft.energy ?: energy,
+        energyFromFat = (draft.totalFat ?: totalFat) * 9.0,
+        totalCarbohydrate = draft.totalCarbohydrate ?: totalCarbohydrate,
+        sugar = draft.sugar ?: sugar,
+        protein = draft.protein ?: protein,
+        totalFat = draft.totalFat ?: totalFat,
+        saturatedFat = draft.saturatedFat ?: saturatedFat,
+        dietaryFiber = draft.dietaryFiber ?: dietaryFiber,
+        name = draft.name.ifBlank { name },
+        clientRecordId = clientRecordId,
     )
 }

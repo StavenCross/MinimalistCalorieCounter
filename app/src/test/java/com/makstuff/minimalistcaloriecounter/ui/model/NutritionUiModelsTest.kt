@@ -83,6 +83,30 @@ class NutritionUiModelsTest {
         assertEquals(QuickImportMealType.Snack, meal("late", 23, MealType.MEAL_TYPE_UNKNOWN).quickImportMealType())
     }
 
+    @Test
+    fun mealServingGroupsCollapseIdenticalFoodsInSameMinute() {
+        val first = meal("Whiskey", 21, MealType.MEAL_TYPE_SNACK, energy = 100.0, carbs = 0.0, protein = 0.0, fat = 0.0, fiber = 0.0)
+        val second = first.copy(recordId = "second", startTime = first.startTime.plusSeconds(15), endTime = first.endTime.plusSeconds(15))
+        val later = first.copy(recordId = "later", startTime = first.startTime.plusMinutes(1), endTime = first.endTime.plusMinutes(1))
+
+        val groups = mealServingGroups(listOf(first, second, later))
+
+        assertEquals(listOf(2, 1), groups.map { it.quantity })
+        assertEquals(listOf(first.recordId, second.recordId), groups.first().foods.map { it.recordId })
+    }
+
+    @Test
+    fun servingGroupForFindsMatchingSiblings() {
+        val first = meal("Whiskey", 21, MealType.MEAL_TYPE_SNACK, energy = 100.0, carbs = 0.0, protein = 0.0, fat = 0.0, fiber = 0.0)
+        val second = first.copy(recordId = "second", startTime = first.startTime.plusSeconds(30), endTime = first.endTime.plusSeconds(30))
+        val other = first.copy(recordId = "other", name = "Soda")
+
+        val group = servingGroupFor(first, listOf(other, second, first))
+
+        assertEquals(2, group.quantity)
+        assertEquals(listOf(first.recordId, second.recordId), group.foods.map { it.recordId })
+    }
+
     private fun meal(
         name: String,
         hour: Int,

@@ -1,8 +1,6 @@
 package com.makstuff.minimalistcaloriecounter.ui.screens
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -10,7 +8,6 @@ import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -21,16 +18,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -70,6 +61,7 @@ fun ScreenQuickImport(
     onRefreshDateTime: () -> Unit,
     onDateTimeChange: (LocalDateTime) -> Unit,
     onMealTypeChange: (QuickImportMealType) -> Unit,
+    onParsedFoodChange: (Int, QuickImportFood) -> Unit,
     onImport: () -> Unit,
     onClear: () -> Unit,
     onRetryOutbox: (String) -> Unit = {},
@@ -80,7 +72,8 @@ fun ScreenQuickImport(
         uiState.quickImportWriteHealthConnect
     val canImport = meal != null && hasDestination && !uiState.quickImportInProgress
     var selectedPreviewMeal by remember { mutableStateOf<QuickImportMeal?>(null) }
-    var selectedPreviewFood by remember { mutableStateOf<QuickImportFood?>(null) }
+    var selectedPreviewFoodIndex by remember { mutableStateOf<Int?>(null) }
+    var datePickerVisible by remember { mutableStateOf(false) }
     val targetAllocation = GoalCalculator.mealAllocation(
         mealType = uiState.quickImportMealType,
         targets = uiState.goals.activeTargetsFor(uiState.inputQuickImportDateTime.toLocalDate()),
@@ -119,29 +112,50 @@ fun ScreenQuickImport(
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
+        if (datePickerVisible) {
+            MealDatePickerSheet(
+                selectedDate = uiState.inputQuickImportDateTime.toLocalDate(),
+                onDismiss = { datePickerVisible = false },
+                onDateSelected = { date ->
+                    datePickerVisible = false
+                    onDateTimeChange(LocalDateTime.of(date, uiState.inputQuickImportDateTime.toLocalTime()))
+                },
+            )
+        }
+
         selectedPreviewMeal?.let { previewMeal ->
             QuickImportMealDetailSheet(
                 meal = previewMeal,
                 mealType = uiState.quickImportMealType,
                 targetAllocation = targetAllocation,
                 onDismiss = { selectedPreviewMeal = null },
-                onFoodClick = { food ->
+                onFoodClick = { index ->
                     selectedPreviewMeal = null
-                    selectedPreviewFood = food
+                    selectedPreviewFoodIndex = index
                 },
             )
         }
-        selectedPreviewFood?.let { previewFood ->
+        selectedPreviewFoodIndex?.let { foodIndex ->
+            val previewFood = meal?.foods?.getOrNull(foodIndex)
+            if (previewFood == null) {
+                selectedPreviewFoodIndex = null
+                return@let
+            }
             QuickImportFoodDetailSheet(
                 food = previewFood,
-                onDismiss = { selectedPreviewFood = null },
+                onDismiss = { selectedPreviewFoodIndex = null },
+                onSave = { updatedFood ->
+                    selectedPreviewFoodIndex = null
+                    onParsedFoodChange(foodIndex, updatedFood)
+                },
             )
         }
 
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 12.dp),
+                .padding(horizontal = 12.dp)
+                .testTag("quick_import_list"),
             contentPadding = PaddingValues(bottom = 92.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
@@ -154,8 +168,21 @@ fun ScreenQuickImport(
             }
 
             item {
+                MealDateSelector(
+                    selectedDate = uiState.inputQuickImportDateTime.toLocalDate(),
+                    onPrevious = {
+                        onDateTimeChange(uiState.inputQuickImportDateTime.minusDays(1))
+                    },
+                    onNext = {
+                        onDateTimeChange(uiState.inputQuickImportDateTime.plusDays(1))
+                    },
+                    onDateClick = { datePickerVisible = true },
+                    testTagPrefix = "add_meal",
+                )
+            }
+
+            item {
                 MealTimePanel(
-                    dateTimeText = uiState.inputQuickImportDateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")),
                     selectedDateTime = uiState.inputQuickImportDateTime,
                     mealType = uiState.quickImportMealType,
                     onDateTimeChange = onDateTimeChange,
@@ -212,7 +239,10 @@ fun ScreenQuickImport(
                         mealType = uiState.quickImportMealType,
                         targetAllocation = targetAllocation,
                         onMealClick = { selectedPreviewMeal = it },
-                        onFoodClick = { food -> selectedPreviewFood = food },
+                        onFoodClick = { index -> selectedPreviewFoodIndex = index },
+                        canSave = canImport,
+                        isSaving = uiState.quickImportInProgress,
+                        onSaveMeal = onImport,
                         modifier = Modifier.testTag("quick_import_preview_totals"),
                     )
                 }
@@ -258,83 +288,6 @@ fun ScreenQuickImport(
                 .testTag("quick_import_success_pill"),
         ) {
             QuickImportSuccessPill()
-        }
-
-        val buttonIsSuccess = successAnimationVisible && !uiState.quickImportInProgress
-        val buttonEnabled = canImport && !buttonIsSuccess
-        val buttonColor by animateColorAsState(
-            targetValue = when {
-                buttonIsSuccess -> QuickAccentHealth.copy(alpha = 0.30f)
-                canImport -> QuickAccentSend.copy(alpha = 0.28f)
-                else -> QuickAccentSend.copy(alpha = 0.14f)
-            },
-            animationSpec = tween(180),
-            label = "quickImportButtonColor",
-        )
-        val buttonContentColor by animateColorAsState(
-            targetValue = when {
-                buttonIsSuccess -> QuickAccentHealth
-                canImport -> QuickAccentSend
-                else -> QuickAccentSend.copy(alpha = 0.46f)
-            },
-            animationSpec = tween(180),
-            label = "quickImportButtonContentColor",
-        )
-        val buttonBorderColor by animateColorAsState(
-            targetValue = when {
-                buttonIsSuccess -> QuickAccentHealth.copy(alpha = 0.72f)
-                canImport -> QuickAccentSend.copy(alpha = 0.70f)
-                else -> QuickAccentSend.copy(alpha = 0.32f)
-            },
-            animationSpec = tween(180),
-            label = "quickImportButtonBorderColor",
-        )
-        val buttonSize by animateDpAsState(
-            targetValue = if (buttonIsSuccess) 70.dp else 64.dp,
-            animationSpec = tween(180),
-            label = "quickImportButtonSize",
-        )
-        Surface(
-            onClick = { if (buttonEnabled) onImport() },
-            enabled = buttonEnabled,
-            shape = RoundedCornerShape(18.dp),
-            color = buttonColor,
-            contentColor = buttonContentColor,
-            border = BorderStroke(2.dp, buttonBorderColor),
-            tonalElevation = 8.dp,
-            shadowElevation = 8.dp,
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(18.dp)
-                .size(buttonSize)
-                .testTag("quick_import_import_button"),
-        ) {
-            Box(contentAlignment = Alignment.Center) {
-                when {
-                    uiState.quickImportInProgress -> {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(28.dp),
-                            strokeWidth = 3.dp,
-                            color = QuickAccentSend,
-                            trackColor = QuickAccentSend.copy(alpha = 0.18f),
-                        )
-                    }
-                    buttonIsSuccess -> {
-                        Icon(
-                            imageVector = Icons.Default.Check,
-                            contentDescription = "Meal added",
-                            modifier = Modifier.size(32.dp),
-                        )
-                    }
-                    else -> {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.Send,
-                            contentDescription = "Import meal",
-                            modifier = Modifier.size(30.dp),
-                        )
-                    }
-                }
-            }
         }
     }
 }

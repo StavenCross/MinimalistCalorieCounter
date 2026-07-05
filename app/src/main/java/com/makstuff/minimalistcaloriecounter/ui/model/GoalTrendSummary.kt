@@ -15,9 +15,17 @@ data class GoalTrendCard(
 
 fun goalBodyTrendCards(goals: Goals, today: LocalDate = LocalDate.now()): List<GoalTrendCard> {
     return listOfNotNull(
-        bodyTrendCard("Weight", "kg", bodyPoints(goals, today, goals.profile.weightKg.value) { it.weightKg }),
+        bodyTrendCard(
+            label = "Weight",
+            unit = "lb",
+            points = bodyPoints(goals, today, goals.profile.weightKg.value) { it.weightKg }.map { it.toPounds() },
+        ),
         bodyTrendCard("Body fat", "%", bodyPoints(goals, today, goals.profile.bodyFatPercent.value) { it.bodyFatPercent }),
-        bodyTrendCard("Lean mass", "kg", bodyPoints(goals, today, goals.profile.leanMassOrCalculatedKg()) { it.leanMassKg }),
+        bodyTrendCard(
+            label = "Lean mass",
+            unit = "lb",
+            points = bodyPoints(goals, today, goals.profile.leanMassOrCalculatedKg()) { it.leanMassKg }.map { it.toPounds() },
+        ),
     )
 }
 
@@ -77,3 +85,5 @@ private fun Double.signed(): String {
     val prefix = if (this > 0.0) "+" else ""
     return "$prefix${toFormattedString(true)}"
 }
+
+private fun TrendPoint.toPounds(): TrendPoint = copy(value = value * 2.2046226218)

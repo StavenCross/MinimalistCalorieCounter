@@ -5,6 +5,7 @@ internal enum class HealthConnectPermissionScope {
     WriteArchiveEntries,
     ReadNutrition,
     ReadGoalProfile,
+    WriteGoalProfile,
     ExportReadableData,
     MutateNutritionRecords,
 }

@@ -62,9 +62,9 @@ private fun StringBuilder.appendTarget(label: String, current: Double, target: D
 
 private fun StringBuilder.appendBodyMetrics(profile: GoalProfile) {
     val metrics = listOfNotNull(
-        profile.weightKg.value?.let { "Weight ${it.toFormattedString(true)} kg" },
+        profile.weightKg.value?.let { "Weight ${formatPounds(it)}" },
         profile.bodyFatPercent.value?.let { "Body fat ${it.toFormattedString(true)}%" },
-        profile.leanMassOrCalculatedKg()?.let { "Lean mass ${it.toFormattedString(true)} kg" },
+        profile.leanMassOrCalculatedKg()?.let { "Lean mass ${formatPounds(it)}" },
     )
     if (metrics.isNotEmpty()) {
         appendLine()
@@ -76,3 +76,5 @@ private fun StringBuilder.appendBodyMetrics(profile: GoalProfile) {
 private fun formatCalories(value: Double): String = "${value.toFormattedString(true)} kcal"
 
 private fun formatGrams(value: Double): String = "${value.toFormattedString(true)}g"
+
+private fun formatPounds(valueKg: Double): String = "${(valueKg * 2.2046226218).toFormattedString(true)} lb"

@@ -2,6 +2,8 @@ package com.makstuff.minimalistcaloriecounter.health
 
 import androidx.health.connect.client.HealthConnectClient
 import androidx.health.connect.client.records.BodyFatRecord
+import androidx.health.connect.client.records.BodyWaterMassRecord
+import androidx.health.connect.client.records.BoneMassRecord
 import androidx.health.connect.client.records.HeightRecord
 import androidx.health.connect.client.records.LeanBodyMassRecord
 import androidx.health.connect.client.records.WeightRecord
@@ -23,6 +25,8 @@ internal class HealthConnectGoalProfileReader(
             val weight = readLatest(WeightRecord::class, start, end)
             val height = readLatest(HeightRecord::class, start, end)
             val bodyFat = readLatest(BodyFatRecord::class, start, end)
+            val bodyWater = readLatest(BodyWaterMassRecord::class, start, end)
+            val boneMass = readLatest(BoneMassRecord::class, start, end)
             val leanMass = readLatest(LeanBodyMassRecord::class, start, end)
 
             HealthConnectGoalProfileReadResult.Success(
@@ -33,6 +37,10 @@ internal class HealthConnectGoalProfileReader(
                     heightUpdatedAt = height?.time?.let { LocalDateTime.ofInstant(it, ZoneId.systemDefault()) },
                     bodyFatPercent = bodyFat?.percentage?.value,
                     bodyFatUpdatedAt = bodyFat?.time?.let { LocalDateTime.ofInstant(it, ZoneId.systemDefault()) },
+                    bodyWaterMassKg = bodyWater?.mass?.inKilograms,
+                    bodyWaterMassUpdatedAt = bodyWater?.time?.let { LocalDateTime.ofInstant(it, ZoneId.systemDefault()) },
+                    boneMassKg = boneMass?.mass?.inKilograms,
+                    boneMassUpdatedAt = boneMass?.time?.let { LocalDateTime.ofInstant(it, ZoneId.systemDefault()) },
                     leanMassKg = leanMass?.mass?.inKilograms,
                     leanMassUpdatedAt = leanMass?.time?.let { LocalDateTime.ofInstant(it, ZoneId.systemDefault()) },
                 )

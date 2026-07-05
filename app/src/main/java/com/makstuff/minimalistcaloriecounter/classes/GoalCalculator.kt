@@ -69,11 +69,21 @@ object GoalCalculator {
     }
 
     fun applyHealthSnapshot(profile: GoalProfile, snapshot: HealthConnectGoalSnapshot): GoalProfile {
-        return profile.copy(
+        val updatedProfile = profile.copy(
             weightKg = profile.weightKg.applyHealthConnect(snapshot.weightKg, snapshot.weightUpdatedAt),
             heightCm = profile.heightCm.applyHealthConnect(snapshot.heightCm, snapshot.heightUpdatedAt),
             bodyFatPercent = profile.bodyFatPercent.applyHealthConnect(snapshot.bodyFatPercent, snapshot.bodyFatUpdatedAt),
-            leanMassKg = profile.leanMassKg.applyHealthConnect(snapshot.leanMassKg, snapshot.leanMassUpdatedAt),
+        )
+        val leanMassSnapshot = snapshot.copy(
+            weightKg = updatedProfile.weightKg.value,
+            heightCm = updatedProfile.heightCm.value,
+            bodyFatPercent = updatedProfile.bodyFatPercent.value,
+        )
+        return updatedProfile.copy(
+            leanMassKg = updatedProfile.leanMassKg.applyHealthConnect(
+                leanMassSnapshot.resolvedLeanMassKg(updatedProfile),
+                leanMassSnapshot.resolvedLeanMassUpdatedAt(),
+            ),
         )
     }
 

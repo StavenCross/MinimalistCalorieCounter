@@ -43,7 +43,7 @@ object QuickImportParser {
             .trim()
         if (compact.isEmpty()) return emptyList()
 
-        return Regex("(?<=\\.)\\s+(?=(?:\\d+(?:\\.\\d+)?\\s*(?:g|oz)\\b|Meal totals\\s*;))", RegexOption.IGNORE_CASE)
+        return Regex("(?<=\\.)\\s+(?=(?:Meal totals\\s*;|[^.;]+;\\s*Calories\\b))", RegexOption.IGNORE_CASE)
             .split(compact)
             .map { it.trim().trimEnd('.') }
             .filter { it.isNotEmpty() }
@@ -58,6 +58,20 @@ object QuickImportParser {
             val grams = if (unit == "oz") amount * OUNCES_TO_GRAMS else amount
             return QuickImportFood(
                 amountText = "${amountMatch.groupValues[1]} ${amountMatch.groupValues[2]}",
+                name = name,
+                grams = grams,
+                nutrients = nutrients,
+            )
+        }
+
+        val trailingAmountMatch = Regex("^\\s*(.+?)\\s*,?\\s+(\\d+(?:\\.\\d+)?)\\s*(g|oz)\\s*$", RegexOption.IGNORE_CASE).find(title)
+        if (trailingAmountMatch != null) {
+            val amount = trailingAmountMatch.groupValues[2].toDouble()
+            val unit = trailingAmountMatch.groupValues[3].lowercase()
+            val name = trailingAmountMatch.groupValues[1].trim().trimEnd(',')
+            val grams = if (unit == "oz") amount * OUNCES_TO_GRAMS else amount
+            return QuickImportFood(
+                amountText = "${trailingAmountMatch.groupValues[2]} ${trailingAmountMatch.groupValues[3]}",
                 name = name,
                 grams = grams,
                 nutrients = nutrients,

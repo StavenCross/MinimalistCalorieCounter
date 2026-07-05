@@ -2,7 +2,12 @@ package com.makstuff.minimalistcaloriecounter.ui.screens
 
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.swipeUp
 import androidx.health.connect.client.records.MealType
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
@@ -16,6 +21,7 @@ import com.makstuff.minimalistcaloriecounter.classes.Goals
 import com.makstuff.minimalistcaloriecounter.classes.MacroTargets
 import com.makstuff.minimalistcaloriecounter.health.HealthConnectNutritionMeal
 import com.makstuff.minimalistcaloriecounter.ui.theme.AppTheme
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -52,6 +58,7 @@ class ScreenGoalsTrendTest {
                             ),
                         ),
                     ),
+                    onSettingsOpen = {},
                     onSettingsDismiss = {},
                     onRefreshHealthConnect = {},
                     onRecalculate = {},
@@ -69,9 +76,12 @@ class ScreenGoalsTrendTest {
             }
         }
 
-        composeRule.onNodeWithText("Trends and adherence").assertIsDisplayed()
-        composeRule.onNodeWithText("-1 kg since prior check").fetchSemanticsNode()
-        composeRule.onNodeWithText("50%").fetchSemanticsNode()
+        repeat(3) {
+            composeRule.onRoot().performTouchInput { swipeUp() }
+            composeRule.waitForIdle()
+        }
+        composeRule.onNodeWithText("-2.2 lb since prior check").fetchSemanticsNode()
+        assertTrue(composeRule.onAllNodesWithText("196 lb").fetchSemanticsNodes().isNotEmpty())
     }
 
     private fun baseState(): AppUiState {

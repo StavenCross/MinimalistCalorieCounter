@@ -52,6 +52,9 @@ class ScreenHealthConnectNutritionTest {
                     onRefresh = { refreshCount++ },
                     onDeleteMeal = {},
                     onDeleteMealGroup = {},
+                    onAddFoodServing = {},
+                    onRemoveFoodServing = {},
+                    onSaveFoodServingGroup = { _, _ -> },
                     onRepeatMealGroup = {},
                     onExportDaySummary = { _, _ -> },
                 )
@@ -83,6 +86,9 @@ class ScreenHealthConnectNutritionTest {
                     onRefresh = {},
                     onDeleteMeal = {},
                     onDeleteMealGroup = {},
+                    onAddFoodServing = {},
+                    onRemoveFoodServing = {},
+                    onSaveFoodServingGroup = { _, _ -> },
                     onRepeatMealGroup = {},
                     onExportDaySummary = { _, _ -> },
                 )
@@ -108,6 +114,9 @@ class ScreenHealthConnectNutritionTest {
                     onRefresh = {},
                     onDeleteMeal = {},
                     onDeleteMealGroup = {},
+                    onAddFoodServing = {},
+                    onRemoveFoodServing = {},
+                    onSaveFoodServingGroup = { _, _ -> },
                     onRepeatMealGroup = {},
                     onExportDaySummary = { _, _ -> },
                 )
@@ -115,7 +124,9 @@ class ScreenHealthConnectNutritionTest {
         }
 
         composeRule.onNodeWithText("100 g test oats").assertIsDisplayed().performClick()
-        composeRule.onNodeWithText("Delete").assertIsDisplayed()
+        composeRule.onNodeWithContentDescription("Delete food").assertIsDisplayed()
+        composeRule.onNodeWithContentDescription("Edit food").assertIsDisplayed()
+        composeRule.onAllNodesWithText("Close").assertCountEquals(0)
     }
 
     @Test
@@ -133,6 +144,9 @@ class ScreenHealthConnectNutritionTest {
                     onRefresh = {},
                     onDeleteMeal = {},
                     onDeleteMealGroup = {},
+                    onAddFoodServing = {},
+                    onRemoveFoodServing = {},
+                    onSaveFoodServingGroup = { _, _ -> },
                     onRepeatMealGroup = {},
                     onExportDaySummary = { _, _ -> },
                 )
@@ -161,6 +175,9 @@ class ScreenHealthConnectNutritionTest {
                     onRefresh = {},
                     onDeleteMeal = {},
                     onDeleteMealGroup = {},
+                    onAddFoodServing = {},
+                    onRemoveFoodServing = {},
+                    onSaveFoodServingGroup = { _, _ -> },
                     onRepeatMealGroup = {},
                     onExportDaySummary = { _, _ -> },
                 )
@@ -193,6 +210,9 @@ class ScreenHealthConnectNutritionTest {
                     onRefresh = {},
                     onDeleteMeal = {},
                     onDeleteMealGroup = {},
+                    onAddFoodServing = {},
+                    onRemoveFoodServing = {},
+                    onSaveFoodServingGroup = { _, _ -> },
                     onRepeatMealGroup = {},
                     onExportDaySummary = { _, _ -> },
                 )
@@ -221,6 +241,9 @@ class ScreenHealthConnectNutritionTest {
                     onRefresh = {},
                     onDeleteMeal = {},
                     onDeleteMealGroup = {},
+                    onAddFoodServing = {},
+                    onRemoveFoodServing = {},
+                    onSaveFoodServingGroup = { _, _ -> },
                     onRepeatMealGroup = {},
                     onExportDaySummary = { _, _ -> },
                 )

@@ -157,7 +157,7 @@ Scope:
   - macro targets
   - weight-loss setting
   - applied/not applied state
-- Make Sunday recalculation explicit and inspectable.
+- Keep goal recalculation quiet and state-driven: Health Connect values refresh on app load, and the Goals page surfaces a review prompt only when a recommendation materially differs from the current unlocked targets.
 - Add trend cards:
   - weight trend
   - body fat trend

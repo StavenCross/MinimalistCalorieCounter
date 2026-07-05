@@ -32,6 +32,13 @@ data class NutritionMealGroup(
     val foods: List<HealthConnectNutritionMeal>,
 )
 
+data class NutritionServingGroup(
+    val foods: List<HealthConnectNutritionMeal>,
+) {
+    val representative: HealthConnectNutritionMeal = foods.first()
+    val quantity: Int = foods.size
+}
+
 fun mealGroupKey(group: NutritionMealGroup): String {
     val firstStart = group.foods.minOfOrNull { it.startTime.toString() }.orEmpty()
     return "${group.mealType}:$firstStart:${group.foods.size}"
@@ -51,6 +58,25 @@ fun visibleMealFoods(
     } else {
         group.foods.take(collapsedFoodLimit)
     }
+}
+
+fun mealServingGroups(
+    foods: List<HealthConnectNutritionMeal>,
+): List<NutritionServingGroup> {
+    return foods
+        .groupBy { it.servingGroupKey() }
+        .values
+        .map { NutritionServingGroup(it.sortedBy { food -> food.startTime }) }
+        .sortedBy { it.representative.startTime }
+}
+
+fun servingGroupFor(
+    selected: HealthConnectNutritionMeal,
+    meals: List<HealthConnectNutritionMeal>,
+): NutritionServingGroup {
+    val key = selected.servingGroupKey()
+    val matches = meals.filter { it.servingGroupKey() == key }.sortedBy { it.startTime }
+    return NutritionServingGroup(matches.ifEmpty { listOf(selected) })
 }
 
 fun macroPercent(value: Double, target: Double?): Double? {
@@ -208,3 +234,21 @@ private fun groupFor(
         foods = meals.filter { it.mealType == mealType }.sortedBy { it.startTime },
     )
 }
+
+private fun HealthConnectNutritionMeal.servingGroupKey(): String {
+    val minute = startTime.withSecond(0).withNano(0)
+    return listOf(
+        name.trim().lowercase(),
+        mealType,
+        minute.toString(),
+        energy.roundForGrouping(),
+        totalCarbohydrate.roundForGrouping(),
+        sugar.roundForGrouping(),
+        protein.roundForGrouping(),
+        totalFat.roundForGrouping(),
+        saturatedFat.roundForGrouping(),
+        dietaryFiber.roundForGrouping(),
+    ).joinToString("|")
+}
+
+private fun Double.roundForGrouping(): String = "%.3f".format(this)

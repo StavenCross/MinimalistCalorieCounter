@@ -34,9 +34,9 @@ class GoalTrendSummaryTest {
 
         val cards = goalBodyTrendCards(goals, LocalDate.of(2026, 7, 5))
 
-        assertEquals("89 kg", cards.first { it.label == "Weight" }.value)
-        assertTrue(cards.first { it.label == "Weight" }.detail.contains("-1 kg"))
-        assertTrue(cards.first { it.label == "Lean mass" }.detail.contains("+0.5 kg"))
+        assertEquals("196 lb", cards.first { it.label == "Weight" }.value)
+        assertTrue(cards.first { it.label == "Weight" }.detail.contains("-2.2 lb"))
+        assertTrue(cards.first { it.label == "Lean mass" }.detail.contains("+1.1 lb"))
     }
 
     @Test

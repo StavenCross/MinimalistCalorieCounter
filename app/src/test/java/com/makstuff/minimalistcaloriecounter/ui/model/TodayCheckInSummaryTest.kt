@@ -29,8 +29,8 @@ class TodayCheckInSummaryTest {
         assertTrue(summary.contains("Nutrition check-in for 2026-07-03"))
         assertTrue(summary.contains("Lunch: 1 foods, 500 kcal"))
         assertTrue(summary.contains("Calories: 650/2200 kcal, 1550 kcal remaining"))
-        assertTrue(summary.contains("Weight 90 kg"))
-        assertTrue(summary.contains("Lean mass 72 kg"))
+        assertTrue(summary.contains("Weight 198 lb"))
+        assertTrue(summary.contains("Lean mass 159 lb"))
     }
 
     private fun meal(name: String, calories: Double, mealType: Int): HealthConnectNutritionMeal {

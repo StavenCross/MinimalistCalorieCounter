@@ -1,11 +1,17 @@
 package com.makstuff.minimalistcaloriecounter
 
 import com.makstuff.minimalistcaloriecounter.classes.HistoricalMealImporter
+import com.makstuff.minimalistcaloriecounter.classes.NutritionFoodEditDraft
+import com.makstuff.minimalistcaloriecounter.classes.QuickImportHealthWriteResult
 import com.makstuff.minimalistcaloriecounter.health.HealthConnectDeleteResult
+import com.makstuff.minimalistcaloriecounter.health.HealthConnectNutritionMeal
 import com.makstuff.minimalistcaloriecounter.health.HealthConnectNutritionReadResult
 import com.makstuff.minimalistcaloriecounter.health.HistoricalMealHealthConnectResult
+import com.makstuff.minimalistcaloriecounter.health.toEditedHealthPayload
+import com.makstuff.minimalistcaloriecounter.health.toHealthPayload
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.util.UUID
 
 internal class AppViewModelHealthConnectMealActions(
     private val env: AppViewModelEnvironment,
@@ -64,9 +70,7 @@ internal class AppViewModelHealthConnectMealActions(
         }
     }
 
-    fun deleteMeal(recordId: String) {
-        deleteMeals(listOf(recordId))
-    }
+    fun deleteMeal(recordId: String) = deleteMeals(listOf(recordId))
 
     fun deleteMeals(recordIds: List<String>) {
         env.state.update { currentState ->
@@ -103,6 +107,22 @@ internal class AppViewModelHealthConnectMealActions(
                     }
                 }
             }
+        }
+    }
+
+    fun addServing(food: HealthConnectNutritionMeal) = mutateServingRecords {
+        env.healthConnectManager.insertNutritionServings(listOf(food.toHealthPayload(clientRecordId = editClientRecordId())))
+    }
+
+    fun updateServingGroup(foods: List<HealthConnectNutritionMeal>, draft: NutritionFoodEditDraft) {
+        if (foods.isEmpty() || !draft.isComplete) return
+        mutateServingRecords {
+            env.healthConnectManager.replaceNutritionServings(
+                recordIds = foods.map { it.recordId },
+                payloads = foods.map { food ->
+                    food.toEditedHealthPayload(draft, clientRecordId = editClientRecordId())
+                },
+            )
         }
     }
 
@@ -234,4 +254,44 @@ internal class AppViewModelHealthConnectMealActions(
             }
         }
     }
+
+    private fun mutateServingRecords(action: suspend () -> QuickImportHealthWriteResult) {
+        env.state.update { currentState ->
+            currentState.copy(
+                healthConnectViewerLoading = true,
+                healthConnectViewerMessage = null,
+            )
+        }
+        env.scope.launch {
+            when (val result = action()) {
+                QuickImportHealthWriteResult.Success -> viewModel.readHealthConnectNutritionMeals()
+                QuickImportHealthWriteResult.HealthConnectUnavailable -> {
+                    env.state.update {
+                        it.copy(
+                            healthConnectViewerLoading = false,
+                            healthConnectViewerMessage = env.application.getString(R.string.toast_hc_not_available),
+                        )
+                    }
+                }
+                QuickImportHealthWriteResult.PermissionsMissing -> {
+                    env.state.update {
+                        it.copy(
+                            healthConnectViewerLoading = false,
+                            healthConnectViewerMessage = env.application.getString(R.string.health_connect_permissions_missing),
+                        )
+                    }
+                }
+                is QuickImportHealthWriteResult.Failed -> {
+                    env.state.update {
+                        it.copy(
+                            healthConnectViewerLoading = false,
+                            healthConnectViewerMessage = result.message,
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    private fun editClientRecordId(): String = "mcc-meal-edit-${UUID.randomUUID()}"
 }
