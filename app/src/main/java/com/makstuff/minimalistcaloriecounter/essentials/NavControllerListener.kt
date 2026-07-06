@@ -28,9 +28,6 @@ fun NavControllerListener(
             AppRoutes.DAY_CONTENT ->
                 setNav(context.getString(R.string.title_edit_food_in_day), NAV_DAY)
 
-            AppRoutes.QUICK_IMPORT ->
-                setNav("Add Meal", NAV_DAY)
-
             AppRoutes.DAY_ADD_FOOD ->
                 setNav(context.getString(R.string.title_pick_food), NAV_DAY)
 

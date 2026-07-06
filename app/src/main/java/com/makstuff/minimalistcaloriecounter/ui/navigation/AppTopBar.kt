@@ -33,7 +33,6 @@ fun AppTopBar(
     title: String,
     currentRoute: String?,
     onOpenMenu: () -> Unit,
-    onOpenQuickImportSettings: () -> Unit,
     onOpenGoalsSettings: () -> Unit,
     mealsDayCopied: Boolean = false,
     onCopyMealsDay: () -> Unit = {},
@@ -55,15 +54,6 @@ fun AppTopBar(
             actionIconContentColor = MaterialTheme.colorScheme.onSurface,
         ),
         actions = {
-            if (currentRoute == AppRoutes.QUICK_IMPORT) {
-                IconButton(onClick = onOpenQuickImportSettings) {
-                    Icon(
-                        imageVector = Icons.Default.MoreVert,
-                        contentDescription = "Add Meal settings",
-                        tint = AccentSettings,
-                    )
-                }
-            }
             if (currentRoute == AppRoutes.HEALTH_CONNECT_NUTRITION) {
                 MealsDayActionsMenu(
                     copied = mealsDayCopied,

@@ -2,9 +2,12 @@ package com.makstuff.minimalistcaloriecounter.ui.screens
 
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertCountEquals
+import androidx.compose.ui.test.assertIsEnabled
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -20,7 +23,14 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.makstuff.minimalistcaloriecounter.AppUiState
 import com.makstuff.minimalistcaloriecounter.classes.Archive
 import com.makstuff.minimalistcaloriecounter.classes.Combo
+import com.makstuff.minimalistcaloriecounter.classes.Goals
+import com.makstuff.minimalistcaloriecounter.classes.MacroTargets
 import com.makstuff.minimalistcaloriecounter.classes.NutritionFoodEditDraft
+import com.makstuff.minimalistcaloriecounter.classes.QuickImportFormatter
+import com.makstuff.minimalistcaloriecounter.classes.QuickImportHealthPayload
+import com.makstuff.minimalistcaloriecounter.classes.QuickImportMealType
+import com.makstuff.minimalistcaloriecounter.classes.QuickImportOutboxItem
+import com.makstuff.minimalistcaloriecounter.classes.QuickImportOutboxState
 import com.makstuff.minimalistcaloriecounter.classes.QuickImportParser
 import com.makstuff.minimalistcaloriecounter.health.HealthConnectNutritionMeal
 import com.makstuff.minimalistcaloriecounter.ui.navigation.AppRoutes
@@ -51,12 +61,11 @@ class ScreenHealthConnectNutritionActionsTest {
 
         composeRule.setContent {
             AppTheme(dynamicColor = false) {
-                AppTopBar(
-                    title = "Meals",
-                    currentRoute = AppRoutes.HEALTH_CONNECT_NUTRITION,
-                    onOpenMenu = {},
-                    onOpenQuickImportSettings = {},
-                    onOpenGoalsSettings = {},
+                    AppTopBar(
+                        title = "Meals",
+                        currentRoute = AppRoutes.HEALTH_CONNECT_NUTRITION,
+                        onOpenMenu = {},
+                        onOpenGoalsSettings = {},
                     mealsDayCopied = copied,
                     onCopyMealsDay = { copied = true },
                     onExportMealsDay = {},
@@ -142,12 +151,11 @@ class ScreenHealthConnectNutritionActionsTest {
 
         composeRule.setContent {
             AppTheme(dynamicColor = false) {
-                AppTopBar(
-                    title = "Meals",
-                    currentRoute = AppRoutes.HEALTH_CONNECT_NUTRITION,
-                    onOpenMenu = {},
-                    onOpenQuickImportSettings = {},
-                    onOpenGoalsSettings = {},
+                    AppTopBar(
+                        title = "Meals",
+                        currentRoute = AppRoutes.HEALTH_CONNECT_NUTRITION,
+                        onOpenMenu = {},
+                        onOpenGoalsSettings = {},
                     onCopyMealsDay = {},
                     onExportMealsDay = { exported = true },
                 )
@@ -165,6 +173,7 @@ class ScreenHealthConnectNutritionActionsTest {
             healthConnectViewerDate = LocalDate.of(2026, 7, 2),
             healthConnectViewerLoading = false,
             healthConnectViewerMessage = null,
+            goals = testGoals(),
         ))
         var preparedDate: LocalDate? = null
         var saved = false
@@ -213,6 +222,11 @@ class ScreenHealthConnectNutritionActionsTest {
             "100g test oats; Calories 389, Fat 6.9g, Sat Fat 1.2g, Carbs 66.3g, Fiber 10.6g, Sugar 0.9g, Protein 16.9g. Meal totals; Calories 389, Fat 6.9g, Sat Fat 1.2g, Carbs 66.3g, Fiber 10.6g, Sugar 0.9g, Protein 16.9g.",
         )
         composeRule.onNodeWithContentDescription("Clear nutrition blurb").assertIsDisplayed()
+        composeRule.onNodeWithTag("meals_add_meal_preview", useUnmergedTree = true).assertIsDisplayed()
+        composeRule.onAllNodesWithTag("quick_meal_macro_carbs", useUnmergedTree = true)[0].fetchSemanticsNode()
+        composeRule.onAllNodesWithTag("quick_meal_macro_protein", useUnmergedTree = true)[0].fetchSemanticsNode()
+        composeRule.onAllNodesWithTag("quick_meal_macro_fat", useUnmergedTree = true)[0].fetchSemanticsNode()
+        composeRule.onAllNodesWithTag("quick_meal_macro_fiber", useUnmergedTree = true)[0].fetchSemanticsNode()
         composeRule.onNodeWithTag("quick_import_save_meal_button").performScrollTo().assertIsDisplayed().performClick()
 
         assertEquals(LocalDate.of(2026, 7, 2), preparedDate)
@@ -271,6 +285,305 @@ class ScreenHealthConnectNutritionActionsTest {
 
         assertTrue(cleared)
         assertEquals(selectedDateTime, updatedDateTime)
+    }
+
+    @Test
+    fun addMealDrawerInvalidTextDoesNotShowSaveAction() {
+        var state by mutableStateOf(baseState().copy(
+            healthConnectViewerDate = LocalDate.of(2026, 7, 2),
+            healthConnectViewerLoading = false,
+            healthConnectViewerMessage = null,
+            goals = testGoals(),
+        ))
+
+        composeRule.setContent {
+            AppTheme(dynamicColor = false) {
+                ScreenHealthConnectNutrition(
+                    uiState = state,
+                    onDateChange = {},
+                    onRefresh = {},
+                    onDeleteMeal = {},
+                    onDeleteMealGroup = {},
+                    onAddFoodServing = {},
+                    onRemoveFoodServing = {},
+                    onSaveFoodServingGroup = { _, _ -> },
+                    onPrepareAddMeal = {},
+                    onRepeatMealGroup = { _, _ -> },
+                    onTextChange = { text ->
+                        state = state.copy(
+                            inputQuickImportText = text,
+                            quickImportMeal = runCatching { QuickImportParser.parse(text) }.getOrNull(),
+                        )
+                    },
+                    onRefreshDateTime = {},
+                    onDateTimeChange = { state = state.copy(inputQuickImportDateTime = it) },
+                    onMealTypeChange = { state = state.copy(quickImportMealTypeOverride = it) },
+                    onParsedFoodChange = { _, _ -> },
+                    onImport = {},
+                    onClear = { state = state.copy(inputQuickImportText = "", quickImportMeal = null) },
+                    onRetryOutbox = {},
+                    onExportDaySummary = { _, _ -> },
+                )
+            }
+        }
+
+        composeRule.onNodeWithTag("meals_add_meal").assertIsDisplayed().performClick()
+        composeRule.waitUntil(timeoutMillis = 5_000) {
+            composeRule.onAllNodesWithTag("quick_import_paste").fetchSemanticsNodes().isNotEmpty()
+        }
+        composeRule.onNodeWithTag("quick_import_paste").performTextInput("not a meal")
+        composeRule.onAllNodesWithTag("quick_import_save_meal_button").assertCountEquals(0)
+    }
+
+    @Test
+    fun addMealDrawerSuccessShowsTransientPill() {
+        var state by mutableStateOf(baseState().copy(
+            healthConnectViewerDate = LocalDate.of(2026, 7, 2),
+            healthConnectViewerLoading = false,
+            healthConnectViewerMessage = null,
+        ))
+
+        composeRule.setContent {
+            AppTheme(dynamicColor = false) {
+                ScreenHealthConnectNutrition(
+                    uiState = state,
+                    onDateChange = {},
+                    onRefresh = {},
+                    onDeleteMeal = {},
+                    onDeleteMealGroup = {},
+                    onAddFoodServing = {},
+                    onRemoveFoodServing = {},
+                    onSaveFoodServingGroup = { _, _ -> },
+                    onPrepareAddMeal = {},
+                    onRepeatMealGroup = { _, _ -> },
+                    onTextChange = {},
+                    onRefreshDateTime = {},
+                    onDateTimeChange = {},
+                    onMealTypeChange = {},
+                    onParsedFoodChange = { _, _ -> },
+                    onImport = {},
+                    onClear = {},
+                    onRetryOutbox = {},
+                    onExportDaySummary = { _, _ -> },
+                )
+            }
+        }
+
+        try {
+            composeRule.onNodeWithTag("meals_add_meal").assertIsDisplayed().performClick()
+            composeRule.onNodeWithTag("meals_add_meal_drawer").assertIsDisplayed()
+            composeRule.mainClock.autoAdvance = false
+            composeRule.runOnIdle {
+                state = state.copy(
+                    quickImportSuccessMessage = "Added 1 database food and 1 day food. Health Connect write succeeded.",
+                    quickImportSuccessToken = 1L,
+                )
+            }
+            composeRule.mainClock.advanceTimeBy(100)
+            composeRule.onNodeWithTag("meals_add_meal_success_pill").assertIsDisplayed()
+            composeRule.onNodeWithText("Meal added").assertIsDisplayed()
+        } finally {
+            composeRule.mainClock.autoAdvance = true
+        }
+    }
+
+    @Test
+    fun addMealDrawerParsedFoodEditEmitsUpdatedFood() {
+        val sample = "100g rice; Calories 130, Fat 0.3g, Sat Fat 0.1g, Carbs 28g, Fiber 1g, Sugar 0.1g, Protein 2.7g. " +
+            "Meal totals; Calories 130, Fat 0.3g, Sat Fat 0.1g, Carbs 28g, Fiber 1g, Sugar 0.1g, Protein 2.7g."
+        var editedIndex: Int? = null
+        var editedCalories: Double? = null
+        var state by mutableStateOf(baseState().copy(
+            healthConnectViewerDate = LocalDate.of(2026, 7, 2),
+            healthConnectViewerLoading = false,
+            healthConnectViewerMessage = null,
+            inputQuickImportText = sample,
+            quickImportMeal = QuickImportParser.parse(sample),
+        ))
+
+        composeRule.setContent {
+            AppTheme(dynamicColor = false) {
+                ScreenHealthConnectNutrition(
+                    uiState = state,
+                    onDateChange = {},
+                    onRefresh = {},
+                    onDeleteMeal = {},
+                    onDeleteMealGroup = {},
+                    onAddFoodServing = {},
+                    onRemoveFoodServing = {},
+                    onSaveFoodServingGroup = { _, _ -> },
+                    onPrepareAddMeal = {},
+                    onRepeatMealGroup = { _, _ -> },
+                    onTextChange = {},
+                    onRefreshDateTime = {},
+                    onDateTimeChange = {},
+                    onMealTypeChange = {},
+                    onParsedFoodChange = { index, food ->
+                        editedIndex = index
+                        editedCalories = food.nutrients.energy
+                    },
+                    onImport = {},
+                    onClear = {},
+                    onRetryOutbox = {},
+                    onExportDaySummary = { _, _ -> },
+                )
+            }
+        }
+
+        composeRule.onNodeWithTag("meals_add_meal").assertIsDisplayed().performClick()
+        composeRule.onNodeWithTag("quick_import_food_row_0").performScrollTo().performClick()
+        composeRule.onAllNodesWithText("Cancel").assertCountEquals(0)
+        composeRule.onNodeWithTag("quick_food_edit_calories").performTextClearance()
+        composeRule.onNodeWithTag("quick_food_edit_calories").performTextInput("145")
+        composeRule.onNodeWithTag("quick_food_edit_save").performScrollTo().performClick()
+        composeRule.waitUntil(timeoutMillis = 2_000) { editedIndex != null }
+
+        assertEquals(0, editedIndex)
+        assertEquals(145.0, editedCalories ?: 0.0, 0.01)
+    }
+
+    @Test
+    fun addMealDrawerParsedFoodQuantityUpdatesParsedMeal() {
+        val sample = "3 fl oz Woodford Reserve bourbon whiskey; Calories 220, Protein 0g, Carbs 0g, Fat 0g, Fiber 0g, Sugar 0g, Sat Fat 0g. " +
+            "Meal totals; Calories 220, Protein 0g, Carbs 0g, Fat 0g, Fiber 0g, Sugar 0g, Sat Fat 0g."
+        var state by mutableStateOf(
+            baseState().copy(
+                healthConnectViewerDate = LocalDate.of(2026, 7, 2),
+                healthConnectViewerLoading = false,
+                healthConnectViewerMessage = null,
+                inputQuickImportText = sample,
+                quickImportMeal = QuickImportParser.parse(sample),
+            ),
+        )
+
+        fun applyMealUpdate(updatedText: String) {
+            state = state.copy(
+                inputQuickImportText = updatedText,
+                quickImportMeal = QuickImportParser.parse(updatedText),
+            )
+        }
+
+        composeRule.setContent {
+            AppTheme(dynamicColor = false) {
+                ScreenHealthConnectNutrition(
+                    uiState = state,
+                    onDateChange = {},
+                    onRefresh = {},
+                    onDeleteMeal = {},
+                    onDeleteMealGroup = {},
+                    onAddFoodServing = {},
+                    onRemoveFoodServing = {},
+                    onSaveFoodServingGroup = { _, _ -> },
+                    onPrepareAddMeal = {},
+                    onRepeatMealGroup = { _, _ -> },
+                    onTextChange = {},
+                    onRefreshDateTime = {},
+                    onDateTimeChange = {},
+                    onMealTypeChange = {},
+                    onParsedFoodChange = { _, _ -> },
+                    onParsedFoodGroupChange = { index, food ->
+                        state.quickImportMeal?.let {
+                            applyMealUpdate(QuickImportFormatter.text(QuickImportFormatter.replaceFoodGroup(it, index, food)))
+                        }
+                    },
+                    onParsedFoodServingAdd = { index ->
+                        state.quickImportMeal?.let {
+                            applyMealUpdate(QuickImportFormatter.text(QuickImportFormatter.addFoodServing(it, index)))
+                        }
+                    },
+                    onParsedFoodServingRemove = { index ->
+                        state.quickImportMeal?.let {
+                            applyMealUpdate(QuickImportFormatter.text(QuickImportFormatter.removeFoodServing(it, index)))
+                        }
+                    },
+                    onImport = {},
+                    onClear = {},
+                    onRetryOutbox = {},
+                    onExportDaySummary = { _, _ -> },
+                )
+            }
+        }
+
+        composeRule.onNodeWithTag("meals_add_meal").assertIsDisplayed().performClick()
+        composeRule.onNodeWithTag("quick_import_food_row_0").performScrollTo().performClick()
+        composeRule.onNodeWithTag("quick_food_quantity_value").assertIsDisplayed()
+        composeRule.onNodeWithTag("quick_food_quantity_increment").performClick()
+        composeRule.waitUntil(timeoutMillis = 2_000) { state.quickImportMeal?.foods?.size == 2 }
+        assertEquals(440.0, state.quickImportMeal!!.totals.energy, 0.01)
+        composeRule.onNodeWithTag("quick_food_quantity_decrement").performClick()
+        composeRule.waitUntil(timeoutMillis = 2_000) { state.quickImportMeal?.foods?.size == 1 }
+        assertEquals(220.0, state.quickImportMeal!!.totals.energy, 0.01)
+    }
+
+    @Test
+    fun addMealDrawerOutboxAttentionShowsSyncStatusCard() {
+        val state = baseState().copy(
+            healthConnectViewerDate = LocalDate.of(2026, 7, 2),
+            healthConnectViewerLoading = false,
+            healthConnectViewerMessage = null,
+            quickImportOutbox = listOf(
+                QuickImportOutboxItem(
+                    id = "abc123",
+                    createdAt = LocalDateTime.of(2026, 7, 3, 12, 1),
+                    intendedDateTime = LocalDateTime.of(2026, 7, 3, 12, 0),
+                    mealType = QuickImportMealType.Lunch,
+                    sourceTextHash = "hash",
+                    mealSummary = "1 foods, 389 kcal",
+                    foodCount = 1,
+                    state = QuickImportOutboxState.FailedHealthConnect,
+                    attemptCount = 1,
+                    lastAttemptAt = LocalDateTime.of(2026, 7, 3, 12, 2),
+                    lastErrorMessage = "Health Connect permissions are missing.",
+                    healthPayloads = listOf(
+                        QuickImportHealthPayload(
+                            dateTime = LocalDateTime.of(2026, 7, 3, 12, 0),
+                            mealType = QuickImportMealType.Lunch.healthConnectValue,
+                            energy = 389.0,
+                            energyFromFat = 62.1,
+                            totalCarbohydrate = 66.3,
+                            sugar = 0.9,
+                            protein = 16.9,
+                            totalFat = 6.9,
+                            saturatedFat = 1.2,
+                            dietaryFiber = 10.6,
+                            name = "100g test oats",
+                            clientRecordId = "mcc-add-meal-abc123-0",
+                        )
+                    ),
+                )
+            ),
+        )
+
+        composeRule.setContent {
+            AppTheme(dynamicColor = false) {
+                ScreenHealthConnectNutrition(
+                    uiState = state,
+                    onDateChange = {},
+                    onRefresh = {},
+                    onDeleteMeal = {},
+                    onDeleteMealGroup = {},
+                    onAddFoodServing = {},
+                    onRemoveFoodServing = {},
+                    onSaveFoodServingGroup = { _, _ -> },
+                    onPrepareAddMeal = {},
+                    onRepeatMealGroup = { _, _ -> },
+                    onTextChange = {},
+                    onRefreshDateTime = {},
+                    onDateTimeChange = {},
+                    onMealTypeChange = {},
+                    onParsedFoodChange = { _, _ -> },
+                    onImport = {},
+                    onClear = {},
+                    onRetryOutbox = {},
+                    onExportDaySummary = { _, _ -> },
+                )
+            }
+        }
+
+        composeRule.onNodeWithTag("meals_add_meal").assertIsDisplayed().performClick()
+        composeRule.onNodeWithTag("quick_import_outbox_status", useUnmergedTree = true).assertIsDisplayed()
+        composeRule.onNodeWithText("1 Health Connect write needs sync attention.").assertIsDisplayed()
+        composeRule.onNodeWithTag("quick_import_outbox_retry").performScrollTo().assertIsDisplayed().assertIsEnabled()
     }
 
     @Test
@@ -410,6 +723,18 @@ class ScreenHealthConnectNutritionActionsTest {
         return AppUiState(
             archive = Archive(context = context),
             day = Combo(context = context),
+        )
+    }
+
+    private fun testGoals(): Goals {
+        return Goals(
+            currentTargets = MacroTargets(
+                calories = 2_000.0,
+                protein = 160.0,
+                carbs = 200.0,
+                fat = 70.0,
+                fiber = 30.0,
+            ),
         )
     }
 

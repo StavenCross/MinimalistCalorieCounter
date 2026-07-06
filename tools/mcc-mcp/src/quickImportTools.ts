@@ -27,7 +27,7 @@ export function registerQuickImportTools(server: McpServer, ctx: ToolContext) {
     "mcc_quick_import_commit",
     {
       title: "Commit Add Meal import",
-      description: "Commit an Add Meal import through the app's real write path. Can write local DB/day rows and Health Connect.",
+      description: "Commit an Add Meal import through the app's real write path with the app's fixed local backup and Health Connect destinations.",
       inputSchema: QuickImportInput,
       annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
     },

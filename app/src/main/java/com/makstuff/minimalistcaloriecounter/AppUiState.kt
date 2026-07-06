@@ -47,7 +47,6 @@ data class AppUiState(
     val topBarTitle: String = "",
     val automationRouteRequest: String? = null,
     val activeSettingsSheet: SettingsSheet? = null,
-    val quickImportSettingsVisible: Boolean = false,
     /*
     CAREFUL! The list below MUST contain the correct number of empty nutrient value strings.
     Yes, this is indeed the case. I don't know if there is a better solution.

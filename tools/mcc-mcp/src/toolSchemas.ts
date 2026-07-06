@@ -8,9 +8,6 @@ export const QuickImportInput = {
   dateTime: z.string().optional().describe("Local ISO date-time, for example 2026-07-02T12:30:00"),
   mealType: z.enum(["Breakfast", "Lunch", "Dinner", "Snack"]).optional(),
   snackOverride: z.boolean().optional(),
-  addDatabase: z.boolean().optional(),
-  addDay: z.boolean().optional(),
-  writeHealthConnect: z.boolean().optional(),
   hostPort: HostPortInput,
 };
 

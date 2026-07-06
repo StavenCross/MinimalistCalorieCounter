@@ -64,6 +64,7 @@ internal fun ok(body: JSONObject): String = jsonResponse(200, JSONObject().put("
 internal fun jsonResponse(statusCode: Int, body: JSONObject): String {
     val statusText = when (statusCode) {
         200 -> "OK"
+        400 -> "Bad Request"
         404 -> "Not Found"
         else -> "Internal Server Error"
     }

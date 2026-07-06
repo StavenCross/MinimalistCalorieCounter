@@ -42,12 +42,6 @@ internal class AppViewModelUiActions(
         }
     }
 
-    fun updateQuickImportSettingsVisible(visible: Boolean) {
-        env.state.update { currentState ->
-            currentState.copy(quickImportSettingsVisible = visible)
-        }
-    }
-
     fun setHealthConnectActivationDialog(visible: Boolean) {
         env.state.update { it.copy(alertDialogHealthConnectActivation = visible) }
     }

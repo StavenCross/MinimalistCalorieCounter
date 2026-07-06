@@ -127,42 +127,6 @@ internal class AppViewModelQuickImportActions(
         }
     }
 
-    fun toggleAddFoodsToDatabase() {
-        env.state.update { currentState ->
-            currentState.copy(quickImportAddFoodsToDatabase = !currentState.quickImportAddFoodsToDatabase).withoutQuickImportOutcome()
-        }
-    }
-
-    fun updateAddFoodsToDatabase(enabled: Boolean) {
-        env.state.update { currentState ->
-            currentState.copy(quickImportAddFoodsToDatabase = enabled).withoutQuickImportOutcome()
-        }
-    }
-
-    fun toggleAddFoodsToDay() {
-        env.state.update { currentState ->
-            currentState.copy(quickImportAddFoodsToDay = !currentState.quickImportAddFoodsToDay).withoutQuickImportOutcome()
-        }
-    }
-
-    fun updateAddFoodsToDay(enabled: Boolean) {
-        env.state.update { currentState ->
-            currentState.copy(quickImportAddFoodsToDay = enabled).withoutQuickImportOutcome()
-        }
-    }
-
-    fun toggleWriteHealthConnect() {
-        env.state.update { currentState ->
-            currentState.copy(quickImportWriteHealthConnect = !currentState.quickImportWriteHealthConnect).withoutQuickImportOutcome()
-        }
-    }
-
-    fun updateWriteHealthConnect(enabled: Boolean) {
-        env.state.update { currentState ->
-            currentState.copy(quickImportWriteHealthConnect = enabled).withoutQuickImportOutcome()
-        }
-    }
-
     fun commit(context: Context) {
         val state = env.uiState
         val meal = state.quickImportMeal ?: run {

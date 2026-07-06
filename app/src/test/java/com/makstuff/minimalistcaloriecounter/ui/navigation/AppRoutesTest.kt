@@ -15,8 +15,9 @@ class AppRoutesTest {
 
     @Test
     fun automationAliasesMapToStableAppRoutes() {
-        assertEquals(AppRoutes.QUICK_IMPORT, AppRoutes.automationRouteFor("quick_import"))
-        assertEquals(AppRoutes.QUICK_IMPORT, AppRoutes.automationRouteFor("quick-add"))
+        assertEquals(AppRoutes.HEALTH_CONNECT_NUTRITION, AppRoutes.automationRouteFor("quick_import"))
+        assertEquals(AppRoutes.HEALTH_CONNECT_NUTRITION, AppRoutes.automationRouteFor("quick-add"))
+        assertEquals(AppRoutes.HEALTH_CONNECT_NUTRITION, AppRoutes.automationRouteFor("add_meal"))
         assertEquals(AppRoutes.HEALTH_CONNECT_NUTRITION, AppRoutes.automationRouteFor("meals"))
         assertEquals(AppRoutes.GOALS_HOME, AppRoutes.automationRouteFor("goals"))
         assertEquals(AppRoutes.SETTINGS_HOME, AppRoutes.automationRouteFor("settings"))
@@ -26,7 +27,6 @@ class AppRoutesTest {
     fun topLevelRoutesStayCentralized() {
         assertEquals(
             setOf(
-                AppRoutes.QUICK_IMPORT,
                 AppRoutes.HEALTH_CONNECT_NUTRITION,
                 AppRoutes.GOALS_HOME,
                 AppRoutes.SETTINGS_HOME,

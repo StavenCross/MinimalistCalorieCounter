@@ -3,7 +3,6 @@ package com.makstuff.minimalistcaloriecounter.ui.navigation
 object AppRoutes {
     const val DAY_HOME = "day_home"
     const val DAY_CONTENT = "day_content"
-    const val QUICK_IMPORT = "quick_import"
     const val DAY_ADD_FOOD = "day_add_food"
     const val DAY_ADD_WEIGHT = "day_add_weight/{index}"
     const val DAY_EDIT_WEIGHT = "day_edit_weight/{index}"
@@ -27,7 +26,6 @@ object AppRoutes {
     fun databaseEditEntry(index: Int): String = "database_edit_entry/$index"
 
     val topLevelRoutes = setOf(
-        QUICK_IMPORT,
         HEALTH_CONNECT_NUTRITION,
         GOALS_HOME,
         SETTINGS_HOME,
@@ -38,7 +36,7 @@ object AppRoutes {
 
     fun automationRouteFor(screen: String): String {
         return when (screen.lowercase().replace("-", "_")) {
-            "quick_add", QUICK_IMPORT -> QUICK_IMPORT
+            "quick_add", "quick_import", "add_meal" -> HEALTH_CONNECT_NUTRITION
             "meals", "health_connect", HEALTH_CONNECT_NUTRITION -> HEALTH_CONNECT_NUTRITION
             "goals", GOALS_HOME -> GOALS_HOME
             "settings", "options" -> SETTINGS_HOME

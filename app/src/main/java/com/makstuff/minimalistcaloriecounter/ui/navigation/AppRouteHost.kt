@@ -19,14 +19,13 @@ import com.makstuff.minimalistcaloriecounter.ui.navigation.legacy.legacyDatabase
 import com.makstuff.minimalistcaloriecounter.ui.navigation.legacy.legacyDayRoutes
 import com.makstuff.minimalistcaloriecounter.ui.screens.ScreenGoals
 import com.makstuff.minimalistcaloriecounter.ui.screens.ScreenHealthConnectNutrition
-import com.makstuff.minimalistcaloriecounter.ui.screens.ScreenQuickImport
 import com.makstuff.minimalistcaloriecounter.ui.settings.AppSettingsPage
 import java.time.LocalDateTime
 
 /**
  * Registers the app's navigation graph.
  *
- * The host keeps the modern Add Meal, Meals, Goals, and Settings routes together while delegating
+ * The host keeps the modern Meals, Goals, and Settings routes together while delegating
  * legacy archive/database/day-builder routes to isolated modules. Route callbacks intentionally pass
  * through the AppViewModel facade until the remaining feature coordinators are split further.
  */
@@ -139,25 +138,6 @@ fun AppRouteHost(
                 fileLaunchers = fileLaunchers,
                 healthConnectManager = healthConnectManager,
                 healthConnectExportPermissionLauncher = healthConnectExportPermissionLauncher,
-            )
-        }
-        composable(AppRoutes.QUICK_IMPORT) {
-            ScreenQuickImport(
-                uiState = uiState,
-                onTextChange = { viewModel.updateQuickImportText(it) },
-                onToggleAddDatabase = { viewModel.toggleQuickImportAddFoodsToDatabase() },
-                onToggleAddDay = { viewModel.toggleQuickImportAddFoodsToDay() },
-                onToggleHealthConnect = { viewModel.toggleQuickImportWriteHealthConnect() },
-                onRefreshDateTime = { viewModel.refreshQuickImportDateTime() },
-                onDateTimeChange = { viewModel.updateQuickImportDateTime(it) },
-                onMealTypeChange = { viewModel.updateQuickImportMealTypeOverride(it) },
-                onParsedFoodChange = { index, food -> viewModel.updateQuickImportParsedFood(index, food) },
-                onParsedFoodGroupChange = { index, food -> viewModel.updateQuickImportParsedFoodGroup(index, food) },
-                onParsedFoodServingAdd = { index -> viewModel.addQuickImportParsedFoodServing(index) },
-                onParsedFoodServingRemove = { index -> viewModel.removeQuickImportParsedFoodServing(index) },
-                onImport = { viewModel.quickImportCommit(context) },
-                onClear = { viewModel.resetQuickImport() },
-                onRetryOutbox = { viewModel.quickImportRetryHealthConnect(context, it) },
             )
         }
     }

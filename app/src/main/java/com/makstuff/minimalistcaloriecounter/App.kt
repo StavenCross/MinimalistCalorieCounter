@@ -70,7 +70,6 @@ import com.makstuff.minimalistcaloriecounter.ui.model.mealsDaySummaryText
 import com.makstuff.minimalistcaloriecounter.ui.reused.ButtonText
 import com.makstuff.minimalistcaloriecounter.ui.reused.DropdownMenu
 import com.makstuff.minimalistcaloriecounter.ui.reused.TextField
-import com.makstuff.minimalistcaloriecounter.ui.screens.QuickImportDestinationDialogHost
 import com.makstuff.minimalistcaloriecounter.health.DayCheckInExporter
 import com.makstuff.minimalistcaloriecounter.health.HealthConnectManager
 import androidx.health.connect.client.HealthConnectClient
@@ -154,8 +153,6 @@ fun App(
 
     AppStartupEffects(uiState = uiState, viewModel = viewModel, onNavigate = { navTo(it) })
     Box(modifier = Modifier.fillMaxSize()) {
-        QuickImportDestinationDialogHost(uiState = uiState, viewModel = viewModel)
-
         Scaffold(
             containerColor = MaterialTheme.colorScheme.surfaceContainer,
             topBar = {
@@ -163,7 +160,6 @@ fun App(
                     title = uiState.topBarTitle,
                     currentRoute = currentRoute,
                     onOpenMenu = { mainMenuExpanded = true },
-                    onOpenQuickImportSettings = { viewModel.updateQuickImportSettingsVisible(true) },
                     onOpenGoalsSettings = { viewModel.updateGoalsSettingsVisible(true) },
                     mealsDayCopied = mealsDayCopied,
                     onCopyMealsDay = {

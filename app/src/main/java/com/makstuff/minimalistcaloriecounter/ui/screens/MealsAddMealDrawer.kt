@@ -52,7 +52,7 @@ import java.time.LocalDateTime
  *
  * The caller owns all quick-import state and callbacks; this drawer only composes the existing
  * capture, meal-time, preview, edit, retry, and success surfaces so the Health Connect write path
- * remains the same one used by the legacy hidden Add Meal route.
+ * stays centralized even though the old standalone Add Meal route has been removed.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -186,7 +186,7 @@ internal fun MealsAddMealDrawer(
 }
 
 /**
- * Shows the same transient success affordance used by the standalone Add Meal screen.
+ * Shows the transient success affordance for the Meals-hosted Add Meal drawer.
  *
  * The animation is kept outside the scroll column so a successful save is visible even when the
  * drawer content is scrolled down to the parsed meal preview.

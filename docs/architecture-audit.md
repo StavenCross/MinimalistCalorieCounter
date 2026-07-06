@@ -16,7 +16,6 @@ Generated output, Gradle build folders, `node_modules`, and IDE metadata are exc
 | `app/src/main/java/com/makstuff/minimalistcaloriecounter/ui/screens/QuickImportControls.kt` | 515 | Compose Add Meal controls | Low, UI-file exception applies |
 | `app/src/main/java/com/makstuff/minimalistcaloriecounter/ui/settings/AppSettingsPage.kt` | 491 | Compose settings page | Low, UI-file exception applies |
 | `app/src/androidTest/java/com/makstuff/minimalistcaloriecounter/ui/screens/ScreenGoalsTest.kt` | 561 | Connected Compose regression tests | Low, test-file exception applies |
-| `app/src/androidTest/java/com/makstuff/minimalistcaloriecounter/ui/screens/ScreenQuickImportTest.kt` | 379 | Connected Compose regression tests | Low, test-file exception applies |
 
 All non-UI files touched in this cleanup are now under the 300-line cap:
 
@@ -88,7 +87,7 @@ All non-UI files touched in this cleanup are now under the 300-line cap:
   - automation navigation, Health Connect permission refresh, CSV bootstrap, and loading completion now live outside `App.kt`.
 - Extracted route host:
   - `ui/navigation/AppRouteHost.kt`
-  - modern Add Meal, Meals, Goals, Settings routes and legacy route registration now live outside `App.kt`.
+  - modern Meals, Goals, Settings routes and legacy route registration now live outside `App.kt`.
 - Extracted Health Connect sync dialogs:
   - `AppHealthConnectDialogs.kt`
   - progress, keep-screen-on behavior, and sync error confirmation now live outside `App.kt`.
@@ -109,19 +108,19 @@ All non-UI files touched in this cleanup are now under the 300-line cap:
   - `ui/navigation/legacy/LegacyDatabaseRoutes.kt`
   - `ui/navigation/legacy/LegacyDayRoutes.kt`
   - old archive, database, and day-builder routes are isolated from the modern Add Meal/Meals/Goals route host.
-- Extracted Add Meal destination dialog host:
-  - `ui/screens/QuickImportDestinationDialogHost.kt`
-  - Add Meal destination settings now live outside `App.kt`.
-  - the Add Meal destination bottom sheet implementation now lives with the host instead of inside `ScreenQuickImport.kt`.
+- Removed the deprecated standalone Add Meal route and destination settings drawer:
+  - Add Meal now opens only from the Meals day card.
+  - automation aliases such as `quick_add` and `quick_import` map to the Meals page for backward compatibility.
+  - Add Meal destination options remain always-on defaults for database backup, day backup, and Health Connect writes.
 - Extracted Add Meal nutrient detail components:
   - `ui/screens/QuickImportNutrientDetails.kt`
-  - food detail sheet and shared nutrient detail pills now live outside `ScreenQuickImport.kt`.
+  - food detail sheet and shared nutrient detail pills are shared by the Meals-hosted Add Meal drawer.
 - Extracted Add Meal meal/day display components:
   - `ui/screens/QuickImportMealComponents.kt`
-  - day summary, parsed meal preview, meal detail sheet, macro chips, food rows, and goal progress arcs now live outside `ScreenQuickImport.kt`.
+  - parsed meal preview, meal detail sheet, macro chips, food rows, and goal progress arcs are shared by the Meals-hosted Add Meal drawer.
 - Extracted Add Meal controls:
   - `ui/screens/QuickImportControls.kt`
-  - success pill, capture card, outbox status card, meal time drawers, and meal type picker now live outside `ScreenQuickImport.kt`.
+  - success pill, capture card, outbox status card, meal time drawers, and meal type picker are shared by the Meals-hosted Add Meal drawer.
 - Extracted Health Connect Meals display components:
   - `ui/screens/HealthNutritionMealComponents.kt`
   - meal cards, food rows, detail drawers, macro grids, and status/section primitives now live outside `ScreenHealthConnectNutrition.kt`.
@@ -158,7 +157,7 @@ All non-UI files touched in this cleanup are now under the 300-line cap:
 - Added meal repeat preparation through Add Meal so repeat writes reuse the existing parser, outbox, and Health Connect commit flow.
 - Added the Meals-hosted Add Meal drawer:
   - `ui/screens/MealsAddMealDrawer.kt`
-  - the primary add workflow now opens from the Meals day card while preserving the legacy hidden Quick Import route for automation and fallback.
+  - the primary add workflow now opens from the Meals day card; the legacy hidden Quick Import route has been removed.
 - Added day check-in text export to Downloads and extracted a shared Downloads text writer for Health Connect CSV and check-in exports.
 - Added richer Goals recommendation history metadata and a compact history card so applied targets show their BMR/TDEE and measurement context.
 - Replaced the visible Goals recalculation card with a state-driven Goal Status surface. Health Connect profile values refresh quietly, recommendations appear only when target changes are meaningful, and review/apply details live in the bottom drawer.
@@ -197,7 +196,7 @@ All non-UI files touched in this cleanup are now under the 300-line cap:
 - MCP splits: `cd tools/mcc-mcp && npm test`
 - Full Android unit pass: `./gradlew testDebugUnitTest --console=plain`
 - Room foundation pass: `./gradlew testDebugUnitTest --tests '*persistence.room*' --console=plain`
-- Connected UI pass after screen or automation changes: focused `ScreenQuickImportTest`, `ScreenHealthConnectNutritionTest`, and `ScreenGoalsTest` instrumentation runs on the Fold emulator.
+- Connected UI pass after screen or automation changes: focused `ScreenHealthConnectNutritionActionsTest`, `ScreenHealthConnectNutritionTest`, and `ScreenGoalsTest` instrumentation runs on the Fold emulator.
 
 ## Refactor Risks
 

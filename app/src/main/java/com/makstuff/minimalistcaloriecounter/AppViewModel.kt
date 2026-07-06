@@ -68,7 +68,6 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     fun clearNavigationRequest(route: String? = null) = uiActions.clearNavigation(route)
     fun updateActiveSettingsSheet(sheet: SettingsSheet?) = uiActions.updateActiveSettingsSheet(sheet)
     fun openSettingsSheet(sheet: SettingsSheet?) = uiActions.openSettingsSheet(sheet)
-    fun updateQuickImportSettingsVisible(visible: Boolean) = uiActions.updateQuickImportSettingsVisible(visible)
     fun updateGoalsSettingsVisible(visible: Boolean) = goalsActions.updateSettingsVisible(visible)
     fun updateGoalBirthday(date: LocalDate?) = goalsActions.updateBirthday(date)
     fun updateGoalSex(sex: GoalSex) = goalsActions.updateSex(sex)
@@ -151,12 +150,6 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     fun updateQuickImportMealTypeOverride(mealType: QuickImportMealType) = quickImportActions.updateMealTypeOverride(mealType)
     fun prepareQuickImportRepeat(foods: List<HealthConnectNutritionMeal>, targetDate: LocalDate? = null) =
         quickImportRepeatActions.prepare(foods, targetDate)
-    fun toggleQuickImportAddFoodsToDatabase() = quickImportActions.toggleAddFoodsToDatabase()
-    fun updateQuickImportAddFoodsToDatabase(enabled: Boolean) = quickImportActions.updateAddFoodsToDatabase(enabled)
-    fun toggleQuickImportAddFoodsToDay() = quickImportActions.toggleAddFoodsToDay()
-    fun updateQuickImportAddFoodsToDay(enabled: Boolean) = quickImportActions.updateAddFoodsToDay(enabled)
-    fun toggleQuickImportWriteHealthConnect() = quickImportActions.toggleWriteHealthConnect()
-    fun updateQuickImportWriteHealthConnect(enabled: Boolean) = quickImportActions.updateWriteHealthConnect(enabled)
     fun quickImportCommit(context: Context) = quickImportActions.commit(context)
     fun quickImportRetryHealthConnect(context: Context, outboxId: String) = quickImportRetryActions.retry(context, outboxId)
     fun quickImportClearOutbox(context: Context, outboxId: String?, attentionOnly: Boolean) =

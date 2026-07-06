@@ -27,7 +27,8 @@ curl http://127.0.0.1:18765/health
 - `GET /state`
   - Returns UI state, Health Connect status, Add Meal parse state, Add Meal outbox state, selected Meals date, and loaded Health Connect meals.
 - `POST /navigate`
-  - Body: `{ "screen": "quick_add" | "meals" | "settings" | "database" | "day" }`
+  - Body: `{ "screen": "quick_add" | "quick_import" | "add_meal" | "meals" | "settings" | "database" | "day" }`
+  - `quick_add`, `quick_import`, and `add_meal` are compatibility aliases for the Meals page, where the Add Meal drawer now lives.
 - `POST /settings/open`
   - Body: `{ "sheet": "health_data" | "import_tools" | "theme" | "maintenance" | null }`
 - `POST /quick-import/preview`

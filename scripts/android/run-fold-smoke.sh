@@ -32,7 +32,7 @@ fi
 
 INSTRUMENT_OUTPUT="$(mktemp)"
 "$ADB" -s "$SERIAL" shell am instrument -w \
-  -e class com.makstuff.minimalistcaloriecounter.ui.screens.ScreenQuickImportTest \
+  -e class com.makstuff.minimalistcaloriecounter.ui.screens.ScreenHealthConnectNutritionActionsTest \
   "$TEST_PACKAGE/$RUNNER" | tee "$INSTRUMENT_OUTPUT"
 if grep -Eq "FAILURES!!!|There (was|were) [0-9]+ failure" "$INSTRUMENT_OUTPUT"; then
   exit 1

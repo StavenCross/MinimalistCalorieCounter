@@ -34,7 +34,7 @@ printf '\n'
 
 curl --silent --fail \
   -H 'content-type: application/json' \
-  -d '{"text":"100g test oats; Calories 389, Fat 6.9g, Sat Fat 1.2g, Trans Fat 0g, Cholesterol 0mg, Sodium 2mg, Carbs 66.3g, Fiber 10.6g, Sugar 0.9g, Added Sugar 0g, Protein 16.9g. Meal totals; Calories 389, Fat 6.9g, Sat Fat 1.2g, Trans Fat 0g, Cholesterol 0mg, Sodium 2mg, Carbs 66.3g, Fiber 10.6g, Sugar 0.9g, Added Sugar 0g, Protein 16.9g.","dateTime":"2026-07-02T12:00:00","snackOverride":false,"addDatabase":false,"addDay":false,"writeHealthConnect":false}' \
+  -d '{"text":"100g test oats; Calories 389, Fat 6.9g, Sat Fat 1.2g, Trans Fat 0g, Cholesterol 0mg, Sodium 2mg, Carbs 66.3g, Fiber 10.6g, Sugar 0.9g, Added Sugar 0g, Protein 16.9g. Meal totals; Calories 389, Fat 6.9g, Sat Fat 1.2g, Trans Fat 0g, Cholesterol 0mg, Sodium 2mg, Carbs 66.3g, Fiber 10.6g, Sugar 0.9g, Added Sugar 0g, Protein 16.9g.","dateTime":"2026-07-02T12:00:00","snackOverride":false}' \
   "http://127.0.0.1:${HOST_PORT}/quick-import/preview"
 printf '\n'
 

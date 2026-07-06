@@ -99,15 +99,19 @@ object AutomationBootstrap {
                     viewModel.openSettingsSheet(sheet)
                     JSONObject().put("route", AppRoutes.SETTINGS_HOME).put("sheet", sheet?.key)
                 })
-                "POST" to "/quick-import/preview" -> ok(runOnMain {
-                    applyQuickImportBody(body)
-                    quickImportJson()
-                })
-                "POST" to "/quick-import/commit" -> ok(runOnMain {
-                    applyQuickImportBody(body)
-                    viewModel.quickImportCommit(context)
-                    JSONObject().put("started", true).put("quickImport", quickImportJson())
-                })
+                "POST" to "/quick-import/preview" -> guardedQuickImportRequest(body) {
+                    ok(runOnMain {
+                        applyQuickImportBody(body)
+                        quickImportJson()
+                    })
+                }
+                "POST" to "/quick-import/commit" -> guardedQuickImportRequest(body) {
+                    ok(runOnMain {
+                        applyQuickImportBody(body)
+                        viewModel.quickImportCommit(context)
+                        JSONObject().put("started", true).put("quickImport", quickImportJson())
+                    })
+                }
                 "POST" to "/quick-import/retry" -> ok(runOnMain {
                     val outboxId = body.requireString("id")
                     viewModel.quickImportRetryHealthConnect(context, outboxId)
@@ -185,7 +189,6 @@ object AutomationBootstrap {
                 "POST" to "/reset-debug-state" -> ok(runOnMain {
                     viewModel.resetQuickImport()
                     viewModel.updateActiveSettingsSheet(null)
-                    viewModel.updateQuickImportSettingsVisible(false)
                     JSONObject().put("reset", true)
                 })
                 else -> jsonResponse(
@@ -200,9 +203,6 @@ object AutomationBootstrap {
             if (body.has("dateTime")) viewModel.updateQuickImportDateTime(LocalDateTime.parse(body.requireString("dateTime")))
             if (body.has("mealType")) viewModel.updateQuickImportMealTypeOverride(QuickImportMealType.valueOf(body.requireString("mealType")))
             if (body.has("snackOverride")) viewModel.updateQuickImportSnackOverride(body.optBoolean("snackOverride"))
-            if (body.has("addDatabase")) viewModel.updateQuickImportAddFoodsToDatabase(body.optBoolean("addDatabase"))
-            if (body.has("addDay")) viewModel.updateQuickImportAddFoodsToDay(body.optBoolean("addDay"))
-            if (body.has("writeHealthConnect")) viewModel.updateQuickImportWriteHealthConnect(body.optBoolean("writeHealthConnect"))
         }
 
         private fun stateJson(): JSONObject = runOnMain {
@@ -213,7 +213,6 @@ object AutomationBootstrap {
                 .put("navigation", state.navigationBarHighlight.name)
                 .put("automationRouteRequest", state.automationRouteRequest)
                 .put("activeSettingsSheet", state.activeSettingsSheet?.key)
-                .put("quickImportSettingsVisible", state.quickImportSettingsVisible)
                 .put("healthConnectPermissionsGranted", state.healthConnectPermissionsGranted)
                 .put("healthConnectExportPermissionsGranted", state.healthConnectExportPermissionsGranted)
                 .put("healthConnectAnyPermissionsGranted", state.healthConnectAnyPermissionsGranted)
