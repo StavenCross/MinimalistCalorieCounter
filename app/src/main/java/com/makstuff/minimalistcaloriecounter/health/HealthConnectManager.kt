@@ -11,7 +11,9 @@ import androidx.health.connect.client.records.HeightRecord
 import androidx.health.connect.client.records.LeanBodyMassRecord
 import androidx.health.connect.client.records.NutritionRecord
 import androidx.health.connect.client.records.WeightRecord
+import androidx.health.connect.client.request.ReadRecordsRequest
 import com.makstuff.minimalistcaloriecounter.R
+import com.makstuff.minimalistcaloriecounter.classes.GoalHistoryEntry
 import com.makstuff.minimalistcaloriecounter.classes.Archive
 import com.makstuff.minimalistcaloriecounter.classes.HistoricalMealFood
 import com.makstuff.minimalistcaloriecounter.classes.Nutrients
@@ -108,6 +110,16 @@ class HealthConnectManager(private val context: Context) {
 
     private suspend fun hasNutritionMutationPermissions(): Boolean = hasPermissions(HealthConnectPermissionScope.MutateNutritionRecords)
 
+    private suspend fun hasGoalWeightMutationPermissions(): Boolean {
+        val client = getClient() ?: return false
+        return try {
+            val permissions = client.permissionController.getGrantedPermissions()
+            permissions.containsAll(readGoalProfilePermissions + writeGoalProfilePermissions)
+        } catch (_: Throwable) {
+            false
+        }
+    }
+
     suspend fun exportHealthConnectCsv(
         startDate: LocalDate,
         endDate: LocalDate,
@@ -202,6 +214,43 @@ class HealthConnectManager(private val context: Context) {
         val client = getClient() ?: return HealthConnectDeleteResult.HealthConnectUnavailable
         if (!hasNutritionMutationPermissions()) return HealthConnectDeleteResult.PermissionsMissing
         return HealthConnectNutritionService(context, client).deleteNutritionMeals(recordIds)
+    }
+
+    suspend fun deleteGoalHistoryWeight(entry: GoalHistoryEntry): HealthConnectDeleteResult {
+        val targetWeightKg = entry.weightKg ?: return HealthConnectDeleteResult.Success
+        if (!isSdkAvailable()) return HealthConnectDeleteResult.HealthConnectUnavailable
+        val client = getClient() ?: return HealthConnectDeleteResult.HealthConnectUnavailable
+        if (!hasGoalWeightMutationPermissions()) return HealthConnectDeleteResult.PermissionsMissing
+        return try {
+            val start = entry.effectiveDate.atStartOfDay(java.time.ZoneId.systemDefault()).toInstant()
+            val end = entry.effectiveDate.plusDays(1).atStartOfDay(java.time.ZoneId.systemDefault()).toInstant()
+            val records = client.readRecords(
+                ReadRecordsRequest(
+                    recordType = WeightRecord::class,
+                    timeRangeFilter = androidx.health.connect.client.time.TimeRangeFilter.between(start, end),
+                    ascendingOrder = false,
+                )
+            ).records
+            val recordIds = records
+                .filter { record ->
+                    record.metadata.clientRecordId?.startsWith(GOAL_WEIGHT_CLIENT_RECORD_PREFIX) == true &&
+                        kotlin.math.abs(record.weight.inKilograms - targetWeightKg) <= GOAL_WEIGHT_MATCH_KG_TOLERANCE
+                }
+                .map { it.metadata.id }
+                .filter { it.isNotBlank() }
+            if (recordIds.isNotEmpty()) {
+                client.deleteRecords(
+                    WeightRecord::class,
+                    recordIdsList = recordIds,
+                    clientRecordIdsList = emptyList(),
+                )
+            }
+            HealthConnectDeleteResult.Success
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
+        } catch (e: Throwable) {
+            HealthConnectDeleteResult.Failed(e.message ?: "Unknown Health Connect weight delete error")
+        }
     }
 
     suspend fun writeHistoricalMealFoods(

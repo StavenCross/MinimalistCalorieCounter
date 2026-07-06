@@ -9,6 +9,9 @@ import androidx.health.connect.client.units.Mass
 import java.time.Instant
 import java.time.ZoneId
 
+internal const val GOAL_WEIGHT_CLIENT_RECORD_PREFIX = "mcc-goal-weight-"
+internal const val GOAL_WEIGHT_MATCH_KG_TOLERANCE = 0.05
+
 internal class HealthConnectGoalProfileWriter(
     private val client: HealthConnectClient,
 ) {
@@ -37,7 +40,7 @@ internal class HealthConnectGoalProfileWriter(
                             time = now,
                             zoneOffset = offset,
                             weight = Mass.kilograms(weightKg),
-                            metadata = Metadata.manualEntry("mcc-goal-weight-$recordSuffix", 1L),
+                            metadata = Metadata.manualEntry("$GOAL_WEIGHT_CLIENT_RECORD_PREFIX$recordSuffix", 1L),
                         )
                     )
                 }

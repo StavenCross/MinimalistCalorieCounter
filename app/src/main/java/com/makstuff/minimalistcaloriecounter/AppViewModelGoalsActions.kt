@@ -3,12 +3,14 @@ package com.makstuff.minimalistcaloriecounter
 import com.makstuff.minimalistcaloriecounter.classes.ActivityLevel
 import com.makstuff.minimalistcaloriecounter.classes.GoalCalculator
 import com.makstuff.minimalistcaloriecounter.classes.GoalFieldKey
+import com.makstuff.minimalistcaloriecounter.classes.GoalHistoryEntry
 import com.makstuff.minimalistcaloriecounter.classes.GoalMacro
 import com.makstuff.minimalistcaloriecounter.classes.GoalMeasurement
 import com.makstuff.minimalistcaloriecounter.classes.GoalSex
 import com.makstuff.minimalistcaloriecounter.classes.WeeklyWeightLossTarget
 import com.makstuff.minimalistcaloriecounter.classes.onlyIfMeaningfulComparedTo
 import com.makstuff.minimalistcaloriecounter.classes.toHistoryEntry
+import com.makstuff.minimalistcaloriecounter.health.HealthConnectDeleteResult
 import com.makstuff.minimalistcaloriecounter.health.HealthConnectGoalProfileReadResult
 import com.makstuff.minimalistcaloriecounter.health.HealthConnectGoalProfileWriteResult
 import kotlinx.coroutines.flow.update
@@ -153,6 +155,33 @@ internal class AppViewModelGoalsActions(private val env: AppViewModelEnvironment
         writeGoals()
     }
 
+    fun deleteHistoryEntry(entry: GoalHistoryEntry) {
+        env.state.update { currentState ->
+            val remaining = currentState.goals.history.filterNot { it.sameHistoryEntry(entry) }
+            val nextTargets = remaining
+                .filter { !it.effectiveDate.isAfter(LocalDate.now()) }
+                .maxByOrNull { it.effectiveDate }
+                ?.targets
+                ?: currentState.goals.currentTargets
+            currentState.copy(
+                goals = currentState.goals.copy(
+                    currentTargets = nextTargets,
+                    history = remaining,
+                    message = "Deleted saved goal.",
+                )
+            )
+        }
+        writeGoals()
+        env.scope.launch {
+            when (val result = env.healthConnectManager.deleteGoalHistoryWeight(entry)) {
+                HealthConnectDeleteResult.Success -> Unit
+                HealthConnectDeleteResult.HealthConnectUnavailable -> setGoalMessage("Deleted saved goal. Health Connect is unavailable for weight cleanup.")
+                HealthConnectDeleteResult.PermissionsMissing -> setGoalMessage("Deleted saved goal. Health Connect weight permissions are missing.")
+                is HealthConnectDeleteResult.Failed -> setGoalMessage("Deleted saved goal. Weight cleanup failed: ${result.message}")
+            }
+        }
+    }
+
     fun refreshFromHealthConnect() {
         env.state.update { currentState ->
             currentState.copy(goals = currentState.goals.copy(message = "Reading Health Connect profile data..."))
@@ -232,5 +261,14 @@ internal class AppViewModelGoalsActions(private val env: AppViewModelEnvironment
             currentState.copy(goals = currentState.goals.copy(message = message))
         }
         writeGoals()
+    }
+
+    private fun GoalHistoryEntry.sameHistoryEntry(other: GoalHistoryEntry): Boolean {
+        return effectiveDate == other.effectiveDate &&
+            targets == other.targets &&
+            generatedDate == other.generatedDate &&
+            weightKg == other.weightKg &&
+            leanMassKg == other.leanMassKg &&
+            bodyFatPercent == other.bodyFatPercent
     }
 }

@@ -9,6 +9,7 @@ import com.makstuff.minimalistcaloriecounter.classes.Archive
 import com.makstuff.minimalistcaloriecounter.classes.Combo
 import com.makstuff.minimalistcaloriecounter.classes.DatabaseEntry
 import com.makstuff.minimalistcaloriecounter.classes.GoalFieldKey
+import com.makstuff.minimalistcaloriecounter.classes.GoalHistoryEntry
 import com.makstuff.minimalistcaloriecounter.classes.GoalMacro
 import com.makstuff.minimalistcaloriecounter.classes.GoalSex
 import com.makstuff.minimalistcaloriecounter.classes.NutritionFoodEditDraft
@@ -80,6 +81,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     fun recalculateGoalRecommendation(date: LocalDate = LocalDate.now()) = goalsActions.recalculateRecommendation(date)
     fun applyGoalRecommendation(date: LocalDate = LocalDate.now()) = goalsActions.applyRecommendation(date)
     fun dismissGoalRecommendation() = goalsActions.dismissRecommendation()
+    fun deleteGoalHistoryEntry(entry: GoalHistoryEntry) = goalsActions.deleteHistoryEntry(entry)
     fun refreshGoalsFromHealthConnect() = goalsActions.refreshFromHealthConnect()
     fun readHealthConnectNutritionMeals(date: LocalDate? = null, showLoading: Boolean = true) =
         healthConnectMealActions.readMeals(date, showLoading)

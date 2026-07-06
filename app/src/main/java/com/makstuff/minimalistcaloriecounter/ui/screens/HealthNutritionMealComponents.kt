@@ -697,7 +697,9 @@ private fun EditNumberField(
         onValueChange = onValueChange,
         label = { Text(label) },
         singleLine = true,
-        modifier = modifier.onFocusChanged { if (!it.isFocused) onBlur() },
+        modifier = modifier
+            .testTag("meals_food_edit_${label.lowercase().replace(" ", "_")}")
+            .onFocusChanged { if (!it.isFocused) onBlur() },
     )
 }
 

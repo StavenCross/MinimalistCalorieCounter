@@ -25,6 +25,8 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.makstuff.minimalistcaloriecounter.AppUiState
 import com.makstuff.minimalistcaloriecounter.classes.Archive
 import com.makstuff.minimalistcaloriecounter.classes.Combo
+import com.makstuff.minimalistcaloriecounter.classes.Goals
+import com.makstuff.minimalistcaloriecounter.classes.MacroTargets
 import com.makstuff.minimalistcaloriecounter.health.HealthConnectNutritionMeal
 import com.makstuff.minimalistcaloriecounter.ui.theme.AppTheme
 import org.junit.Assert.assertTrue
@@ -337,7 +339,7 @@ class ScreenHealthConnectNutritionTest {
 
         composeRule.onNodeWithText("100 g test oats").assertIsDisplayed().performClick()
         composeRule.onNodeWithTag("meals_food_delete").assertIsDisplayed()
-        composeRule.onNodeWithText("Calories").assertIsDisplayed()
+        composeRule.onNodeWithTag("meals_food_edit_calories").assertIsDisplayed()
         composeRule.onAllNodesWithContentDescription("Edit food").assertCountEquals(0)
         composeRule.onAllNodesWithText("Delete food").assertCountEquals(0)
         composeRule.onAllNodesWithText("Close").assertCountEquals(0)
@@ -370,8 +372,8 @@ class ScreenHealthConnectNutritionTest {
         }
 
         composeRule.onNodeWithText("100 g test oats").assertIsDisplayed().performClick()
-        composeRule.onNodeWithText("Calories").performTextClearance()
-        composeRule.onNodeWithText("Calories").performTextInput("405")
+        composeRule.onNodeWithTag("meals_food_edit_calories").performTextClearance()
+        composeRule.onNodeWithTag("meals_food_edit_calories").performTextInput("405")
         composeRule.onNodeWithTag("meals_food_detail_sheet").performTouchInput { swipeDown() }
 
         composeRule.waitUntil(timeoutMillis = 2_000) { saved }
@@ -409,9 +411,9 @@ class ScreenHealthConnectNutritionTest {
         }
 
         composeRule.onNodeWithText("100 g test oats").assertIsDisplayed().performClick()
-        composeRule.onNodeWithText("Calories").performTextClearance()
-        composeRule.onNodeWithText("Calories").performTextInput("405")
-        composeRule.onAllNodesWithText("Carbs")[1].performClick()
+        composeRule.onNodeWithTag("meals_food_edit_calories").performTextClearance()
+        composeRule.onNodeWithTag("meals_food_edit_calories").performTextInput("405")
+        composeRule.onNodeWithTag("meals_food_edit_carbs").performClick()
 
         composeRule.waitUntil(timeoutMillis = 2_000) { saved }
         composeRule.onNodeWithTag("meals_food_detail_sheet").assertIsDisplayed()
@@ -419,7 +421,7 @@ class ScreenHealthConnectNutritionTest {
     }
 
     @Test
-    fun goalProgressArcsStayVisibleWhenTargetsAreMissing() {
+    fun dayMacroCardsStayVisibleWhenTargetsAreMissing() {
         composeRule.setContent {
             AppTheme(dynamicColor = false) {
                 ScreenHealthConnectNutrition(
@@ -442,11 +444,11 @@ class ScreenHealthConnectNutritionTest {
             }
         }
 
-        composeRule.onNodeWithContentDescription("Calories goal progress").assertIsDisplayed()
-        composeRule.onNodeWithContentDescription("Protein goal progress").assertIsDisplayed()
-        composeRule.onNodeWithContentDescription("Carbs goal progress").assertIsDisplayed()
-        composeRule.onNodeWithContentDescription("Fat goal progress").assertIsDisplayed()
-        composeRule.onNodeWithContentDescription("Fiber goal progress").assertIsDisplayed()
+        composeRule.onNodeWithTag("day_calories_progress", useUnmergedTree = true).assertIsDisplayed()
+        composeRule.onNodeWithTag("day_macro_carbs", useUnmergedTree = true).assertIsDisplayed()
+        composeRule.onNodeWithTag("day_macro_protein", useUnmergedTree = true).assertIsDisplayed()
+        composeRule.onNodeWithTag("day_macro_fat", useUnmergedTree = true).assertIsDisplayed()
+        composeRule.onNodeWithTag("day_macro_fiber", useUnmergedTree = true).assertIsDisplayed()
     }
 
     @Test
@@ -477,6 +479,128 @@ class ScreenHealthConnectNutritionTest {
         composeRule.onAllNodesWithTag("meal_macro_protein", useUnmergedTree = true)[0].performScrollTo().assertIsDisplayed()
         composeRule.onAllNodesWithTag("meal_macro_fat", useUnmergedTree = true)[0].performScrollTo().assertIsDisplayed()
         composeRule.onAllNodesWithTag("meal_macro_fiber", useUnmergedTree = true)[0].performScrollTo().assertIsDisplayed()
+    }
+
+    @Test
+    fun daySummaryShowsCompactMetricCards() {
+        composeRule.setContent {
+            AppTheme(dynamicColor = false) {
+                ScreenHealthConnectNutrition(
+                    uiState = baseState().copy(
+                        healthConnectViewerDate = LocalDate.of(2026, 7, 2),
+                        healthConnectViewerLoading = false,
+                        healthConnectViewerMessage = null,
+                        healthConnectViewerMeals = listOf(sampleMeal()),
+                    ),
+                    onDateChange = {},
+                    onRefresh = {},
+                    onDeleteMeal = {},
+                    onDeleteMealGroup = {},
+                    onAddFoodServing = {},
+                    onRemoveFoodServing = {},
+                    onSaveFoodServingGroup = { _, _ -> },
+                    onRepeatMealGroup = { _, _ -> },
+                    onExportDaySummary = { _, _ -> },
+                )
+            }
+        }
+
+        composeRule.onNodeWithTag("day_macro_carbs", useUnmergedTree = true).assertIsDisplayed()
+        composeRule.onNodeWithTag("day_macro_protein", useUnmergedTree = true).assertIsDisplayed()
+        composeRule.onNodeWithTag("day_macro_fat", useUnmergedTree = true).assertIsDisplayed()
+        composeRule.onNodeWithTag("day_macro_fiber", useUnmergedTree = true).assertIsDisplayed()
+    }
+
+    @Test
+    fun tappingCaloriesProgressCardShowsTemporaryDescription() {
+        composeRule.setContent {
+            AppTheme(dynamicColor = false) {
+                ScreenHealthConnectNutrition(
+                    uiState = baseState().copy(
+                        healthConnectViewerDate = LocalDate.of(2026, 7, 2),
+                        healthConnectViewerLoading = false,
+                        healthConnectViewerMessage = null,
+                        healthConnectViewerMeals = listOf(sampleMeal()),
+                    ),
+                    onDateChange = {},
+                    onRefresh = {},
+                    onDeleteMeal = {},
+                    onDeleteMealGroup = {},
+                    onAddFoodServing = {},
+                    onRemoveFoodServing = {},
+                    onSaveFoodServingGroup = { _, _ -> },
+                    onRepeatMealGroup = { _, _ -> },
+                    onExportDaySummary = { _, _ -> },
+                )
+            }
+        }
+
+        composeRule.onNodeWithTag("day_calories_progress", useUnmergedTree = true).performClick()
+        composeRule.onNodeWithText("Calories are the meal's usable energy.").assertIsDisplayed()
+    }
+
+    @Test
+    fun dayCaloriesHeaderShowsRemainingCaloriesHint() {
+        composeRule.setContent {
+            AppTheme(dynamicColor = false) {
+                ScreenHealthConnectNutrition(
+                    uiState = baseState().copy(
+                        goals = Goals(currentTargets = MacroTargets(calories = 500.0)),
+                        healthConnectViewerDate = LocalDate.of(2026, 7, 2),
+                        healthConnectViewerLoading = false,
+                        healthConnectViewerMessage = null,
+                        healthConnectViewerMeals = listOf(sampleMeal()),
+                    ),
+                    onDateChange = {},
+                    onRefresh = {},
+                    onDeleteMeal = {},
+                    onDeleteMealGroup = {},
+                    onAddFoodServing = {},
+                    onRemoveFoodServing = {},
+                    onSaveFoodServingGroup = { _, _ -> },
+                    onRepeatMealGroup = { _, _ -> },
+                    onExportDaySummary = { _, _ -> },
+                )
+            }
+        }
+
+        composeRule.onNodeWithTag("day_remaining_calories", useUnmergedTree = true)
+            .assertIsDisplayed()
+            .performClick()
+        composeRule.onNodeWithText("111").assertIsDisplayed()
+        composeRule.onNodeWithText("Remaining calories left for today.").assertIsDisplayed()
+    }
+
+    @Test
+    fun dayCaloriesHeaderShowsExceededCaloriesHint() {
+        composeRule.setContent {
+            AppTheme(dynamicColor = false) {
+                ScreenHealthConnectNutrition(
+                    uiState = baseState().copy(
+                        goals = Goals(currentTargets = MacroTargets(calories = 300.0)),
+                        healthConnectViewerDate = LocalDate.of(2026, 7, 2),
+                        healthConnectViewerLoading = false,
+                        healthConnectViewerMessage = null,
+                        healthConnectViewerMeals = listOf(sampleMeal()),
+                    ),
+                    onDateChange = {},
+                    onRefresh = {},
+                    onDeleteMeal = {},
+                    onDeleteMealGroup = {},
+                    onAddFoodServing = {},
+                    onRemoveFoodServing = {},
+                    onSaveFoodServingGroup = { _, _ -> },
+                    onRepeatMealGroup = { _, _ -> },
+                    onExportDaySummary = { _, _ -> },
+                )
+            }
+        }
+
+        composeRule.onNodeWithTag("day_remaining_calories", useUnmergedTree = true)
+            .assertIsDisplayed()
+            .performClick()
+        composeRule.onNodeWithText("-89").assertIsDisplayed()
+        composeRule.onNodeWithText("Exceeded total calories for the day.").assertIsDisplayed()
     }
 
     @Test
@@ -516,7 +640,7 @@ class ScreenHealthConnectNutritionTest {
     }
 
     @Test
-    fun tappingMacroProgressShowsTemporaryDescription() {
+    fun tappingDayMacroCardShowsTemporaryDescription() {
         composeRule.setContent {
             AppTheme(dynamicColor = false) {
                 ScreenHealthConnectNutrition(
@@ -539,7 +663,7 @@ class ScreenHealthConnectNutritionTest {
             }
         }
 
-        composeRule.onNodeWithContentDescription("Fat goal progress").performClick()
+        composeRule.onNodeWithTag("day_macro_fat", useUnmergedTree = true).performClick()
         composeRule.onNodeWithText("Fat is dietary fat grams, including saturated fat.").assertIsDisplayed()
     }
 

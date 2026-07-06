@@ -1,7 +1,9 @@
 package com.makstuff.minimalistcaloriecounter.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -16,6 +18,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.DirectionsWalk
 import androidx.compose.material.icons.automirrored.filled.TrendingDown
 import androidx.compose.material.icons.filled.BakeryDining
 import androidx.compose.material.icons.filled.Check
@@ -29,16 +32,20 @@ import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.MonitorHeart
 import androidx.compose.material.icons.filled.OilBarrel
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PieChart
 import androidx.compose.material.icons.filled.QueryStats
 import androidx.compose.material.icons.filled.Scale
 import androidx.compose.material.icons.filled.TrackChanges
 import androidx.compose.material.icons.filled.SelfImprovement
+import androidx.compose.material.icons.filled.Straighten
+import androidx.compose.material.icons.filled.Today
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -50,6 +57,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -239,6 +248,7 @@ internal fun GoalsDetailsSheet(
     onRecalculate: () -> Unit,
     onApplyRecommendation: () -> Unit,
     onDismissRecommendation: () -> Unit,
+    onHistoryEntryClick: (GoalHistoryEntry) -> Unit = {},
 ) {
     Column(
         modifier = Modifier
@@ -273,7 +283,7 @@ internal fun GoalsDetailsSheet(
         } else {
             DailyMacroPlanCard(targets = targets)
             if (goals.history.isNotEmpty()) {
-                GoalHistoryCard(entries = goals.history)
+                GoalHistoryCard(entries = goals.history, onEntryClick = onHistoryEntryClick)
             }
             BodyDetailsCard(profile = goals.profile)
         }
@@ -452,7 +462,10 @@ private fun progressFraction(value: Double, target: Double?): Double {
 }
 
 @Composable
-internal fun GoalHistoryCard(entries: List<GoalHistoryEntry>) {
+internal fun GoalHistoryCard(
+    entries: List<GoalHistoryEntry>,
+    onEntryClick: (GoalHistoryEntry) -> Unit = {},
+) {
     val orderedEntries = entries.sortedBy { it.effectiveDate }.takeLast(6)
     val recentEntries = entries.sortedByDescending { it.effectiveDate }.take(3)
     SurfacePanel(
@@ -480,7 +493,11 @@ internal fun GoalHistoryCard(entries: List<GoalHistoryEntry>) {
             HistoryTrendStrip(entries = orderedEntries)
         }
         recentEntries.forEachIndexed { index, entry ->
-            GoalHistoryDecisionCard(entry = entry, previous = recentEntries.getOrNull(index + 1))
+            GoalHistoryDecisionCard(
+                entry = entry,
+                previous = recentEntries.getOrNull(index + 1),
+                onSelect = { onEntryClick(entry) },
+            )
         }
     }
 }
@@ -568,7 +585,11 @@ private fun HistoryTrendStrip(entries: List<GoalHistoryEntry>) {
 }
 
 @Composable
-private fun GoalHistoryDecisionCard(entry: GoalHistoryEntry, previous: GoalHistoryEntry?) {
+private fun GoalHistoryDecisionCard(
+    entry: GoalHistoryEntry,
+    previous: GoalHistoryEntry?,
+    onSelect: () -> Unit,
+) {
     val delta = previous?.targets?.calories?.let { previousCalories ->
         entry.targets.calories?.minus(previousCalories)
     }
@@ -578,42 +599,56 @@ private fun GoalHistoryDecisionCard(entry: GoalHistoryEntry, previous: GoalHisto
         entry.leanMassKg?.let { GoalContextChip(Icons.Default.FitnessCenter, AccentProtein, "${it.toImperialPounds()} lb lean", "Lean mass") },
         entry.weightLossTarget?.let { GoalContextChip(Icons.Default.TrackChanges, AccentGoals, it.label, "Weight loss target") },
     )
-    SurfacePanel(
-        backgroundColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-        borderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.12f),
-        contentPadding = 12,
-        verticalSpacing = 9,
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .testTag("goals_history_entry_${entry.effectiveDate}")
+            .clickable(onClick = onSelect)
+            .semantics {
+                onClick(label = "Delete saved goal") {
+                    onSelect()
+                    true
+                }
+            },
+        shape = MaterialTheme.shapes.medium,
+        color = MaterialTheme.colorScheme.surfaceContainerHighest,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.12f)),
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
-            verticalAlignment = Alignment.CenterVertically,
+        Column(
+            modifier = Modifier.padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(9.dp),
         ) {
-            TimelineBadge(delta = delta)
-            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                TimelineBadge(delta = delta)
+                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Text(
+                        text = if (isFirstSavedGoal) "Started goal" else "Updated goal",
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                    Text(
+                        text = "${entry.effectiveDate.monthValue}/${entry.effectiveDate.dayOfMonth}",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
                 Text(
-                    text = if (isFirstSavedGoal) "Started goal" else "Updated goal",
-                    style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.SemiBold,
-                )
-                Text(
-                    text = "${entry.effectiveDate.monthValue}/${entry.effectiveDate.dayOfMonth}",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    text = entry.targets.calories.formatTarget("kcal"),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                 )
             }
-            Text(
-                text = entry.targets.calories.formatTarget("kcal"),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-        }
-        if (contextChips.isNotEmpty()) {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                contextChips.take(3).forEach { chip ->
-                    GoalContextChipView(chip = chip, modifier = Modifier.weight(1f))
+            if (contextChips.isNotEmpty()) {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                    contextChips.take(3).forEach { chip ->
+                        GoalContextChipView(chip = chip, modifier = Modifier.weight(1f))
+                    }
                 }
             }
         }
@@ -855,7 +890,7 @@ internal fun BodyDetailsCard(profile: GoalProfile) {
             }
         }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-            BodyInputTile(Icons.Default.SelfImprovement, AccentProfile, "Height", profile.heightCm.heightImperialLabel(), profile.heightCm, Modifier.weight(1f))
+            BodyInputTile(Icons.Default.Straighten, AccentProfile, "Height", profile.heightCm.heightImperialLabel(), profile.heightCm, Modifier.weight(1f))
             BodyInputTile(Icons.Default.Scale, AccentProfile, "Weight", profile.weightKg.weightImperialLabel(), profile.weightKg, Modifier.weight(1f))
         }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
@@ -889,14 +924,11 @@ internal fun ProfileSnapshotCard(uiState: AppUiState) {
         ) {
             AccentIcon(Icons.Default.SelfImprovement, AccentProfile, 42)
             Text("Body profile", modifier = Modifier.weight(1f), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                profile.sex?.label?.let { ProfileSourceChip(it) }
-                profile.ageOn(LocalDate.now())?.let { ProfileSourceChip("${it}y") }
-                ProfileSourceChip(profile.activityLevel.label)
-            }
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+            ProfileFactCard(Icons.Default.Person, AccentProfile, "Sex", profile.sex?.label ?: "Required", Modifier.weight(1f))
+            ProfileFactCard(Icons.Default.Today, AccentGoals, "Age", profile.ageOn(LocalDate.now())?.let { "${it}y" } ?: "Required", Modifier.weight(1f))
+            ProfileFactCard(Icons.AutoMirrored.Filled.DirectionsWalk, AccentFiber, "Lifestyle", profile.activityLevel.label, Modifier.weight(1f))
         }
         MacroHintBox(label = "Weight", modifier = Modifier.testTag("goals_body_weight_card")) {
             SurfacePanel(
@@ -922,6 +954,13 @@ internal fun ProfileSnapshotCard(uiState: AppUiState) {
         }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
             BodyMetricChip(
+                icon = Icons.Default.Straighten,
+                color = AccentProfile,
+                label = "Height",
+                value = profile.heightCm.heightImperialLabel(),
+                modifier = Modifier.weight(1f),
+            )
+            BodyMetricChip(
                 icon = Icons.Default.PieChart,
                 color = AccentFat,
                 label = "Body fat",
@@ -936,6 +975,38 @@ internal fun ProfileSnapshotCard(uiState: AppUiState) {
                 statusLabel = null,
                 modifier = Modifier.weight(1f),
             )
+        }
+    }
+}
+
+@Composable
+private fun ProfileFactCard(
+    icon: ImageVector,
+    color: Color,
+    label: String,
+    value: String,
+    modifier: Modifier = Modifier,
+) {
+    MacroHintBox(label = label, modifier = modifier.testTag("goals_body_fact_${label.metricTag()}")) {
+        SurfacePanel(
+            backgroundColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+            borderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.12f),
+            contentPadding = 10,
+            verticalSpacing = 6,
+        ) {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                AccentIcon(icon, color, 30)
+                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(
+                        text = value,
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
         }
     }
 }
@@ -1037,25 +1108,6 @@ private fun ProfileStatusIconChip(label: String) {
 }
 
 @Composable
-private fun ProfileSourceChip(label: String) {
-    Box(
-        modifier = Modifier
-            .clip(MaterialTheme.shapes.small)
-            .background(MaterialTheme.colorScheme.surfaceContainerHighest)
-            .padding(horizontal = 7.dp, vertical = 3.dp),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelSmall,
-            fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            maxLines = 1,
-        )
-    }
-}
-
-@Composable
 internal fun RecentTrendCard(
     bodyCards: List<GoalTrendCard>,
     adherenceCards: List<GoalTrendCard>,
@@ -1068,7 +1120,7 @@ internal fun RecentTrendCard(
         verticalSpacing = 10,
     ) {
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
-            AccentIcon(Icons.Default.TrackChanges, AccentProfile, 42)
+            AccentIcon(Icons.Default.TrackChanges, AccentTrendTitle, 42)
             Text("Recent trend", modifier = Modifier.weight(1f), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
         }
         val primaryTrend = bodyCards.firstOrNull { it.label == "Weight" } ?: bodyCards.firstOrNull()
@@ -1152,9 +1204,10 @@ private fun String.trendMetricIcon(): ImageVector {
 
 private fun String.trendMetricColor(): Color {
     return when (this) {
-        "Body fat" -> AccentFat
-        "Lean mass" -> AccentProtein
-        else -> AccentProfile
+        "Weight" -> AccentTrendWeight
+        "Body fat" -> AccentTrendBodyFat
+        "Lean mass" -> AccentTrendLeanMass
+        else -> AccentTrendTitle
     }
 }
 
@@ -1183,5 +1236,9 @@ private val AccentProtein = Color(0xFFFF6E7F)
 private val AccentCarbs = Color(0xFFFFB74D)
 private val AccentFat = Color(0xFF64B5F6)
 private val AccentFiber = Color(0xFF81C784)
+private val AccentTrendTitle = Color(0xFFFF6E7F)
+private val AccentTrendWeight = Color(0xFF7DB7FF)
+private val AccentTrendBodyFat = Color(0xFF5CC8D7)
+private val AccentTrendLeanMass = Color(0xFFFF8A99)
 private val DeltaUpColor = Color(0xFF81C784)
 private val DeltaDownColor = Color(0xFFFF6E7F)

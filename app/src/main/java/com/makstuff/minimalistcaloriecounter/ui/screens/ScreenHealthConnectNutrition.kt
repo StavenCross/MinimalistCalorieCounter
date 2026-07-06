@@ -1,14 +1,13 @@
 package com.makstuff.minimalistcaloriecounter.ui.screens
 
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -55,27 +54,24 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.makstuff.minimalistcaloriecounter.AppUiState
 import com.makstuff.minimalistcaloriecounter.classes.MacroTargets
 import com.makstuff.minimalistcaloriecounter.classes.NutritionFoodEditDraft
 import com.makstuff.minimalistcaloriecounter.classes.QuickImportFood
 import com.makstuff.minimalistcaloriecounter.classes.QuickImportMealType
+import com.makstuff.minimalistcaloriecounter.classes.QuickImportNutrients
 import com.makstuff.minimalistcaloriecounter.essentials.toFormattedString
 import com.makstuff.minimalistcaloriecounter.health.HealthConnectNutritionMeal
 import com.makstuff.minimalistcaloriecounter.ui.model.NutritionMealGroup
-import com.makstuff.minimalistcaloriecounter.ui.model.macroProgressArc
-import com.makstuff.minimalistcaloriecounter.ui.model.macroSummaryItems
 import com.makstuff.minimalistcaloriecounter.ui.model.mealGroupKey
 import com.makstuff.minimalistcaloriecounter.ui.model.mealGroupSummaryText
 import com.makstuff.minimalistcaloriecounter.ui.model.mealGroups
@@ -411,51 +407,11 @@ private fun DaySummaryCard(
             .padding(14.dp),
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Top,
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = date.format(DateTimeFormatter.ofPattern("EEEE, MMM d")),
-                        style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    Text(
-                        text = if (isLoading) "Loading" else "${totals.energy.toFormattedString(true)} kcal",
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold,
-                    )
-                }
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                ) {
-                    Surface(
-                        shape = RoundedCornerShape(999.dp),
-                        color = AccentGold.copy(alpha = 0.16f),
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 7.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(5.dp),
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Restaurant,
-                                contentDescription = null,
-                                tint = AccentGold,
-                                modifier = Modifier.size(18.dp),
-                            )
-                            Text(
-                                text = if (isLoading) "Loading" else "${summary.foodCount} foods",
-                                style = MaterialTheme.typography.labelLarge,
-                                color = MaterialTheme.colorScheme.onSurface,
-                            )
-                        }
-                    }
-                }
-            }
+            DayCaloriesProgressHeader(
+                calories = if (isLoading) "Loading" else "${totals.energy.toFormattedString(true)} kcal",
+                remainingCalories = if (isLoading) null else targets.calories?.minus(totals.energy),
+                progress = summary.progress.calories,
+            )
             if (message != null && meals.isNotEmpty()) {
                 Text(
                     text = message,
@@ -464,13 +420,333 @@ private fun DaySummaryCard(
                 )
             }
             if (!isLoading) {
-                MacroGrid(
-                    items = macroSummaryItems(totals)
+                DayMacroProgressGrid(
+                    totals = totals,
+                    progress = summary.progress,
                 )
-                GoalProgressRow(summary.progress)
             }
         }
     }
+}
+
+@Composable
+private fun DayCaloriesProgressHeader(
+    calories: String,
+    remainingCalories: Double?,
+    progress: Double?,
+) {
+    val fraction = ((progress ?: 0.0) / 100.0).coerceIn(0.0, 1.0).toFloat()
+    val isExceeded = remainingCalories != null && remainingCalories < 0.0
+    val progressColor = if (isExceeded) HealthGoalOverage else AccentGold
+    val fillColor = if (isExceeded) HealthGoalOverage.overageMetricFill() else AccentGold.lightMetricFill()
+    val calorieIconColor = if (isExceeded) HealthGoalOverage.darkenedIcon() else AccentGold
+    MacroHintBox(label = "Calories", modifier = Modifier.fillMaxWidth()) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = 84.dp)
+                .clip(RoundedCornerShape(12.dp))
+                .background(progressColor.darkMetricTrack())
+                .border(
+                    BorderStroke(1.dp, progressColor.copy(alpha = 0.24f)),
+                    RoundedCornerShape(12.dp),
+                )
+                .testTag("day_calories_progress"),
+        ) {
+            Box(
+                modifier = Modifier
+                    .matchParentSize()
+                    .clip(RoundedCornerShape(12.dp)),
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth(fraction)
+                        .fillMaxHeight()
+                        .background(fillColor),
+                )
+            }
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 14.dp, vertical = 12.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Row(
+                    modifier = Modifier.weight(1f),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    OutlinedProgressIcon(
+                        icon = Icons.Default.LocalFireDepartment,
+                        label = "Calories",
+                        color = calorieIconColor,
+                    )
+                    Column(verticalArrangement = Arrangement.spacedBy(1.dp)) {
+                        Text(
+                            text = "Calories",
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                        Text(
+                            text = calories,
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                }
+                RemainingCaloriesChip(
+                    remainingCalories = remainingCalories,
+                    fillFraction = fraction,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun RemainingCaloriesChip(
+    remainingCalories: Double?,
+    fillFraction: Float,
+) {
+    val isExceeded = remainingCalories != null && remainingCalories < 0.0
+    val color = if (isExceeded) HealthGoalOverage else AccentGold
+    val iconColor = if (isExceeded) HealthGoalOverage.darkenedIcon() else AccentGold
+    val label = if (isExceeded) "Calories exceeded" else "Remaining calories"
+    val value = remainingCalories?.toFormattedString(true) ?: "Unset"
+    val borderColor = if (fillFraction >= CALORIE_CHIP_FILL_OVERLAP_THRESHOLD) {
+        Color.Black
+    } else {
+        color.copy(alpha = 0.24f)
+    }
+    MacroHintBox(label = label, modifier = Modifier.testTag("day_remaining_calories")) {
+        Surface(
+            shape = RoundedCornerShape(999.dp),
+            color = color.copy(alpha = 0.3f),
+            border = BorderStroke(1.dp, borderColor),
+        ) {
+            Row(
+                modifier = Modifier.padding(horizontal = 10.dp, vertical = 7.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(5.dp),
+            ) {
+                OutlinedProgressIcon(
+                    icon = Icons.Default.LocalFireDepartment,
+                    label = label,
+                    color = iconColor,
+                    backingSize = 21.dp,
+                    foregroundSize = 18.dp,
+                )
+                Text(
+                    text = value,
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
+    }
+}
+
+private data class DayMacroMetric(
+    val label: String,
+    val value: String,
+    val progress: Double?,
+    val icon: ImageVector,
+    val color: Color,
+    val testTag: String,
+)
+
+@Composable
+private fun DayMacroProgressGrid(
+    totals: QuickImportNutrients,
+    progress: MacroTargets,
+) {
+    val metrics = listOf(
+        DayMacroMetric(
+            label = "Carbs",
+            value = "${totals.carbohydrate.toFormattedString(true)}g",
+            progress = progress.carbs,
+            icon = Icons.Default.BakeryDining,
+            color = MacroCarbs,
+            testTag = "day_macro_carbs",
+        ),
+        DayMacroMetric(
+            label = "Protein",
+            value = "${totals.protein.toFormattedString(true)}g",
+            progress = progress.protein,
+            icon = Icons.Default.EggAlt,
+            color = MacroProtein,
+            testTag = "day_macro_protein",
+        ),
+        DayMacroMetric(
+            label = "Fat",
+            value = "${totals.fat.toFormattedString(true)}g",
+            progress = progress.fat,
+            icon = Icons.Default.OilBarrel,
+            color = MacroFat,
+            testTag = "day_macro_fat",
+        ),
+        DayMacroMetric(
+            label = "Fiber",
+            value = "${totals.fiber.toFormattedString(true)}g",
+            progress = progress.fiber,
+            icon = Icons.Default.Grass,
+            color = MacroFiber,
+            testTag = "day_macro_fiber",
+        ),
+    )
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        metrics.chunked(2).forEach { row ->
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                row.forEach { metric ->
+                    DayMacroProgressCard(metric = metric, modifier = Modifier.weight(1f))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun DayMacroProgressCard(
+    metric: DayMacroMetric,
+    modifier: Modifier = Modifier,
+) {
+    val fraction = ((metric.progress ?: 0.0) / 100.0).coerceIn(0.0, 1.0).toFloat()
+    MacroHintBox(label = metric.label, modifier = modifier) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = 56.dp)
+                .clip(RoundedCornerShape(8.dp))
+                .background(metric.color.darkMetricTrack())
+                .border(
+                    BorderStroke(1.dp, metric.color.copy(alpha = 0.22f)),
+                    RoundedCornerShape(8.dp),
+                )
+                .testTag(metric.testTag),
+        ) {
+            Box(
+                modifier = Modifier
+                    .matchParentSize()
+                    .clip(RoundedCornerShape(8.dp)),
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth(fraction)
+                        .fillMaxHeight()
+                        .background(metric.color.lightMetricFill()),
+                )
+            }
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 10.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                OutlinedProgressIcon(
+                    icon = metric.icon,
+                    label = metric.label,
+                    color = metric.color,
+                )
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(1.dp),
+                ) {
+                    Text(
+                        text = metric.label,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Text(
+                        text = metric.value,
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun OutlinedProgressIcon(
+    icon: ImageVector,
+    label: String,
+    color: Color,
+    backingSize: Dp = 23.dp,
+    foregroundSize: Dp = 20.dp,
+) {
+    Box(
+        modifier = Modifier.size(backingSize),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = Color.Black,
+            modifier = Modifier.size(backingSize),
+        )
+        Icon(
+            imageVector = icon,
+            contentDescription = "$label day total",
+            tint = color,
+            modifier = Modifier.size(foregroundSize),
+        )
+    }
+}
+
+private fun Color.lightMetricFill(): Color {
+    return Color(
+        red = red + (1f - red) * 0.2f,
+        green = green + (1f - green) * 0.2f,
+        blue = blue + (1f - blue) * 0.2f,
+        alpha = 0.42f,
+    )
+}
+
+private const val CALORIE_CHIP_FILL_OVERLAP_THRESHOLD = 0.72f
+
+private fun Color.darkenedIcon(): Color {
+    return Color(
+        red = red * 0.82f,
+        green = green * 0.82f,
+        blue = blue * 0.82f,
+        alpha = alpha,
+    )
+}
+
+private fun Color.overageMetricFill(): Color {
+    return Color(
+        red = red + (1f - red) * 0.1f,
+        green = green + (1f - green) * 0.1f,
+        blue = blue + (1f - blue) * 0.1f,
+        alpha = 0.34f,
+    )
+}
+
+private fun Color.darkMetricTrack(): Color {
+    return Color(
+        red = red * 0.34f,
+        green = green * 0.34f,
+        blue = blue * 0.34f,
+        alpha = 0.28f,
+    )
 }
 
 private fun String.isEmptyNutritionMessage(): Boolean {
@@ -614,121 +890,6 @@ private fun AddMealAttachedAction(
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface,
             )
-        }
-    }
-}
-
-@Composable
-private fun GoalProgressRow(progress: MacroTargets) {
-    BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
-        if (maxWidth < 420.dp) {
-            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    GoalArcTile(Icons.Default.LocalFireDepartment, progress.calories, AccentGold, "Calories", Modifier.weight(1f))
-                    GoalArcTile(Icons.Default.EggAlt, progress.protein, MacroProtein, "Protein", Modifier.weight(1f))
-                    GoalArcTile(Icons.Default.BakeryDining, progress.carbs, MacroCarbs, "Carbs", Modifier.weight(1f))
-                }
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    GoalArcTile(Icons.Default.OilBarrel, progress.fat, MacroFat, "Fat", Modifier.weight(1f))
-                    GoalArcTile(Icons.Default.Grass, progress.fiber, MacroFiber, "Fiber", Modifier.weight(1f))
-                    Box(modifier = Modifier.weight(1f))
-                }
-            }
-        } else {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                GoalArcTile(Icons.Default.LocalFireDepartment, progress.calories, AccentGold, "Calories", Modifier.weight(1f))
-                GoalArcTile(Icons.Default.EggAlt, progress.protein, MacroProtein, "Protein", Modifier.weight(1f))
-                GoalArcTile(Icons.Default.BakeryDining, progress.carbs, MacroCarbs, "Carbs", Modifier.weight(1f))
-                GoalArcTile(Icons.Default.OilBarrel, progress.fat, MacroFat, "Fat", Modifier.weight(1f))
-                GoalArcTile(Icons.Default.Grass, progress.fiber, MacroFiber, "Fiber", Modifier.weight(1f))
-            }
-        }
-    }
-}
-
-@Composable
-private fun GoalArcTile(
-    icon: ImageVector,
-    value: Double?,
-    color: Color,
-    label: String,
-    modifier: Modifier = Modifier,
-) {
-    val arc = macroProgressArc(value)
-    val progressColor = if (arc.isOverTarget) HealthGoalOverage else color
-    MacroHintBox(label = label, modifier = modifier) {
-        BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
-            val arcCanvasHeight = (maxWidth * 0.52f).coerceIn(30.dp, 62.dp)
-            val iconSize = (arcCanvasHeight * 0.42f).coerceIn(18.dp, 26.dp)
-            val tileMinHeight = (arcCanvasHeight + 18.dp).coerceAtLeast(48.dp)
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.72f))
-                    .border(
-                        BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.14f)),
-                        RoundedCornerShape(8.dp),
-                    )
-                    .heightIn(min = tileMinHeight)
-                    .padding(horizontal = 5.dp, vertical = 6.dp),
-                contentAlignment = Alignment.Center,
-            ) {
-                Canvas(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(arcCanvasHeight),
-                ) {
-                    val strokeWidth = 4.dp.toPx()
-                    val horizontalInset = 4.dp.toPx()
-                    val arcSize = Size(
-                        width = size.width - horizontalInset * 2,
-                        height = (size.height - strokeWidth) * 1.8f,
-                    )
-                    val top = strokeWidth / 2
-                    drawArc(
-                        color = Color.White.copy(alpha = 0.16f),
-                        startAngle = 180f,
-                        sweepAngle = 180f,
-                        useCenter = false,
-                        topLeft = androidx.compose.ui.geometry.Offset(horizontalInset, top),
-                        size = arcSize,
-                        style = Stroke(width = strokeWidth, cap = StrokeCap.Round),
-                    )
-                    if (arc.progress > 0f) {
-                        drawArc(
-                            color = progressColor,
-                            startAngle = 180f,
-                            sweepAngle = 180f * arc.progress,
-                            useCenter = false,
-                            topLeft = androidx.compose.ui.geometry.Offset(horizontalInset, top),
-                            size = arcSize,
-                            style = Stroke(width = strokeWidth, cap = StrokeCap.Round),
-                        )
-                    }
-                }
-                Icon(
-                    icon,
-                    contentDescription = "$label goal progress",
-                    tint = if (value == null) MaterialTheme.colorScheme.onSurfaceVariant else color,
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .padding(bottom = 2.dp)
-                        .size(iconSize),
-                )
-            }
         }
     }
 }

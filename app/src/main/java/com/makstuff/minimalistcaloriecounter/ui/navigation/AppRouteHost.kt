@@ -129,6 +129,7 @@ fun AppRouteHost(
                 onMeasurementLockToggle = { viewModel.toggleGoalMeasurementLock(it) },
                 onMacroChange = { macro, value -> viewModel.updateGoalMacro(macro, value) },
                 onMacroLockToggle = { viewModel.toggleGoalMacroLock(it) },
+                onDeleteHistoryEntry = { viewModel.deleteGoalHistoryEntry(it) },
             )
         }
         composable(AppRoutes.SETTINGS_HOME) {

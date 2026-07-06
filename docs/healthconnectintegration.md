@@ -66,6 +66,8 @@ Repeating a meal from the Meals page does not write directly to Health Connect. 
 
 The Meals page can also export the selected day's check-in summary as a text file in Downloads. This uses the same generated day summary as the copy action, not a raw Health Connect CSV.
 
+Goals history deletion removes the selected saved goal from local goal history and then attempts a narrow Health Connect weight cleanup. Weight cleanup only targets app-written weight records whose client record id uses the goal-weight prefix and whose value matches the deleted goal entry. The app does not delete arbitrary third-party Health Connect weight records because historical goal entries do not store external Health Connect record ids.
+
 Cleanup modes are:
 
 - Historical imports only

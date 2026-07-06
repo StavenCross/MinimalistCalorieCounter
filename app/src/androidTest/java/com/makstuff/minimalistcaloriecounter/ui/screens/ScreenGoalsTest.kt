@@ -12,8 +12,10 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToIndex
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.makstuff.minimalistcaloriecounter.AppUiState
@@ -31,13 +33,16 @@ import com.makstuff.minimalistcaloriecounter.classes.Goals
 import com.makstuff.minimalistcaloriecounter.classes.MacroTargets
 import com.makstuff.minimalistcaloriecounter.classes.QuickImportNutrients
 import com.makstuff.minimalistcaloriecounter.classes.WeeklyWeightLossTarget
+import com.makstuff.minimalistcaloriecounter.health.HealthConnectNutritionMeal
 import com.makstuff.minimalistcaloriecounter.ui.theme.AppTheme
+import androidx.health.connect.client.records.MealType
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.time.LocalDate
+import java.time.LocalDateTime
 
 @RunWith(AndroidJUnit4::class)
 class ScreenGoalsTest {
@@ -480,6 +485,7 @@ class ScreenGoalsTest {
         composeRule.onNodeWithText("Not now").assertIsDisplayed()
         composeRule.onNodeWithText("Apply").performClick()
         assertEquals(1, applyCount)
+        assertTrue(composeRule.onAllNodesWithText("Goal review").fetchSemanticsNodes().isEmpty())
     }
 
     @Test
@@ -552,17 +558,49 @@ class ScreenGoalsTest {
     }
 
     @Test
+    fun goalsProgressUsesTodayNotViewerDateMeals() {
+        composeRule.setContent {
+            AppTheme(dynamicColor = false) {
+                ScreenGoals(
+                    uiState = baseState().copy(
+                        goals = Goals(
+                            profile = completeProfile(),
+                            currentTargets = MacroTargets(calories = 2100.0),
+                        ),
+                        healthConnectViewerDate = LocalDate.now().minusDays(1),
+                        healthConnectViewerMeals = listOf(sampleMeal(energy = 650.0)),
+                    ),
+                    onSettingsOpen = {},
+                    onSettingsDismiss = {},
+                    onRefreshHealthConnect = {},
+                    onRecalculate = {},
+                    onApplyRecommendation = {},
+                    onDismissRecommendation = {},
+                    onBirthdayChange = {},
+                    onSexChange = {},
+                    onActivityLevelChange = {},
+                    onWeightLossTargetChange = {},
+                    onMeasurementChange = { _, _ -> },
+                    onMeasurementLockToggle = {},
+                    onMacroChange = { _, _ -> },
+                    onMacroLockToggle = {},
+                )
+            }
+        }
+
+        composeRule.onNodeWithTag("goals_calories_progress", useUnmergedTree = true).assertIsDisplayed()
+        composeRule.onNodeWithText("0").assertIsDisplayed()
+        assertTrue(composeRule.onAllNodesWithText("650").fetchSemanticsNodes().isEmpty())
+    }
+
+    @Test
     fun profileSnapshotShowsEstimatedLeanMassWhenDirectValueMissing() {
         composeRule.setContent {
             AppTheme(dynamicColor = false) {
                 ProfileSnapshotCard(
                     uiState = baseState().copy(
                         goals = Goals(
-                            profile = GoalProfile(
-                                weightKg = GoalMeasurement(90.0),
-                                bodyFatPercent = GoalMeasurement(20.0),
-                                leanMassKg = GoalMeasurement(),
-                            ),
+                            profile = completeProfile().copy(leanMassKg = GoalMeasurement()),
                         ),
                     ),
                 )
@@ -571,12 +609,56 @@ class ScreenGoalsTest {
 
         assertTrue(composeRule.onAllNodesWithContentDescription("Estimated").fetchSemanticsNodes().isEmpty())
         composeRule.onNodeWithText("159 lb").assertIsDisplayed()
+        composeRule.onNodeWithTag("goals_body_fact_sex", useUnmergedTree = true).performClick()
+        composeRule.onNodeWithText("Sex is used by the calorie formula for your current goal.").assertIsDisplayed()
+        composeRule.onNodeWithTag("goals_body_fact_age", useUnmergedTree = true).performClick()
+        composeRule.onNodeWithText("Age helps estimate your resting calorie burn.").assertIsDisplayed()
+        composeRule.onNodeWithTag("goals_body_fact_lifestyle", useUnmergedTree = true).performClick()
+        composeRule.onNodeWithText("Lifestyle estimates your daily activity level.").assertIsDisplayed()
         composeRule.onNodeWithTag("goals_body_weight_card", useUnmergedTree = true).performClick()
         composeRule.onNodeWithText("Weight is your latest body weight measurement.").assertIsDisplayed()
+        composeRule.onNodeWithTag("goals_body_metric_height", useUnmergedTree = true).assertIsDisplayed().performClick()
+        composeRule.onNodeWithText("Height helps estimate your resting calorie burn.").assertIsDisplayed()
         composeRule.onNodeWithTag("goals_body_metric_body_fat", useUnmergedTree = true).performClick()
         composeRule.onNodeWithText("Body fat is the percent of your body weight from fat mass.").assertIsDisplayed()
         composeRule.onNodeWithTag("goals_body_metric_lean_mass", useUnmergedTree = true).performClick()
         composeRule.onNodeWithText("Lean mass is your weight excluding body fat.").assertIsDisplayed()
+    }
+
+    @Test
+    fun currentGoalHistoryEntryEmitsSelectedEntry() {
+        val historyEntry = GoalHistoryEntry(
+            effectiveDate = LocalDate.of(2026, 7, 4),
+            targets = MacroTargets(calories = 2140.0),
+            source = "recommended",
+            weightKg = 90.0,
+        )
+        var deletedEntry: GoalHistoryEntry? = null
+
+        composeRule.setContent {
+            AppTheme(dynamicColor = false) {
+                GoalsDetailsSheet(
+                    goals = Goals(
+                        profile = completeProfile(),
+                        currentTargets = MacroTargets(calories = 2140.0),
+                        history = listOf(historyEntry),
+                    ),
+                    targets = MacroTargets(calories = 2140.0),
+                    mode = GoalDetailsMode.CurrentGoal,
+                    onRecalculate = {},
+                    onApplyRecommendation = {},
+                    onDismissRecommendation = {},
+                    onHistoryEntryClick = { deletedEntry = it },
+                )
+            }
+        }
+
+        composeRule.onNodeWithTag("goals_history_entry_2026-07-04", useUnmergedTree = true)
+            .performScrollTo()
+            .performSemanticsAction(SemanticsActions.OnClick)
+        composeRule.runOnIdle {
+            assertEquals(historyEntry, deletedEntry)
+        }
     }
 
     private fun baseState(): AppUiState {
@@ -595,4 +677,23 @@ class ScreenGoalsTest {
         bodyFatPercent = GoalMeasurement(20.0),
         leanMassKg = GoalMeasurement(72.0),
     )
+
+    private fun sampleMeal(energy: Double): HealthConnectNutritionMeal {
+        return HealthConnectNutritionMeal(
+            recordId = "goal-meal",
+            clientRecordId = "goal-client",
+            startTime = LocalDateTime.now(),
+            endTime = LocalDateTime.now().plusMinutes(1),
+            name = "test meal",
+            energy = energy,
+            energyFromFat = 0.0,
+            totalCarbohydrate = 0.0,
+            sugar = 0.0,
+            protein = 0.0,
+            totalFat = 0.0,
+            saturatedFat = 0.0,
+            dietaryFiber = 0.0,
+            mealType = MealType.MEAL_TYPE_LUNCH,
+        )
+    }
 }

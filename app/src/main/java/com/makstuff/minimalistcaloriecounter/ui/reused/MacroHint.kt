@@ -78,6 +78,8 @@ fun MacroHintBox(
 fun macroDescription(label: String): String {
     return when (label.lowercase()) {
         "calories" -> "Calories are the meal's usable energy."
+        "remaining calories" -> "Remaining calories left for today."
+        "calories exceeded" -> "Exceeded total calories for the day."
         "carbs" -> "Carbs are the meal's carbohydrate grams."
         "protein" -> "Protein supports muscle repair and fullness."
         "fat" -> "Fat is dietary fat grams, including saturated fat."
@@ -86,6 +88,9 @@ fun macroDescription(label: String): String {
         "weight" -> "Weight is your latest body weight measurement."
         "body fat" -> "Body fat is the percent of your body weight from fat mass."
         "lean mass" -> "Lean mass is your weight excluding body fat."
+        "sex" -> "Sex is used by the calorie formula for your current goal."
+        "age" -> "Age helps estimate your resting calorie burn."
+        "lifestyle" -> "Lifestyle estimates your daily activity level."
         "weight loss target" -> "Weight loss target is the weekly pace used to adjust calories."
         "locked" -> "Locked values stay manual and will not be replaced by Health Connect."
         "estimated" -> "Estimated values are calculated from your available body measurements."
