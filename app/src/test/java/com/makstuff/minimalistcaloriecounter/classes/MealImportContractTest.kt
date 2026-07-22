@@ -67,6 +67,18 @@ class MealImportContractTest {
     }
 
     @Test
+    fun acceptsStarbucksServingLabelsWithoutInventingGramWeights() {
+        val request = MealImportContract.fromJson(STARBUCKS_BREAKFAST_JSON)
+
+        assertEquals(QuickImportMealType.Breakfast, request.mealType)
+        assertEquals(listOf("1 venti", "1 croissant"), request.meal.foods.map { it.amountText })
+        assertEquals(listOf(null, null), request.meal.foods.map { it.grams })
+        assertEquals(21.0, request.meal.foods.first().nutrients.sugar, 0.001)
+        assertEquals(23.0, request.meal.foods.first().nutrients.carbohydrate, 0.001)
+        assertEquals(527.0, request.meal.totals.energy, 0.001)
+    }
+
+    @Test
     fun formattedImportRoundTripsThroughExistingParser() {
         val request = MealImportContract.fromJson(SAMPLE_JSON)
         val parsed = QuickImportParser.parse(QuickImportFormatter.text(request.meal))
@@ -76,21 +88,19 @@ class MealImportContractTest {
     }
 
     @Test
-    fun rejectsContradictoryTotals() {
-        val result = runCatching {
-            MealImportContract.fromJson(
-                """
-                {
-                  "source": "chatgpt",
-                  "action": "log_meal",
-                  "items": [{"name": "Japanese curry", "amount": "400g", "calories": 425}],
-                  "totals": {"calories": 999}
-                }
-                """.trimIndent()
-            )
-        }
+    fun treatsProvidedTotalsAsAdvisoryAndSumsItems() {
+        val request = MealImportContract.fromJson(
+            """
+            {
+              "source": "chatgpt",
+              "action": "log_meal",
+              "items": [{"name": "Japanese curry", "amount": "400g", "calories": 425}],
+              "totals": {"calories": 999}
+            }
+            """.trimIndent()
+        )
 
-        assertTrue(result.isFailure)
+        assertEquals(425.0, request.meal.totals.energy, 0.001)
     }
 
     @Test
@@ -144,7 +154,7 @@ class MealImportContractTest {
         assertTrue(result.exceptionOrNull()?.message?.contains("finite") == true)
     }
 
-    private companion object {
+    companion object {
         const val SAMPLE_JSON = """
             {
               "version": 1,
@@ -198,6 +208,20 @@ class MealImportContractTest {
                 {"name":"Broccolini","amount":"225g","calories":50,"protein_g":7.1,"carbs_g":6.4,"fat_g":1.1,"fiber_g":6.1,"sugar_g":0.9,"sat_fat_g":0.2}
               ],
               "totals":{"calories":654,"protein_g":71.6,"carbs_g":36.7,"fat_g":24.6,"fiber_g":7.9,"sugar_g":1.8,"sat_fat_g":7.3}
+            }
+        """
+
+        const val STARBUCKS_BREAKFAST_JSON = """
+            {
+              "source":"chatgpt",
+              "action":"log_meal",
+              "date":"2026-07-21",
+              "meal":"breakfast",
+              "items":[
+                {"name":"Starbucks Venti Caffè Latte","amount":"1 venti","calories":277,"protein_g":14.0,"carbs_g":23.0,"fat_g":14.0,"fiber_g":0.0,"sugar_g":21.0,"sat_fat_g":8.0},
+                {"name":"Starbucks Butter Croissant","amount":"1 croissant","calories":250,"protein_g":5.0,"carbs_g":26.0,"fat_g":14.0,"fiber_g":1.0,"sugar_g":4.0,"sat_fat_g":8.0}
+              ],
+              "totals":{"calories":527,"protein_g":19.0,"carbs_g":49.0,"fat_g":28.0,"fiber_g":1.0,"sugar_g":25.0,"sat_fat_g":16.0}
             }
         """
     }

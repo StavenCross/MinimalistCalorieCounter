@@ -207,13 +207,14 @@ internal class AppViewModelQuickImportActions(
                         createdAt = LocalDateTime.now(),
                     )
                     val existingItem = env.uiState.quickImportOutbox.firstOrNull { it.id == pendingItem.id }
-                    outboxItem = QuickImportOutbox.markAttempting(
+                    val attemptingItem = QuickImportOutbox.markAttempting(
                         item = existingItem ?: pendingItem,
                         attemptedAt = LocalDateTime.now(),
                     )
-                    env.writeQuickImportOutboxItem(context, outboxItem)
-                    env.writeLocalMealBackup(meal, state.inputQuickImportDateTime, state.quickImportMealType, outboxItem.healthPayloads.map { it.clientRecordId })
-                    val result = env.healthConnectManager.insertQuickMealNutrition(outboxItem.healthPayloads)
+                    env.writeLocalMealBackup(meal, state.inputQuickImportDateTime, state.quickImportMealType, attemptingItem.healthPayloads.map { it.clientRecordId })
+                    outboxItem = attemptingItem
+                    env.writeQuickImportOutboxItem(context, attemptingItem)
+                    val result = env.healthConnectManager.insertQuickMealNutrition(attemptingItem.healthPayloads)
                     outboxItem = QuickImportOutbox.markResult(outboxItem, result)
                     env.writeQuickImportOutboxItem(context, outboxItem)
                     result
@@ -225,6 +226,7 @@ internal class AppViewModelQuickImportActions(
                     databaseEntriesAdded = databaseEntriesAdded,
                     dayFoodsAdded = dayFoodsAdded,
                     healthWriteResult = healthResult,
+                    localDestinationsSkipped = plan.localDestinationsSkipped,
                 )
                 val healthWriteSucceeded = healthResult == null || healthResult == QuickImportHealthWriteResult.Success
                 if (healthWriteSucceeded) {
@@ -242,6 +244,7 @@ internal class AppViewModelQuickImportActions(
                                 result.databaseEntriesAdded,
                                 result.dayFoodsAdded,
                                 result.healthWriteResult,
+                                result.localDestinationsSkipped,
                             ),
                             quickImportSuccessToken = it.quickImportSuccessToken + 1L,
                             quickImportInProgress = false,

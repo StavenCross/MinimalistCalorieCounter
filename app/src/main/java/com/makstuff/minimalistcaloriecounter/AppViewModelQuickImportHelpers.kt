@@ -35,8 +35,13 @@ internal fun quickImportResultText(
     databaseEntriesAdded: Int,
     dayFoodsAdded: Int,
     healthWriteResult: QuickImportHealthWriteResult?,
+    localDestinationsSkipped: Boolean = false,
 ): String {
-    val localText = "Added $databaseEntriesAdded database foods and $dayFoodsAdded day foods."
+    val localText = if (localDestinationsSkipped) {
+        "Saved serving nutrition without legacy gram conversion."
+    } else {
+        "Added $databaseEntriesAdded database foods and $dayFoodsAdded day foods."
+    }
     val healthText = when (healthWriteResult) {
         null -> "Health Connect skipped."
         QuickImportHealthWriteResult.Success -> "Health Connect write succeeded."
@@ -88,15 +93,13 @@ internal suspend fun AppViewModelEnvironment.writeLocalMealBackup(
     mealType: QuickImportMealType,
     clientRecordIds: List<String?> = emptyList(),
 ) {
-    runCatching {
-        roomStore.writeLocalMealBackups(
-            LocalMealBackupMapper.toEntities(
-                meal = meal,
-                dateTime = dateTime,
-                mealType = mealType,
-                clientRecordIds = clientRecordIds,
-                createdAt = LocalDateTime.now(),
-            )
+    roomStore.writeLocalMealBackups(
+        LocalMealBackupMapper.toEntities(
+            meal = meal,
+            dateTime = dateTime,
+            mealType = mealType,
+            clientRecordIds = clientRecordIds,
+            createdAt = LocalDateTime.now(),
         )
-    }
+    )
 }

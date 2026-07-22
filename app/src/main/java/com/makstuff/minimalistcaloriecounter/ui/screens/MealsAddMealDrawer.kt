@@ -259,7 +259,12 @@ private fun AddMealDrawerStatus(
                     modifier = Modifier.size(20.dp),
                 )
                 Text(
-                    text = quickImportResultText(result.databaseEntriesAdded, result.dayFoodsAdded, result.healthWriteResult),
+                    text = quickImportResultText(
+                        result.databaseEntriesAdded,
+                        result.dayFoodsAdded,
+                        result.healthWriteResult,
+                        result.localDestinationsSkipped,
+                    ),
                     style = MaterialTheme.typography.bodyMedium,
                     color = resultColor,
                 )

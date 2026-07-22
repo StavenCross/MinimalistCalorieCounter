@@ -78,6 +78,56 @@ class QuickImportPlannerTest {
     }
 
     @Test
+    fun defaultImportLogsServingLabelsWithoutLegacyGramDrafts() {
+        val meal = MealImportContract.fromJson(MealImportContractTest.STARBUCKS_BREAKFAST_JSON).meal
+
+        val plan = QuickImportPlanner.build(
+            meal = meal,
+            options = QuickImportCommitOptions(
+                addFoodsToDatabase = true,
+                addFoodsToDay = true,
+                writeHealthConnect = true,
+            ),
+            dateTime = LocalDateTime.of(2026, 7, 21, 9, 0),
+            mealType = QuickImportMealType.Breakfast,
+        )
+
+        assertEquals(0, plan.foodDrafts.size)
+        assertEquals(true, plan.localDestinationsSkipped)
+        assertEquals(2, plan.healthPayloads.size)
+        assertEquals(
+            listOf("1 venti Starbucks Venti Caffè Latte", "1 croissant Starbucks Butter Croissant"),
+            plan.healthPayloads.map { it.name },
+        )
+        assertClose(527.0, plan.healthPayloads.sumOf { it.energy })
+    }
+
+    @Test
+    fun roundedLabelRelationshipsDoNotBlockServingImport() {
+        val meal = MealImportContract.fromJson(
+            """
+            {
+              "action":"log_meal",
+              "items":[
+                {"name":"Rounded restaurant item","amount":"1 serving","calories":100,"carbs_g":4,"fiber_g":5,"sugar_g":5,"fat_g":1,"sat_fat_g":2}
+              ]
+            }
+            """.trimIndent(),
+        ).meal
+
+        val plan = QuickImportPlanner.build(
+            meal = meal,
+            options = QuickImportCommitOptions(true, true, true),
+            dateTime = LocalDateTime.of(2026, 7, 21, 9, 0),
+        )
+
+        assertEquals(0, plan.foodDrafts.size)
+        assertEquals(true, plan.localDestinationsSkipped)
+        assertEquals(1, plan.healthPayloads.size)
+        assertClose(5.0, plan.healthPayloads.single().sugar)
+    }
+
+    @Test
     fun healthPayloadsExcludeMealTotalsToAvoidDoubleCounting() {
         val meal = QuickImportParser.parse(
             "100g rice; Calories 130, Fat 0.3g, Sat Fat 0.1g, Trans Fat 0g, Cholesterol 0mg, Sodium 1mg, Carbs 28g, Fiber 1g, Sugar 0.1g, Added Sugar 0g, Protein 2.7g. " +

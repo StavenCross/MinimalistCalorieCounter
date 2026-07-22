@@ -70,6 +70,30 @@ class HealthConnectNutritionMapperTest {
     }
 
     @Test
+    fun healthConnectRecordPreservesRoundedRestaurantValues() {
+        val payload = QuickImportHealthPayload(
+            dateTime = LocalDateTime.of(2026, 7, 21, 9, 0),
+            mealType = MealType.MEAL_TYPE_BREAKFAST,
+            energy = 100.0,
+            energyFromFat = 18.0,
+            totalCarbohydrate = 4.0,
+            sugar = 5.0,
+            protein = 3.0,
+            totalFat = 1.0,
+            saturatedFat = 2.0,
+            dietaryFiber = 5.0,
+            name = "1 serving rounded restaurant item",
+        )
+
+        val meal = payload.toNutritionRecord(zone).toHealthConnectNutritionMeal(zone)
+
+        assertEquals(4.0, meal.totalCarbohydrate, 0.001)
+        assertEquals(5.0, meal.sugar, 0.001)
+        assertEquals(5.0, meal.dietaryFiber, 0.001)
+        assertEquals(2.0, meal.saturatedFat, 0.001)
+    }
+
+    @Test
     fun editedViewerMealMapsToReplacementPayload() {
         val meal = HealthConnectNutritionMeal(
             recordId = "record-1",

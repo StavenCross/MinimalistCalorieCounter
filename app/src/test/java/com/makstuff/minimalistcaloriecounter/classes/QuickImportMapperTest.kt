@@ -172,18 +172,21 @@ class QuickImportMapperTest {
     }
 
     @Test
-    fun rejectsFiberGreaterThanTotalCarbs() {
-        org.junit.Assert.assertThrows(IllegalArgumentException::class.java) {
-            QuickImportNutrients(
-                energy = 100.0,
-                carbohydrate = 2.0,
-                sugar = 0.0,
-                protein = 3.0,
-                fat = 1.0,
-                saturatedFat = 0.2,
-                fiber = 4.0,
-            )
-        }
+    fun preservesReportedRoundedNutrientsWithoutRecalculation() {
+        val nutrients = QuickImportNutrients(
+            energy = 100.0,
+            carbohydrate = 2.0,
+            sugar = 3.0,
+            protein = 3.0,
+            fat = 1.0,
+            saturatedFat = 1.2,
+            fiber = 4.0,
+        )
+
+        assertClose(2.0, nutrients.carbohydrate)
+        assertClose(3.0, nutrients.sugar)
+        assertClose(4.0, nutrients.fiber)
+        assertClose(1.2, nutrients.saturatedFat)
     }
 
     private fun assertClose(expected: Double, actual: Double, tolerance: Double = 0.0001) {

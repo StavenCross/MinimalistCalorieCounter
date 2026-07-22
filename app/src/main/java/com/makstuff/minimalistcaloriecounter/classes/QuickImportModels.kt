@@ -5,8 +5,11 @@ import java.time.LocalDateTime
 import java.time.LocalTime
 
 /**
- * Stores label-style nutrition values where carbohydrate is total carbohydrate, including fiber.
- * [appCarbohydrate] performs the legacy app's net-carb conversion at its persistence boundary.
+ * Stores nutrition exactly as reported by a label or import source.
+ *
+ * Imported restaurant and packaged-food values can differ slightly because of label rounding, so
+ * this boundary rejects negative values but intentionally does not infer relationships between
+ * macros. [appCarbohydrate] is only for the legacy per-100g database representation.
  */
 data class QuickImportNutrients(
     val energy: Double,
@@ -28,9 +31,6 @@ data class QuickImportNutrients(
         require(fat >= 0.0) { "Fat must be zero or greater." }
         require(saturatedFat >= 0.0) { "Saturated fat must be zero or greater." }
         require(fiber >= 0.0) { "Fiber must be zero or greater." }
-        require(carbohydrate + EPSILON >= fiber) { "Fiber cannot exceed total carbs." }
-        require(fat + EPSILON >= saturatedFat) { "Saturated fat cannot exceed total fat." }
-        require(carbohydrate + EPSILON >= sugar) { "Sugar cannot exceed total carbs." }
     }
 
     fun toAppValues(): List<Double> = listOf(
@@ -53,10 +53,6 @@ data class QuickImportNutrients(
         saturatedFat = saturatedFat * factor,
         fiber = fiber * factor,
     )
-
-    companion object {
-        private const val EPSILON = 0.000001
-    }
 }
 
 data class QuickImportFood(
@@ -138,6 +134,7 @@ data class QuickImportCommitOptions(
 data class QuickImportCommitPlan(
     val foodDrafts: List<QuickImportDatabaseEntryDraft>,
     val healthPayloads: List<QuickImportHealthPayload>,
+    val localDestinationsSkipped: Boolean,
 )
 
 sealed class QuickImportHealthWriteResult {
@@ -151,4 +148,5 @@ data class QuickImportResult(
     val databaseEntriesAdded: Int,
     val dayFoodsAdded: Int,
     val healthWriteResult: QuickImportHealthWriteResult?,
+    val localDestinationsSkipped: Boolean,
 )

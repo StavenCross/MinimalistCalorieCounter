@@ -44,9 +44,7 @@ object MealImportContract {
         }
         require(foods.isNotEmpty()) { "Meal import must contain at least one item." }
         val itemTotals = foods.sumNutrients()
-        val providedTotals = root.obj("totals")?.toNutrients()
-        if (providedTotals != null) validateTotals(providedTotals, itemTotals)
-        val meal = QuickImportMeal(foods = foods, totals = providedTotals ?: itemTotals)
+        val meal = QuickImportMeal(foods = foods, totals = itemTotals)
         return MealImportRequest(
             source = source,
             action = action,
@@ -92,19 +90,6 @@ object MealImportContract {
         fiber = sumOf { it.nutrients.fiber },
     )
 
-    private fun validateTotals(provided: QuickImportNutrients, calculated: QuickImportNutrients) {
-        val mismatched = listOf(
-            "calories" to (provided.energy to calculated.energy),
-            "protein_g" to (provided.protein to calculated.protein),
-            "carbs_g" to (provided.carbohydrate to calculated.carbohydrate),
-            "fat_g" to (provided.fat to calculated.fat),
-            "fiber_g" to (provided.fiber to calculated.fiber),
-        ).firstOrNull { (_, values) -> kotlin.math.abs(values.first - values.second) > TOTALS_TOLERANCE }
-        require(mismatched == null) {
-            "Meal totals do not match items for ${mismatched!!.first}."
-        }
-    }
-
     private fun String.toMealType(): QuickImportMealType {
         return when (lowercase()) {
             "breakfast" -> QuickImportMealType.Breakfast
@@ -124,7 +109,6 @@ object MealImportContract {
         }
     }
 
-    private const val TOTALS_TOLERANCE = 1.0
     private const val MAX_ENCODED_PAYLOAD_CHARS = 64_000
     private const val MAX_JSON_BYTES = 48_000
     private const val MAX_MEAL_ITEMS = 100

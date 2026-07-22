@@ -17,7 +17,11 @@ Supported entry points:
 
 The HTTPS route is an Android App Link. The backend at `nutrition.dioem.cloud` must serve `/.well-known/assetlinks.json` for the exact package and signing certificate. The current hosted association supports the debug package used for Fold deployment; a release build requires its own association before production rollout. No browser fallback page is currently guaranteed, so callers should retain the `foodlog://` form when direct App Link verification is unavailable.
 
-Import nutrition follows US label semantics: `carbs_g` is total carbohydrate and includes both `fiber_g` and `sugar_g`. Invalid or unsupported payloads show an import error and leave the app running.
+Import nutrition is stored as reported. The app does not reject restaurant or packaged-food values merely because rounded `fiber_g`, `sugar_g`, or `sat_fat_g` figures do not form exact mathematical subsets of another macro.
+
+The optional `totals` object is advisory. The app derives the meal preview and saved totals by summing the reported items, so a rounded or stale total cannot block the import or override what will actually be written.
+
+`amount` is a display label and may use a weight (`211g`, `6 oz`) or a serving description (`1 venti`, `1 croissant`, `2 slices`). Weight-based meals can also populate the legacy per-100g local database. If any item in a default import is serving-based or otherwise cannot be represented faithfully in that database, the app skips legacy database/day conversion for the whole meal and writes every reported serving to Health Connect and the local meal backup instead.
 
 To keep external intents bounded, encoded payloads may contain at most 64,000 characters, decoded JSON at most 48,000 UTF-8 bytes, 100 meal items, and 32 nested JSON levels.
 
