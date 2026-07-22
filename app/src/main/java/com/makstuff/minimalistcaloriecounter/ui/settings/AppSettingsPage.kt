@@ -3,7 +3,6 @@ package com.makstuff.minimalistcaloriecounter.ui.settings
 import android.app.DatePickerDialog
 import android.content.Intent
 import android.widget.Toast
-import androidx.activity.compose.ManagedActivityResultLauncher
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -45,7 +44,6 @@ import com.makstuff.minimalistcaloriecounter.AppViewModel
 import com.makstuff.minimalistcaloriecounter.R
 import com.makstuff.minimalistcaloriecounter.health.HealthConnectCleanupMode
 import com.makstuff.minimalistcaloriecounter.health.HealthConnectExportMode
-import com.makstuff.minimalistcaloriecounter.health.HealthConnectManager
 import com.makstuff.minimalistcaloriecounter.ui.reused.ButtonText
 import com.makstuff.minimalistcaloriecounter.ui.reused.SheetNote
 import com.makstuff.minimalistcaloriecounter.ui.reused.SheetTitle
@@ -58,8 +56,7 @@ fun AppSettingsPage(
     uiState: AppUiState,
     viewModel: AppViewModel,
     fileLaunchers: AppFileLaunchers,
-    healthConnectManager: HealthConnectManager,
-    healthConnectExportPermissionLauncher: ManagedActivityResultLauncher<Set<String>, Set<String>>,
+    onRequestExportPermissions: () -> Unit,
 ) {
     val context = LocalContext.current
     val uriHandler = LocalUriHandler.current
@@ -193,14 +190,13 @@ fun AppSettingsPage(
                     SettingsSheet.HealthData -> HealthDataSheetContent(
                         uiState = uiState,
                         viewModel = viewModel,
-                        healthConnectManager = healthConnectManager,
-                        healthConnectExportPermissionLauncher = healthConnectExportPermissionLauncher,
                         exportStartPicker = exportStartPicker,
                         exportEndPicker = exportEndPicker,
                         cleanupStartPicker = cleanupStartPicker,
                         cleanupEndPicker = cleanupEndPicker,
                         onConfirmCleanup = { historicalCleanupConfirmVisible = true },
                         onHealthConnectAction = { handleHCInteraction(it) },
+                        onRequestExportPermissions = onRequestExportPermissions,
                     )
                     SettingsSheet.ImportTools -> ImportToolsSheetContent(
                         uiState = uiState,
@@ -228,14 +224,13 @@ fun AppSettingsPage(
 private fun HealthDataSheetContent(
     uiState: AppUiState,
     viewModel: AppViewModel,
-    healthConnectManager: HealthConnectManager,
-    healthConnectExportPermissionLauncher: ManagedActivityResultLauncher<Set<String>, Set<String>>,
     exportStartPicker: DatePickerDialog,
     exportEndPicker: DatePickerDialog,
     cleanupStartPicker: DatePickerDialog,
     cleanupEndPicker: DatePickerDialog,
     onConfirmCleanup: () -> Unit,
     onHealthConnectAction: (() -> Unit) -> Unit,
+    onRequestExportPermissions: () -> Unit,
 ) {
     val cleanupStartDate = uiState.healthConnectNutritionCleanupStartDate
     val cleanupEndDate = uiState.healthConnectNutritionCleanupEndDate
@@ -263,7 +258,7 @@ private fun HealthDataSheetContent(
             if (uiState.healthConnectExportPermissionsGranted) {
                 viewModel.exportHealthConnectRange()
             } else {
-                healthConnectExportPermissionLauncher.launch(healthConnectManager.exportPermissionsFor(uiState.healthConnectExportMode))
+                onRequestExportPermissions()
             }
         },
         enabled = !uiState.healthConnectExportInProgress,
@@ -408,6 +403,8 @@ private fun SettingsCards(
     onHealthConnectAction: (() -> Unit) -> Unit,
 ) {
     val context = LocalContext.current
+    val onSyncHealthConnect = { onHealthConnectAction { viewModel.toggleHealthConnectSyncEnabled(context) } }
+    val onHealthConnectToasts = { onHealthConnectAction { viewModel.toggleHealthConnectToastsEnabled(context) } }
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
@@ -435,22 +432,22 @@ private fun SettingsCards(
                     trailingContent = {
                         Switch(
                             checked = uiState.healthConnectSyncEnabled && uiState.healthConnectPermissionsGranted,
-                            enabled = uiState.healthConnectPermissionsGranted,
-                            onCheckedChange = null,
+                            onCheckedChange = { onSyncHealthConnect() },
+                            modifier = Modifier.testTag("settings_health_connect_sync_switch"),
                         )
                     },
-                    onClick = { onHealthConnectAction { viewModel.toggleHealthConnectSyncEnabled(context) } },
+                    onClick = onSyncHealthConnect,
                 )
                 OptionsItem(
                     text = stringResource(R.string.health_connect_notifications),
                     trailingContent = {
                         Switch(
                             checked = uiState.healthConnectToastsEnabled && uiState.healthConnectPermissionsGranted,
-                            enabled = uiState.healthConnectPermissionsGranted,
-                            onCheckedChange = null,
+                            onCheckedChange = { onHealthConnectToasts() },
+                            modifier = Modifier.testTag("settings_health_connect_toasts_switch"),
                         )
                     },
-                    onClick = { onHealthConnectAction { viewModel.toggleHealthConnectToastsEnabled(context) } },
+                    onClick = onHealthConnectToasts,
                 )
                 OptionsItem("Manage Health Connect data") { viewModel.updateActiveSettingsSheet(SettingsSheet.HealthData) }
             }

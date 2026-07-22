@@ -31,4 +31,16 @@ class HealthConnectManifestPermissionsTest {
             assertTrue("$permission missing from manifest", manifest.contains(permission))
         }
     }
+
+    @Test
+    fun `export capability request includes every full export read permission`() {
+        val permissions = exportRecordTypes
+            .map { HealthPermission.getReadPermission(it) }
+            .toSet() + HealthPermission.PERMISSION_READ_HEALTH_DATA_HISTORY
+        val exportRequest = healthConnectPermissionsFor(HealthConnectPermissionScope.ExportReadableData)
+
+        permissions.forEach { permission ->
+            assertTrue("$permission missing from export Health Connect request", exportRequest.contains(permission))
+        }
+    }
 }

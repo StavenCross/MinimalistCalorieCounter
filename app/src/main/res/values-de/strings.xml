@@ -1,4 +1,5 @@
 <resources>
+    <string name="meal_import_failed">Dieser Mahlzeitenimport konnte nicht geöffnet werden. Prüfe den Link und versuche es erneut.</string>
     <string name="app_name">Einfacher Kalorienzähler</string>
     <string name="archive">Archiv</string>
     <string name="body_weight">Körpergewicht</string>
@@ -136,4 +137,5 @@
     <string name="error_archive_date_future">Archiveinträge dürfen nicht in der Zukunft liegen.</string>
     <string name="toast_hc_not_available">Health Connect ist auf diesem Gerät nicht verfügbar.</string>
     <string name="quick_import">Schnellimport</string>
+    <string name="nutrition_widget_description">Zeigt die verbleibenden Kalorien und den täglichen Makronährstofffortschritt an.</string>
 </resources>

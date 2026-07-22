@@ -61,6 +61,7 @@ import com.makstuff.minimalistcaloriecounter.essentials.NAV_DATABASE
 import com.makstuff.minimalistcaloriecounter.essentials.NavControllerListener
 import com.makstuff.minimalistcaloriecounter.essentials.NavButton
 import com.makstuff.minimalistcaloriecounter.ui.navigation.AppBottomBar
+import com.makstuff.minimalistcaloriecounter.ui.navigation.AppDestinations
 import com.makstuff.minimalistcaloriecounter.ui.navigation.AppMainDrawer
 import com.makstuff.minimalistcaloriecounter.ui.navigation.AppRouteHost
 import com.makstuff.minimalistcaloriecounter.ui.navigation.AppRoutes
@@ -80,7 +81,8 @@ import androidx.health.connect.client.PermissionController
 fun App(
     viewModel: AppViewModel,
     uiState: AppUiState,
-    navController: NavHostController = rememberNavController()
+    navController: NavHostController = rememberNavController(),
+    fastWidgetLaunch: Boolean = false,
 ) {
     val context = LocalContext.current
     val clipboard = LocalClipboardManager.current
@@ -104,12 +106,6 @@ fun App(
     }
 
     val healthConnectRequestPermissionLauncher = rememberLauncherForActivityResult(
-        contract = PermissionController.createRequestPermissionResultContract(),
-        onResult = { _ ->
-            viewModel.updateHealthConnectPermissionsStatus()
-        }
-    )
-    val healthConnectExportPermissionLauncher = rememberLauncherForActivityResult(
         contract = PermissionController.createRequestPermissionResultContract(),
         onResult = { _ ->
             viewModel.updateHealthConnectPermissionsStatus()
@@ -142,6 +138,11 @@ fun App(
         viewModel.updateTopBarTitle(string)
         viewModel.updateNavigationBarHighlight(button)
     }
+    LaunchedEffect(currentRoute) {
+        AppDestinations.forRoute(currentRoute ?: return@LaunchedEffect)?.let { destination ->
+            setNav(destination.label, destination.navButton)
+        }
+    }
     // NavControllerListener preserves the legacy title/highlight behavior for old routes.
     NavControllerListener(
         nameFoodDayAdd = uiState.nameFoodDayAdd,
@@ -151,7 +152,12 @@ fun App(
         setNav = { string, button -> setNav(string, button) }
     )
 
-    AppStartupEffects(uiState = uiState, viewModel = viewModel, onNavigate = { navTo(it) })
+    AppStartupEffects(
+        uiState = uiState,
+        viewModel = viewModel,
+        fastWidgetLaunch = fastWidgetLaunch,
+        onNavigate = { navTo(it) },
+    )
     Box(modifier = Modifier.fillMaxSize()) {
         Scaffold(
             containerColor = MaterialTheme.colorScheme.surfaceContainer,
@@ -186,11 +192,13 @@ fun App(
                 navController = navController,
                 fileLaunchers = fileLaunchers,
                 healthConnectManager = healthConnectManager,
-                healthConnectExportPermissionLauncher = healthConnectExportPermissionLauncher,
                 keyboardController = keyboardController,
                 onNavigate = { navTo(it) },
                 onNavigateBack = { navBack() },
                 onEditDatabaseEntry = { editDatabaseEntry(it) },
+                onRequestHealthConnectPermissions = { permissions ->
+                    healthConnectRequestPermissionLauncher.launch(permissions)
+                },
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(innerPadding)

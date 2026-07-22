@@ -1,6 +1,10 @@
 package com.makstuff.minimalistcaloriecounter
+import com.makstuff.minimalistcaloriecounter.health.CheckInDateRange
 import com.makstuff.minimalistcaloriecounter.health.HealthConnectExportResult
 import com.makstuff.minimalistcaloriecounter.health.HealthConnectExportMode
+import com.makstuff.minimalistcaloriecounter.health.exportHealthConnectCheckInXlsx
+import com.makstuff.minimalistcaloriecounter.health.exportHealthConnectCsv
+import com.makstuff.minimalistcaloriecounter.health.hasExportReadPermissions
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.LocalDate
@@ -111,6 +115,79 @@ internal class AppViewModelHealthConnectExportActions(private val env: AppViewMo
                         it.copy(
                             healthConnectExportInProgress = false,
                             healthConnectExportMessage = "Health Connect export failed: ${result.message}",
+                            healthConnectSyncProgress = null,
+                            healthConnectSyncMessage = null,
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    fun exportCheckIn(range: CheckInDateRange) {
+        val state = env.uiState
+        if (state.checkInExportInProgress) return
+        env.state.update {
+            it.copy(
+                checkInExportInProgress = true,
+                checkInExportMessage = "Creating ${range.label.lowercase()}.",
+                healthConnectSyncProgress = 0f,
+                healthConnectSyncCurrentCount = 0,
+                healthConnectSyncTotalCount = 0,
+                healthConnectSyncMessage = "Creating ${range.label.lowercase()}.",
+            )
+        }
+        env.scope.launch {
+            val result = env.healthConnectManager.exportHealthConnectCheckInXlsx(
+                range = range,
+                onProgress = { progress, current, total ->
+                    env.state.update {
+                        it.copy(
+                            healthConnectSyncProgress = progress,
+                            healthConnectSyncCurrentCount = current,
+                            healthConnectSyncTotalCount = total,
+                            healthConnectSyncMessage = "Creating check-in workbook: $current/$total types",
+                        )
+                    }
+                },
+            )
+            when (result) {
+                is HealthConnectExportResult.Success -> {
+                    env.state.update {
+                        it.copy(
+                            checkInExportInProgress = false,
+                            checkInExportMessage = "Exported ${range.label.lowercase()} to ${result.displayPath}.",
+                            checkInExportSuccessToken = it.checkInExportSuccessToken + 1,
+                            healthConnectSyncProgress = null,
+                            healthConnectSyncMessage = null,
+                        )
+                    }
+                }
+                HealthConnectExportResult.HealthConnectUnavailable -> {
+                    env.state.update {
+                        it.copy(
+                            checkInExportInProgress = false,
+                            checkInExportMessage = "Health Connect is unavailable on this device.",
+                            healthConnectSyncProgress = null,
+                            healthConnectSyncMessage = null,
+                        )
+                    }
+                }
+                HealthConnectExportResult.PermissionsMissing -> {
+                    env.state.update {
+                        it.copy(
+                            checkInExportInProgress = false,
+                            checkInExportMessage = "Health Connect read permissions are missing.",
+                            healthConnectSyncProgress = null,
+                            healthConnectSyncMessage = null,
+                        )
+                    }
+                }
+                is HealthConnectExportResult.Failed -> {
+                    env.state.update {
+                        it.copy(
+                            checkInExportInProgress = false,
+                            checkInExportMessage = "Check-in export failed: ${result.message}",
                             healthConnectSyncProgress = null,
                             healthConnectSyncMessage = null,
                         )

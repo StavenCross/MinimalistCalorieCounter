@@ -2,6 +2,8 @@ package com.makstuff.minimalistcaloriecounter
 
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
+import android.provider.Settings
 import androidx.activity.compose.ManagedActivityResultLauncher
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
@@ -126,21 +128,30 @@ private fun HealthConnectPermissionsDialog(
         onDismiss = { viewModel.setAlertDialogHealthConnectPermissions(false) },
         onConfirm = {
             if (uiState.healthConnectAnyPermissionsGranted) {
-                try {
-                    context.startActivity(
-                        Intent("androidx.health.connect.action.MANAGE_HEALTH_PERMISSIONS").apply {
-                            putExtra(Intent.EXTRA_PACKAGE_NAME, context.packageName)
-                        },
-                    )
-                } catch (_: Exception) {
-                    context.startActivity(Intent(HealthConnectClient.ACTION_HEALTH_CONNECT_SETTINGS))
-                }
+                openAppPermissionSettings(context)
             } else {
                 healthConnectRequestPermissionLauncher.launch(healthConnectManager.permissions)
             }
             viewModel.setAlertDialogHealthConnectPermissions(false)
         },
     )
+}
+
+/**
+ * Opens system settings when Android's runtime health permission prompt is likely to no-op after
+ * partial grants or repeated denials. Android 14+ serves Health Connect permissions through the
+ * platform permission system, so app settings is the reliable recovery path.
+ */
+private fun openAppPermissionSettings(context: Context) {
+    try {
+        context.startActivity(
+            Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                data = Uri.parse("package:${context.packageName}")
+            },
+        )
+    } catch (_: Exception) {
+        context.startActivity(Intent(HealthConnectClient.ACTION_HEALTH_CONNECT_SETTINGS))
+    }
 }
 
 @Composable

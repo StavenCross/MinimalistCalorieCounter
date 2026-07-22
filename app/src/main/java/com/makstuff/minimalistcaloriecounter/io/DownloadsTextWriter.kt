@@ -9,6 +9,10 @@ import androidx.annotation.RequiresApi
 
 internal class DownloadsTextWriter(private val context: Context) {
     fun write(filename: String, mimeType: String, content: String): String {
+        return writeBytes(filename, mimeType, content.toByteArray(Charsets.UTF_8))
+    }
+
+    fun writeBytes(filename: String, mimeType: String, content: ByteArray): String {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             writeWithMediaStore(filename, mimeType, content)
         } else {
@@ -17,7 +21,7 @@ internal class DownloadsTextWriter(private val context: Context) {
     }
 
     @RequiresApi(Build.VERSION_CODES.Q)
-    private fun writeWithMediaStore(filename: String, mimeType: String, content: String): String {
+    private fun writeWithMediaStore(filename: String, mimeType: String, content: ByteArray): String {
         val resolver = context.contentResolver
         val values = ContentValues().apply {
             put(MediaStore.Downloads.DISPLAY_NAME, filename)
@@ -27,16 +31,16 @@ internal class DownloadsTextWriter(private val context: Context) {
         val uri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)
             ?: error("Could not create Downloads export file.")
         resolver.openOutputStream(uri)?.use { stream ->
-            stream.write(content.toByteArray(Charsets.UTF_8))
+            stream.write(content)
         } ?: error("Could not write Downloads export file.")
         return "Downloads/$filename"
     }
 
-    private fun writeLegacy(filename: String, content: String): String {
+    private fun writeLegacy(filename: String, content: ByteArray): String {
         val dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
         dir.mkdirs()
         val file = java.io.File(dir, filename)
-        file.writeText(content, Charsets.UTF_8)
+        file.writeBytes(content)
         return file.absolutePath
     }
 }

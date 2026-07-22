@@ -15,6 +15,12 @@ import com.makstuff.minimalistcaloriecounter.persistence.room.LocalMealBackupMap
 import kotlinx.coroutines.flow.update
 import java.time.LocalDateTime
 
+internal data class QuickImportMealTypeSelection(
+    val dateTime: LocalDateTime,
+    val mealType: QuickImportMealType,
+    val snackOverride: Boolean,
+)
+
 internal fun QuickImportDatabaseEntryDraft.toDatabaseEntry(context: Context): DatabaseEntry {
     return DatabaseEntry(
         name = name,
@@ -40,6 +46,29 @@ internal fun quickImportResultText(
     }
     return "$localText $healthText"
 }
+
+/**
+ * Applies an explicit meal label without changing its timestamp. Time windows choose the automatic
+ * label only; moving the timestamp can create a future Health Connect record that Android rejects.
+ */
+internal fun AppUiState.withMealTypeOverride(mealType: QuickImportMealType): AppUiState {
+    val selection = quickImportMealTypeSelection(inputQuickImportDateTime, mealType)
+    return copy(
+        inputQuickImportDateTime = selection.dateTime,
+        quickImportMealTypeOverride = selection.mealType,
+        quickImportSnackOverride = selection.snackOverride,
+    )
+}
+
+/** Builds the explicit label state while retaining the timestamp selected by the user. */
+internal fun quickImportMealTypeSelection(
+    currentDateTime: LocalDateTime,
+    mealType: QuickImportMealType,
+): QuickImportMealTypeSelection = QuickImportMealTypeSelection(
+    dateTime = currentDateTime,
+    mealType = mealType,
+    snackOverride = mealType == QuickImportMealType.Snack,
+)
 
 internal fun AppViewModelEnvironment.writeQuickImportOutboxItem(context: Context, item: QuickImportOutboxItem?) {
     if (item == null) return

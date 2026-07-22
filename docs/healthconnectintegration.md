@@ -13,9 +13,11 @@ Core meal logging requests:
 - Read Height
 - Write Height
 - Read Body Fat
+- Read Body Water Mass
+- Read Bone Mass
 - Read Lean Body Mass
 
-The export workflow also requests broad Health Connect read permissions for supported record types, plus historical-data access, so it can produce a review CSV for external analysis.
+The default Health Connect grant flow requests only core meal, archive, and Goals permissions. CSV and check-in exports request their additional read/history permissions when the user starts that capability. Optional broad export reads are reported separately and do not create a false missing-permissions state.
 
 Read Nutrition is needed so the app can display Meals and avoid duplicate historical-import or Add Meal writes. Weight, height, body-fat, and lean-mass reads support Goals. Weight and height writes let manual Goals values be mirrored back to Health Connect when permission is granted. Health Connect permissions remain user controlled and cannot be silently granted by automation.
 
@@ -52,6 +54,8 @@ The app infers meal type from the selected timestamp unless snack override is en
 - 3:00 PM through 10:59 PM: dinner
 - Otherwise: snack
 
+Choosing a meal type manually changes only the label. It never rewrites the selected timestamp, so Breakfast, Lunch, Dinner, or Snack can be logged at any time of day. Default meal times are still used when preparing a repeated meal for another date.
+
 ## Historical Import
 
 Historical import writes one Nutrition record per food row. Duplicate detection checks both client record ids and content fingerprints.
@@ -87,5 +91,7 @@ Settings can export Health Connect CSV files to Downloads. Export modes are:
 - Full Health Connect export
 
 Redacted export is enabled by default for ChatGPT check-ins. It omits Health Connect record ids, client record ids, client record version, data-origin package, recording method, last-modified time, and the raw record text while keeping dates, times, calories, macros, meal type, and available body metrics. Raw/full export remains available by turning redaction off and selecting the full mode.
+
+Goals includes a Check-ins card that creates a ChatGPT-ready XLSX workbook in Downloads. Weekly check-ins export the previous Monday-through-Sunday calendar week, monthly check-ins export the previous calendar month, and custom check-ins export once both dates are selected. The workbook currently includes Summary, Meals Foods, Daily Nutrition, Body Metrics, Sleep, Activity Burn, Heart Oxygen, and Exercise sheets.
 
 Debug automation and the MCP server can set export mode and redaction before triggering an export so emulator smoke tests cover all export choices without manual drawer navigation.

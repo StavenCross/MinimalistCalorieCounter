@@ -34,6 +34,7 @@ import com.makstuff.minimalistcaloriecounter.classes.GoalStatusState
 import com.makstuff.minimalistcaloriecounter.classes.GoalSex
 import com.makstuff.minimalistcaloriecounter.classes.WeeklyWeightLossTarget
 import com.makstuff.minimalistcaloriecounter.classes.statusState
+import com.makstuff.minimalistcaloriecounter.health.CheckInDateRange
 import com.makstuff.minimalistcaloriecounter.ui.model.emptyQuickImportNutrients
 import com.makstuff.minimalistcaloriecounter.ui.model.goalAdherenceCards
 import com.makstuff.minimalistcaloriecounter.ui.model.goalBodyTrendCards
@@ -64,6 +65,7 @@ fun ScreenGoals(
     onMeasurementLockToggle: (GoalFieldKey) -> Unit,
     onMacroChange: (GoalMacro, Double?) -> Unit,
     onMacroLockToggle: (GoalMacro) -> Unit,
+    onExportCheckIn: (CheckInDateRange) -> Unit = {},
     onDeleteHistoryEntry: (GoalHistoryEntry) -> Unit = {},
 ) {
     val goals = uiState.goals
@@ -79,6 +81,7 @@ fun ScreenGoals(
     val adherenceCards = goalAdherenceCards(dayTotals, activeTargets)
     var detailsDestination by remember { mutableStateOf<GoalDetailsDestination?>(null) }
     var selectedHistoryEntry by remember { mutableStateOf<GoalHistoryEntry?>(null) }
+    var checkInSheetVisible by remember { mutableStateOf(false) }
 
     if (goals.settingsVisible) {
         GoalsSettingsSheet(
@@ -146,6 +149,13 @@ fun ScreenGoals(
             }
         }
     }
+    if (checkInSheetVisible) {
+        CheckInExportSheet(
+            inProgress = uiState.checkInExportInProgress,
+            onDismiss = { checkInSheetVisible = false },
+            onExport = onExportCheckIn,
+        )
+    }
 
     LazyColumn(
         modifier = Modifier
@@ -185,6 +195,15 @@ fun ScreenGoals(
                 bodyCards = bodyTrendCards,
                 adherenceCards = adherenceCards,
                 adherenceDate = uiState.healthConnectViewerDate,
+            )
+        }
+
+        item {
+            CheckInsCard(
+                message = uiState.checkInExportMessage,
+                inProgress = uiState.checkInExportInProgress,
+                successToken = uiState.checkInExportSuccessToken,
+                onOpen = { checkInSheetVisible = true },
             )
         }
 

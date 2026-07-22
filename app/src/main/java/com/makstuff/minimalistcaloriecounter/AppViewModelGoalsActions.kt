@@ -13,6 +13,7 @@ import com.makstuff.minimalistcaloriecounter.classes.toHistoryEntry
 import com.makstuff.minimalistcaloriecounter.health.HealthConnectDeleteResult
 import com.makstuff.minimalistcaloriecounter.health.HealthConnectGoalProfileReadResult
 import com.makstuff.minimalistcaloriecounter.health.HealthConnectGoalProfileWriteResult
+import com.makstuff.minimalistcaloriecounter.widget.NutritionWidgetUpdater
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.LocalDate
@@ -238,6 +239,9 @@ internal class AppViewModelGoalsActions(private val env: AppViewModelEnvironment
         env.csvStore.writeGoals(env.context, env.uiState.goals)
         env.launchRoomWrite {
             writeGoals(env.uiState.goals)
+        }
+        env.scope.launch {
+            NutritionWidgetUpdater.updateAll(env.application)
         }
     }
 

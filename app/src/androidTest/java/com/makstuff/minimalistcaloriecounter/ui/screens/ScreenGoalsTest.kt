@@ -661,6 +661,27 @@ class ScreenGoalsTest {
         }
     }
 
+    @Test
+    fun customCheckInWaitsForExplicitExport() {
+        var exportCount = 0
+
+        composeRule.setContent {
+            AppTheme(dynamicColor = false) {
+                CheckInExportSheet(
+                    inProgress = false,
+                    onDismiss = {},
+                    onExport = { exportCount += 1 },
+                )
+            }
+        }
+
+        composeRule.onNodeWithText("Choose check-in").performClick()
+        composeRule.onNodeWithText("Custom check-in").performClick()
+        composeRule.runOnIdle { assertEquals(0, exportCount) }
+        composeRule.onNodeWithTag("goals_checkins_export_custom").assertIsDisplayed().performClick()
+        composeRule.runOnIdle { assertEquals(1, exportCount) }
+    }
+
     private fun baseState(): AppUiState {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         return AppUiState(

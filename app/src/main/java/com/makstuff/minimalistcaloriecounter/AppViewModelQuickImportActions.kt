@@ -1,10 +1,12 @@
 package com.makstuff.minimalistcaloriecounter
 
 import android.content.Context
+import com.makstuff.minimalistcaloriecounter.classes.MealImportRequest
 import com.makstuff.minimalistcaloriecounter.classes.QuickImportCommitOptions
 import com.makstuff.minimalistcaloriecounter.classes.QuickImportFood
 import com.makstuff.minimalistcaloriecounter.classes.QuickImportFormatter
 import com.makstuff.minimalistcaloriecounter.classes.QuickImportHealthWriteResult
+import com.makstuff.minimalistcaloriecounter.widget.NutritionWidgetUpdater
 import com.makstuff.minimalistcaloriecounter.classes.QuickImportMealType
 import com.makstuff.minimalistcaloriecounter.classes.QuickImportOutbox
 import com.makstuff.minimalistcaloriecounter.classes.QuickImportOutboxItem
@@ -28,6 +30,20 @@ internal class AppViewModelQuickImportActions(
                 inputQuickImportText = text,
                 quickImportMeal = parsed.getOrNull(),
                 quickImportError = if (text.isBlank()) null else parsed.exceptionOrNull()?.message,
+            ).withoutQuickImportOutcome()
+        }
+    }
+
+    fun applyMealImport(import: MealImportRequest) {
+        val sourceText = import.sourceText
+        env.state.update { currentState ->
+            currentState.copy(
+                inputQuickImportText = sourceText,
+                inputQuickImportDateTime = import.dateTime,
+                quickImportSnackOverride = import.mealType == QuickImportMealType.Snack,
+                quickImportMealTypeOverride = import.mealType,
+                quickImportMeal = import.meal,
+                quickImportError = null,
             ).withoutQuickImportOutcome()
         }
     }
@@ -119,11 +135,7 @@ internal class AppViewModelQuickImportActions(
 
     fun updateMealTypeOverride(mealType: QuickImportMealType) {
         env.state.update { currentState ->
-            currentState.copy(
-                inputQuickImportDateTime = mealType.applyDefaultTime(currentState.inputQuickImportDateTime),
-                quickImportMealTypeOverride = mealType,
-                quickImportSnackOverride = mealType == QuickImportMealType.Snack,
-            ).withoutQuickImportOutcome()
+            currentState.withMealTypeOverride(mealType).withoutQuickImportOutcome()
         }
     }
 
@@ -237,6 +249,7 @@ internal class AppViewModelQuickImportActions(
                         )
                     }
                     viewModel.readHealthConnectNutritionMeals()
+                    NutritionWidgetUpdater.updateAll(context)
                 } else {
                     env.state.update {
                         it.copy(

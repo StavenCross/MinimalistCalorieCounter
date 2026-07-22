@@ -1,6 +1,8 @@
 package com.makstuff.minimalistcaloriecounter
 
 import android.widget.Toast
+import com.makstuff.minimalistcaloriecounter.health.hasExportReadPermissions
+import com.makstuff.minimalistcaloriecounter.health.hasCheckInReadPermissions
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -14,22 +16,24 @@ internal class AppViewModelHealthConnectActions(
 
     fun updatePermissionsStatus() {
         env.scope.launch {
-            val allGranted = env.healthConnectManager.hasAllPermissions()
+            val coreGranted = env.healthConnectManager.hasCorePermissions()
             val exportGranted = env.healthConnectManager.hasExportReadPermissions(env.uiState.healthConnectExportMode)
+            val checkInGranted = env.healthConnectManager.hasCheckInReadPermissions()
             val anyGranted = env.healthConnectManager.hasAnyPermissions()
             var needsSave = false
             env.state.update { currentState ->
-                val newSyncStatus = if (!allGranted) false else currentState.healthConnectSyncEnabled
+                val newSyncStatus = if (!coreGranted) false else currentState.healthConnectSyncEnabled
                 if (newSyncStatus != currentState.healthConnectSyncEnabled) {
                     needsSave = true
                 }
-                val newToastsStatus = if (!allGranted) false else currentState.healthConnectToastsEnabled
+                val newToastsStatus = if (!coreGranted) false else currentState.healthConnectToastsEnabled
                 if (newToastsStatus != currentState.healthConnectToastsEnabled) {
                     needsSave = true
                 }
                 currentState.copy(
-                    healthConnectPermissionsGranted = allGranted,
+                    healthConnectPermissionsGranted = coreGranted,
                     healthConnectExportPermissionsGranted = exportGranted,
+                    healthConnectCheckInPermissionsGranted = checkInGranted,
                     healthConnectAnyPermissionsGranted = anyGranted,
                     healthConnectSyncEnabled = newSyncStatus,
                     healthConnectToastsEnabled = newToastsStatus,

@@ -1,7 +1,6 @@
 package com.makstuff.minimalistcaloriecounter.ui.navigation
 
 import android.widget.Toast
-import androidx.activity.compose.ManagedActivityResultLauncher
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -14,6 +13,8 @@ import com.makstuff.minimalistcaloriecounter.AppUiState
 import com.makstuff.minimalistcaloriecounter.AppViewModel
 import com.makstuff.minimalistcaloriecounter.health.DayCheckInExporter
 import com.makstuff.minimalistcaloriecounter.health.HealthConnectManager
+import com.makstuff.minimalistcaloriecounter.health.checkInReadPermissions
+import com.makstuff.minimalistcaloriecounter.health.exportPermissionsFor
 import com.makstuff.minimalistcaloriecounter.ui.navigation.legacy.legacyArchiveRoutes
 import com.makstuff.minimalistcaloriecounter.ui.navigation.legacy.legacyDatabaseRoutes
 import com.makstuff.minimalistcaloriecounter.ui.navigation.legacy.legacyDayRoutes
@@ -36,11 +37,11 @@ fun AppRouteHost(
     navController: NavHostController,
     fileLaunchers: AppFileLaunchers,
     healthConnectManager: HealthConnectManager,
-    healthConnectExportPermissionLauncher: ManagedActivityResultLauncher<Set<String>, Set<String>>,
     keyboardController: SoftwareKeyboardController?,
     onNavigate: (String) -> Unit,
     onNavigateBack: () -> Unit,
     onEditDatabaseEntry: (Int) -> Unit,
+    onRequestHealthConnectPermissions: (Set<String>) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
@@ -109,6 +110,9 @@ fun AppRouteHost(
                 onReviewHealthConnectPermissions = {
                     viewModel.setAlertDialogHealthConnectPermissions(true)
                 },
+                openAddMealRequestToken = uiState.openAddMealDrawerRequestToken,
+                openAddMealRequestPrepared = uiState.openAddMealDrawerPrepared,
+                onOpenAddMealRequestHandled = { viewModel.consumeAddMealDrawerRequest(it) },
             )
         }
         composable(AppRoutes.GOALS_HOME) {
@@ -128,6 +132,13 @@ fun AppRouteHost(
                 onMeasurementLockToggle = { viewModel.toggleGoalMeasurementLock(it) },
                 onMacroChange = { macro, value -> viewModel.updateGoalMacro(macro, value) },
                 onMacroLockToggle = { viewModel.toggleGoalMacroLock(it) },
+                onExportCheckIn = {
+                    if (uiState.healthConnectCheckInPermissionsGranted) {
+                        viewModel.exportHealthConnectCheckIn(it)
+                    } else {
+                        onRequestHealthConnectPermissions(checkInReadPermissions)
+                    }
+                },
                 onDeleteHistoryEntry = { viewModel.deleteGoalHistoryEntry(it) },
             )
         }
@@ -136,8 +147,11 @@ fun AppRouteHost(
                 uiState = uiState,
                 viewModel = viewModel,
                 fileLaunchers = fileLaunchers,
-                healthConnectManager = healthConnectManager,
-                healthConnectExportPermissionLauncher = healthConnectExportPermissionLauncher,
+                onRequestExportPermissions = {
+                    onRequestHealthConnectPermissions(
+                        healthConnectManager.exportPermissionsFor(uiState.healthConnectExportMode)
+                    )
+                },
             )
         }
     }

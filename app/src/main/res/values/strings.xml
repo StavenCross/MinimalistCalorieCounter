@@ -1,4 +1,5 @@
 <resources>
+    <string name="meal_import_failed">Could not open this meal import. Check the link and try again.</string>
     <string name="app_name">Minimalist Calorie Counter</string>
     <string name="archive">Archive</string>
     <string name="body_weight">Body Weight</string>
@@ -117,6 +118,7 @@
     <string name="dialog_database_delete">Are you sure you want to delete this Database Entry?</string>
     <string name="health_connect">Health Connect</string>
     <string name="health_connect_nutrition">Health Connect Nutrition</string>
+    <string name="nutrition_widget_description">Shows calories remaining and daily macro progress.</string>
     <string name="health_connect_permissions_missing">Health Connect permissions are missing.</string>
     <string name="dropdown_sync_health_connect">Health Connect Auto-Sync</string>
     <string name="dropdown_export_archive_health_connect">Health Connect Full Manual Sync</string>
@@ -125,7 +127,7 @@
     <string name="privacy_policy">Privacy Policy</string>
     <string name="dialog_health_connect_activation">Health Connect Auto-Sync is now active. Future Archive modifications will be synced automatically. This includes all additions, deletions and changes to the Archive made from inside the app, except Archive Imports and Archive Clears.\n\nTo sync existing Archive Entries, please use \"Health Connect Full Manual Sync\".</string>
     <string name="dialog_health_connect_toasts">Health Connect Notifications are now active. This will show little popup messages at every successful write action to Health Connect.</string>
-    <string name="dialog_health_connect_disclosure">Minimalist Calorie Counter uses Health Connect to share your nutrition and weight data with other health apps. For full functionality, please grant ALL requested permissions on the next screen. Your data stays on your device and is never shared with third parties.</string>
+    <string name="dialog_health_connect_disclosure">Minimalist Calorie Counter uses Health Connect to share your nutrition and weight data with other health apps. For full functionality, grant all requested health permissions on the next screen. If Android opens App info instead, choose Permissions, then allow Health, fitness and wellness. Your data stays on your device and is never shared with third parties.</string>
     <string name="toast_hc_entry_added">Archive Entry added to Health Connect</string>
     <string name="toast_hc_entry_edited">Archive Entry edited in Health Connect</string>
     <string name="toast_hc_entry_deleted">Archive Entry deleted from Health Connect</string>

@@ -1,4 +1,5 @@
 <resources>
+    <string name="meal_import_failed">Impossible d’ouvrir cette importation de repas. Vérifiez le lien et réessayez.</string>
     <string name="app_name">Compteur de Calories Minimaliste</string>
     <string name="archive">Archives</string>
     <string name="body_weight">Poids corporel</string>
@@ -136,4 +137,5 @@
     <string name="error_archive_date_future">Les entrées d\'archive ne peuvent pas être dans le futur.</string>
     <string name="toast_hc_not_available">Health Connect n\'est pas disponible sur cet appareil.</string>
     <string name="quick_import">Import rapide</string>
+    <string name="nutrition_widget_description">Affiche les calories restantes et la progression quotidienne des macronutriments.</string>
 </resources>

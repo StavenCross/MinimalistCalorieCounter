@@ -46,6 +46,8 @@ data class AppUiState(
     val navigationBarHighlight: NavButton = NAV_DAY,
     val topBarTitle: String = "",
     val automationRouteRequest: String? = null,
+    val openAddMealDrawerRequestToken: Long = 0L,
+    val openAddMealDrawerPrepared: Boolean = false,
     val activeSettingsSheet: SettingsSheet? = null,
     /*
     CAREFUL! The list below MUST contain the correct number of empty nutrient value strings.
@@ -116,6 +118,7 @@ data class AppUiState(
     val themeUserSetting: AppTheme = AppTheme.MODE_AUTO,
     val healthConnectPermissionsGranted: Boolean = false,
     val healthConnectExportPermissionsGranted: Boolean = false,
+    val healthConnectCheckInPermissionsGranted: Boolean = false,
     val healthConnectAnyPermissionsGranted: Boolean = false,
     val healthConnectSyncEnabled: Boolean = false,
     val healthConnectToastsEnabled: Boolean = false,
@@ -140,6 +143,9 @@ data class AppUiState(
     val healthConnectExportRedacted: Boolean = true,
     val healthConnectExportMessage: String? = null,
     val healthConnectExportInProgress: Boolean = false,
+    val checkInExportMessage: String? = null,
+    val checkInExportInProgress: Boolean = false,
+    val checkInExportSuccessToken: Long = 0L,
     val healthConnectNutritionCleanupStartDate: LocalDate = LocalDateTime.now().minusHours(12).toLocalDate(),
     val healthConnectNutritionCleanupEndDate: LocalDate = LocalDateTime.now().minusHours(12).toLocalDate(),
     val healthConnectNutritionCleanupMode: HealthConnectCleanupMode = HealthConnectCleanupMode.AllAppNutrition,

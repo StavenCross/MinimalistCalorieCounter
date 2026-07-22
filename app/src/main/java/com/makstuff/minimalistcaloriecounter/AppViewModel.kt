@@ -14,6 +14,7 @@ import com.makstuff.minimalistcaloriecounter.classes.GoalMacro
 import com.makstuff.minimalistcaloriecounter.classes.GoalSex
 import com.makstuff.minimalistcaloriecounter.classes.NutritionFoodEditDraft
 import com.makstuff.minimalistcaloriecounter.classes.Nutrients
+import com.makstuff.minimalistcaloriecounter.classes.MealImportRequest
 import com.makstuff.minimalistcaloriecounter.classes.QuickImportFood
 import com.makstuff.minimalistcaloriecounter.classes.QuickImportMealType
 import com.makstuff.minimalistcaloriecounter.classes.WeeklyWeightLossTarget
@@ -21,12 +22,15 @@ import com.makstuff.minimalistcaloriecounter.health.HealthConnectNutritionMeal
 import com.makstuff.minimalistcaloriecounter.health.HealthConnectManager
 import com.makstuff.minimalistcaloriecounter.health.HealthConnectExportMode
 import com.makstuff.minimalistcaloriecounter.health.HealthConnectCleanupMode
+import com.makstuff.minimalistcaloriecounter.health.CheckInDateRange
 import com.makstuff.minimalistcaloriecounter.essentials.NavButton
+import com.makstuff.minimalistcaloriecounter.ui.navigation.AppRoutes
 import com.makstuff.minimalistcaloriecounter.persistence.AppCsvStore
 import com.makstuff.minimalistcaloriecounter.ui.settings.SettingsSheet
 import com.makstuff.minimalistcaloriecounter.ui.theme.AppTheme
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import java.io.InputStream
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -51,6 +55,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     private val persistenceActions = AppViewModelPersistenceActions(environment, this)
     private val healthConnectActions = AppViewModelHealthConnectActions(environment, this)
     private val healthConnectMealActions = AppViewModelHealthConnectMealActions(environment, this)
+    private val historicalMealActions = AppViewModelHistoricalMealActions(environment, this)
     private val healthConnectExportActions = AppViewModelHealthConnectExportActions(environment, this)
     private val healthConnectCleanupActions = AppViewModelHealthConnectCleanupActions(environment, this)
     private val uiActions = AppViewModelUiActions(environment, this)
@@ -65,6 +70,51 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     fun dismissHealthConnectSyncError() = healthConnectActions.dismissSyncError()
     fun updateHealthConnectViewerDate(date: LocalDate) = healthConnectActions.updateViewerDate(date)
     fun requestNavigation(route: String) = uiActions.requestNavigation(route)
+    fun openAddMealFromWidget(
+        date: LocalDate = LocalDate.now(),
+        targetRoute: String = AppRoutes.HEALTH_CONNECT_NUTRITION,
+        openDrawer: Boolean = true,
+    ) {
+        quickImportActions.reset()
+        quickImportActions.updateDateTime(LocalDateTime.of(date, LocalDateTime.now().toLocalTime()))
+        healthConnectActions.updateViewerDate(date)
+        _uiState.update {
+            it.copy(
+                automationRouteRequest = targetRoute,
+                openAddMealDrawerRequestToken = if (openDrawer) {
+                    it.openAddMealDrawerRequestToken + 1L
+                } else {
+                    it.openAddMealDrawerRequestToken
+                },
+                openAddMealDrawerPrepared = false,
+                loading = false,
+            )
+        }
+    }
+    fun openMealImport(
+        import: MealImportRequest,
+        targetRoute: String = AppRoutes.HEALTH_CONNECT_NUTRITION,
+        openDrawer: Boolean = true,
+    ) {
+        quickImportActions.applyMealImport(import)
+        healthConnectActions.updateViewerDate(import.dateTime.toLocalDate())
+        _uiState.update {
+            it.copy(
+                automationRouteRequest = targetRoute,
+                openAddMealDrawerRequestToken = if (openDrawer) {
+                    it.openAddMealDrawerRequestToken + 1L
+                } else {
+                    it.openAddMealDrawerRequestToken
+                },
+                openAddMealDrawerPrepared = true,
+                loading = false,
+            )
+        }
+    }
+    /** Acknowledges exactly one external drawer request so route recreation cannot replay it. */
+    fun consumeAddMealDrawerRequest(token: Long) {
+        _uiState.update { it.withConsumedAddMealDrawerRequest(token) }
+    }
     fun clearNavigationRequest(route: String? = null) = uiActions.clearNavigation(route)
     fun updateActiveSettingsSheet(sheet: SettingsSheet?) = uiActions.updateActiveSettingsSheet(sheet)
     fun openSettingsSheet(sheet: SettingsSheet?) = uiActions.openSettingsSheet(sheet)
@@ -91,9 +141,9 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         foods: List<HealthConnectNutritionMeal>,
         draft: NutritionFoodEditDraft,
     ) = healthConnectMealActions.updateServingGroup(foods, draft)
-    fun previewHistoricalMealImport(rows: List<List<String>>) = healthConnectMealActions.previewHistoricalImport(rows)
-    fun writeHistoricalMealImport() = healthConnectMealActions.writeHistoricalImport()
-    fun cleanupHistoricalMealImport() = healthConnectMealActions.cleanupHistoricalImport()
+    fun previewHistoricalMealImport(rows: List<List<String>>) = historicalMealActions.preview(rows)
+    fun writeHistoricalMealImport() = historicalMealActions.write()
+    fun cleanupHistoricalMealImport() = historicalMealActions.cleanup()
     fun updateHealthConnectNutritionCleanupStartDate(date: LocalDate) = healthConnectCleanupActions.updateStartDate(date)
     fun updateHealthConnectNutritionCleanupEndDate(date: LocalDate) = healthConnectCleanupActions.updateEndDate(date)
     fun updateHealthConnectNutritionCleanupMode(mode: HealthConnectCleanupMode) = healthConnectCleanupActions.updateMode(mode)
@@ -103,6 +153,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     fun updateHealthConnectExportMode(mode: HealthConnectExportMode) = healthConnectExportActions.updateExportMode(mode)
     fun updateHealthConnectExportRedacted(redacted: Boolean) = healthConnectExportActions.updateExportRedacted(redacted)
     fun exportHealthConnectRange() = healthConnectExportActions.exportRange()
+    fun exportHealthConnectCheckIn(range: CheckInDateRange) = healthConnectExportActions.exportCheckIn(range)
     fun removeHealthConnectNutritionRange() = healthConnectCleanupActions.removeRange()
     fun setAlertDialogHealthConnectActivation(bool: Boolean) = uiActions.setHealthConnectActivationDialog(bool)
     fun setAlertDialogHealthConnectToasts(bool: Boolean) = uiActions.setHealthConnectToastsDialog(bool)
@@ -190,4 +241,33 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     fun archiveImportCSV(context: Context, inputStream: InputStream) = persistenceActions.importArchiveCsv(context, inputStream)
     fun setNameFoodDayAdd(string: String) = uiActions.setNameFoodDayAdd(string)
     fun setNameFoodDayEdit(string: String) = uiActions.setNameFoodDayEdit(string)
+}
+
+/** Clears a matching one-shot Add Meal request while preserving any newer request. */
+internal fun AppUiState.withConsumedAddMealDrawerRequest(token: Long): AppUiState {
+    val request = consumeAddMealDrawerRequest(
+        currentToken = openAddMealDrawerRequestToken,
+        prepared = openAddMealDrawerPrepared,
+        handledToken = token,
+    )
+    if (request.token == openAddMealDrawerRequestToken) return this
+    return copy(
+        openAddMealDrawerRequestToken = request.token,
+        openAddMealDrawerPrepared = request.prepared,
+    )
+}
+
+internal data class AddMealDrawerRequestStatus(val token: Long, val prepared: Boolean)
+
+/** Computes one-shot request acknowledgement without requiring Android-backed UI state in tests. */
+internal fun consumeAddMealDrawerRequest(
+    currentToken: Long,
+    prepared: Boolean,
+    handledToken: Long,
+): AddMealDrawerRequestStatus {
+    return if (handledToken > 0L && currentToken == handledToken) {
+        AddMealDrawerRequestStatus(token = 0L, prepared = false)
+    } else {
+        AddMealDrawerRequestStatus(token = currentToken, prepared = prepared)
+    }
 }

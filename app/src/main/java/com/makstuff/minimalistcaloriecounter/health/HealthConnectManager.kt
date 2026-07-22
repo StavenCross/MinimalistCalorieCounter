@@ -3,13 +3,6 @@ package com.makstuff.minimalistcaloriecounter.health
 import android.content.Context
 import android.widget.Toast
 import androidx.health.connect.client.HealthConnectClient
-import androidx.health.connect.client.permission.HealthPermission
-import androidx.health.connect.client.records.BodyFatRecord
-import androidx.health.connect.client.records.BodyWaterMassRecord
-import androidx.health.connect.client.records.BoneMassRecord
-import androidx.health.connect.client.records.HeightRecord
-import androidx.health.connect.client.records.LeanBodyMassRecord
-import androidx.health.connect.client.records.NutritionRecord
 import androidx.health.connect.client.records.WeightRecord
 import androidx.health.connect.client.request.ReadRecordsRequest
 import com.makstuff.minimalistcaloriecounter.R
@@ -30,64 +23,32 @@ class HealthConnectManager(private val context: Context) {
         null
     }
 
+    internal val applicationContext: Context
+        get() = context
+
+    internal fun getClientOrNull(): HealthConnectClient? = getClient()
+
     fun isSdkAvailable(): Boolean = try {
         HealthConnectClient.getSdkStatus(context) == HealthConnectClient.SDK_AVAILABLE
     } catch (_: Throwable) {
         false
     }
 
-    private val writeNutritionPermissions = setOf(
-        HealthPermission.getWritePermission(NutritionRecord::class),
-    )
+    private val writeGoalProfilePermissions = healthConnectGoalProfileWritePermissions
+    private val readGoalProfilePermissions = healthConnectGoalProfileReadPermissions
 
-    private val writeArchivePermissions = writeNutritionPermissions + setOf(
-        HealthPermission.getWritePermission(WeightRecord::class),
-    )
-
-    private val writeGoalProfilePermissions = setOf(
-        HealthPermission.getWritePermission(HeightRecord::class),
-        HealthPermission.getWritePermission(WeightRecord::class),
-    )
-
-    private val exportReadPermissions = allReadPermissions
-
-    private val readNutritionPermissions = setOf(HealthPermission.getReadPermission(NutritionRecord::class))
-
-    private val readGoalProfilePermissions = setOf(
-        HealthPermission.getReadPermission(WeightRecord::class),
-        HealthPermission.getReadPermission(HeightRecord::class),
-        HealthPermission.getReadPermission(BodyFatRecord::class),
-        HealthPermission.getReadPermission(BodyWaterMassRecord::class),
-        HealthPermission.getReadPermission(BoneMassRecord::class),
-        HealthPermission.getReadPermission(LeanBodyMassRecord::class),
-    )
-
-    val permissions = writeNutritionPermissions + readNutritionPermissions + readGoalProfilePermissions + writeGoalProfilePermissions
-
-    fun exportPermissionsFor(mode: HealthConnectExportMode): Set<String> = mode.recordTypes()
-        .map { HealthPermission.getReadPermission(it) }
-        .toSet() + HealthPermission.PERMISSION_READ_HEALTH_DATA_HISTORY
-
-    private fun permissionSetFor(scope: HealthConnectPermissionScope): Set<String> = when (scope) {
-        HealthConnectPermissionScope.AllAppFeatures -> permissions
-        HealthConnectPermissionScope.WriteArchiveEntries -> writeArchivePermissions
-        HealthConnectPermissionScope.ReadNutrition -> readNutritionPermissions
-        HealthConnectPermissionScope.ReadGoalProfile -> readGoalProfilePermissions
-        HealthConnectPermissionScope.WriteGoalProfile -> writeGoalProfilePermissions
-        HealthConnectPermissionScope.ExportReadableData -> exportReadPermissions
-        HealthConnectPermissionScope.MutateNutritionRecords -> writeNutritionPermissions + readNutritionPermissions
-    }
+    val permissions = defaultHealthConnectPermissions
 
     private suspend fun hasPermissions(scope: HealthConnectPermissionScope): Boolean {
         val client = getClient() ?: return false
         return try {
-            client.permissionController.getGrantedPermissions().containsAll(permissionSetFor(scope))
+            client.permissionController.getGrantedPermissions().containsAll(healthConnectPermissionsFor(scope))
         } catch (_: Throwable) {
             false
         }
     }
 
-    suspend fun hasAllPermissions(): Boolean = hasPermissions(HealthConnectPermissionScope.AllAppFeatures)
+    suspend fun hasCorePermissions(): Boolean = hasPermissions(HealthConnectPermissionScope.CoreAppFeatures)
 
     suspend fun hasArchiveSyncPermissions(): Boolean = hasPermissions(HealthConnectPermissionScope.WriteArchiveEntries)
 
@@ -99,15 +60,6 @@ class HealthConnectManager(private val context: Context) {
 
     private suspend fun hasWriteGoalProfilePermissions(): Boolean = hasPermissions(HealthConnectPermissionScope.WriteGoalProfile)
 
-    suspend fun hasExportReadPermissions(mode: HealthConnectExportMode = HealthConnectExportMode.Full): Boolean {
-        val client = getClient() ?: return false
-        return try {
-            client.permissionController.getGrantedPermissions().containsAll(exportPermissionsFor(mode))
-        } catch (_: Throwable) {
-            false
-        }
-    }
-
     private suspend fun hasNutritionMutationPermissions(): Boolean = hasPermissions(HealthConnectPermissionScope.MutateNutritionRecords)
 
     private suspend fun hasGoalWeightMutationPermissions(): Boolean {
@@ -117,26 +69,6 @@ class HealthConnectManager(private val context: Context) {
             permissions.containsAll(readGoalProfilePermissions + writeGoalProfilePermissions)
         } catch (_: Throwable) {
             false
-        }
-    }
-
-    suspend fun exportHealthConnectCsv(
-        startDate: LocalDate,
-        endDate: LocalDate,
-        mode: HealthConnectExportMode,
-        redacted: Boolean,
-        onProgress: (Float?, Int, Int) -> Unit,
-    ): HealthConnectExportResult {
-        if (!isSdkAvailable()) return HealthConnectExportResult.HealthConnectUnavailable
-        val client = getClient() ?: return HealthConnectExportResult.HealthConnectUnavailable
-
-        return try {
-            if (!hasExportReadPermissions(mode)) return HealthConnectExportResult.PermissionsMissing
-            HealthConnectExporter(context, client).exportCsv(startDate, endDate, mode, redacted, onProgress)
-        } catch (e: kotlinx.coroutines.CancellationException) {
-            throw e
-        } catch (e: Throwable) {
-            HealthConnectExportResult.Failed(e.message ?: "Unknown Health Connect export error")
         }
     }
 

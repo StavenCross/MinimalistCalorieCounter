@@ -19,12 +19,13 @@ Generated output, Gradle build folders, `node_modules`, and IDE metadata are exc
 
 All non-UI files touched in this cleanup are now under the 300-line cap:
 
-- `HealthConnectManager.kt`: 300 lines after extracting export, nutrition, archive sync, mapper, goal-profile reader, and permission-scope policy helpers.
+- `HealthConnectManager.kt`: 280 lines after extracting export, nutrition, archive sync, mapper, goal-profile reader, and permission-scope policy helpers.
 - `AutomationBootstrap.kt`: 298 lines after extracting HTTP helpers, JSON serializers, and route aliases.
 - `tools/mcc-mcp/src/server.ts`: 23 lines after splitting tool registration groups.
-- `AppViewModel.kt`: 192 lines after extracting feature action classes for Health Connect, Goals, Add Meal, persistence, database, archive/day, and UI chrome.
+- `AppViewModel.kt`: 240 lines after extracting feature action classes for Health Connect, Goals, Add Meal, persistence, database, archive/day, and UI chrome.
+- `AppViewModelHealthConnectMealActions.kt`: 205 lines after moving historical CSV batch orchestration to `AppViewModelHistoricalMealActions.kt`.
 - `AppViewModelHealthConnectExportActions.kt`: under 300 lines after moving cleanup preview/delete behavior to `AppViewModelHealthConnectCleanupActions.kt`.
-- `AppViewModelQuickImportActions.kt`: 300 lines after moving outbox persistence helpers into `AppViewModelQuickImportHelpers.kt`.
+- `AppViewModelQuickImportActions.kt`: 289 lines after moving outbox persistence helpers into `AppViewModelQuickImportHelpers.kt`.
 
 ## Cleanup Completed In This Pass
 
@@ -37,6 +38,7 @@ All non-UI files touched in this cleanup are now under the 300-line cap:
 - Split `AppViewModel` into a facade plus focused action classes:
   - `AppViewModelHealthConnectActions.kt`
   - `AppViewModelHealthConnectMealActions.kt`
+  - `AppViewModelHistoricalMealActions.kt`
   - `AppViewModelHealthConnectExportActions.kt`
   - `AppViewModelGoalsActions.kt`
   - `AppViewModelQuickImportActions.kt`

@@ -1,7 +1,8 @@
 package com.makstuff.minimalistcaloriecounter.health
 
+/** Names each independent permission contract so optional features cannot gate core app status. */
 internal enum class HealthConnectPermissionScope {
-    AllAppFeatures,
+    CoreAppFeatures,
     WriteArchiveEntries,
     ReadNutrition,
     ReadGoalProfile,

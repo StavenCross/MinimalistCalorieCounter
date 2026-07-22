@@ -7,6 +7,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import com.makstuff.minimalistcaloriecounter.widget.NutritionWidgetRefreshScheduler
 import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.delay
 
@@ -14,6 +15,7 @@ import kotlinx.coroutines.delay
 fun AppStartupEffects(
     uiState: AppUiState,
     viewModel: AppViewModel,
+    fastWidgetLaunch: Boolean = false,
     onNavigate: (String) -> Unit,
 ) {
     val context = LocalContext.current
@@ -35,6 +37,11 @@ fun AppStartupEffects(
     }
 
     LaunchedEffect(Unit) {
+        NutritionWidgetRefreshScheduler.scheduleNext(context)
+        if (fastWidgetLaunch) {
+            viewModel.setLoadingToFalse()
+            delay(350.milliseconds)
+        }
         viewModel.updateHealthConnectPermissionsStatus()
         viewModel.databaseResetCSV(false, context)
         viewModel.archiveResetCSV(false, context)
@@ -42,7 +49,7 @@ fun AppStartupEffects(
         viewModel.optionsResetFile(false, context)
         viewModel.goalsResetCSV(false, context)
         loadCsvBackedState(viewModel, context)
-        delay(1000.milliseconds)
+        if (!fastWidgetLaunch) delay(1000.milliseconds)
         viewModel.setLoadingToFalse()
     }
 }

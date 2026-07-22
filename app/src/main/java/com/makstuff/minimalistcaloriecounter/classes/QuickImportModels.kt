@@ -4,6 +4,10 @@ import androidx.health.connect.client.records.MealType
 import java.time.LocalDateTime
 import java.time.LocalTime
 
+/**
+ * Stores label-style nutrition values where carbohydrate is total carbohydrate, including fiber.
+ * [appCarbohydrate] performs the legacy app's net-carb conversion at its persistence boundary.
+ */
 data class QuickImportNutrients(
     val energy: Double,
     val carbohydrate: Double,
@@ -26,7 +30,7 @@ data class QuickImportNutrients(
         require(fiber >= 0.0) { "Fiber must be zero or greater." }
         require(carbohydrate + EPSILON >= fiber) { "Fiber cannot exceed total carbs." }
         require(fat + EPSILON >= saturatedFat) { "Saturated fat cannot exceed total fat." }
-        require(appCarbohydrate + EPSILON >= sugar) { "Sugar cannot exceed carbs after fiber." }
+        require(carbohydrate + EPSILON >= sugar) { "Sugar cannot exceed total carbs." }
     }
 
     fun toAppValues(): List<Double> = listOf(

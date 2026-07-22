@@ -115,6 +115,9 @@ fun ScreenHealthConnectNutrition(
     onRetryOutbox: (String) -> Unit = {},
     onExportDaySummary: (LocalDate, String) -> Unit,
     onReviewHealthConnectPermissions: () -> Unit = {},
+    openAddMealRequestToken: Long = 0L,
+    openAddMealRequestPrepared: Boolean = false,
+    onOpenAddMealRequestHandled: (Long) -> Unit = {},
 ) {
     LaunchedEffect(Unit) {
         onRefresh()
@@ -140,9 +143,16 @@ fun ScreenHealthConnectNutrition(
     var mealSummaryCopied by remember { mutableStateOf(false) }
     var foodSaveNoticeKey by remember { mutableStateOf<Long?>(null) }
     val targets = uiState.goals.activeTargetsFor(contentDate)
-    fun openAddMeal() {
-        onPrepareAddMeal(selectedDate)
+    fun openAddMeal(prepare: Boolean = true) {
+        if (prepare) onPrepareAddMeal(selectedDate)
         addMealVisible = true
+    }
+
+    LaunchedEffect(openAddMealRequestToken, openAddMealRequestPrepared) {
+        if (openAddMealRequestToken > 0L) {
+            openAddMeal(prepare = !openAddMealRequestPrepared)
+            onOpenAddMealRequestHandled(openAddMealRequestToken)
+        }
     }
 
     LaunchedEffect(selectedMealGroup) {

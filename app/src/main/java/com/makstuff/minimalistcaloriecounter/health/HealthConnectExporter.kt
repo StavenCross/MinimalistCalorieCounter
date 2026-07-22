@@ -33,7 +33,7 @@ internal class HealthConnectExporter(
             val recordTypes = mode.recordTypes()
 
             recordTypes.forEachIndexed { index, type ->
-                rows += readExportRows(type, range)
+                rows += readExportRowsOrError(type, range)
                 withContext(Dispatchers.Main) {
                     onProgress((index + 1).toFloat() / recordTypes.size, index + 1, recordTypes.size)
                 }
@@ -48,6 +48,16 @@ internal class HealthConnectExporter(
         } catch (e: Throwable) {
             HealthConnectExportResult.Failed(e.message ?: "Unknown Health Connect export error")
         }
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    private suspend fun readExportRowsOrError(
+        recordType: KClass<out Record>,
+        range: TimeRangeFilter,
+    ): List<List<String>> = try {
+        readExportRows(recordType, range)
+    } catch (e: Throwable) {
+        listOf(exportErrorRow(recordType.simpleName ?: "Record", e.message ?: e::class.java.simpleName))
     }
 
     @Suppress("UNCHECKED_CAST")
@@ -73,4 +83,27 @@ internal class HealthConnectExporter(
         return rows
     }
 
+    private fun exportErrorRow(recordType: String, message: String): List<String> = listOf(
+        recordType,
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "Export skipped: $message",
+    )
 }
